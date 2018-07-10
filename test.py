@@ -4,6 +4,7 @@ import urllib.request
 
 from mvol_collection_year import IIIFCollectionYear
 from mvol_collection_month import IIIFCollectionMonth
+from mvol_manifest import IIIFManifest
 
 def ordered(obj):
   if isinstance(obj, dict):
@@ -39,13 +40,17 @@ class TestIIIFTools(unittest.TestCase):
     ).data()
     self.assertTrue(ordered(live_data) == ordered(test_data))
 
-  '''
   def test_iiif_manifest(self):
-    url = 'http://iiif-manifest.lib.uchicago.edu/mvol/0004/1930/0106/mvol-0004-1930-0106.json'
-    live_data = json.load(urllib.request.urlopen(url).read())
-    test_data = {}
+    url = 'http://iiif-manifest.lib.uchicago.edu/mvol/0004/1929/0103/mvol-0004-1929-0103.json'
+    live_data = json.load(urllib.request.urlopen(url))
+    test_data = IIIFManifest(
+      'Daily Maroon',
+      'mvol-0004-1929-0103',
+      'A newspaper produced by students of the University of Chicago. Published 1900-1942 and continued by the Chicago Maroon.',
+      'University of Chicago Library',
+      '/Volumes/webdav/IIIF_Files/mvol/0004/1929'
+    ).data()
     self.assertTrue(ordered(live_data) == ordered(test_data))
-  '''
 
 if __name__ == '__main__':
   unittest.main()

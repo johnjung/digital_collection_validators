@@ -31,13 +31,28 @@ class MvolIdentifier:
     Takes identifiers like mvol-0004-1930-0103
   
     Returns:
-      str: An iiif-collection url, e.g. http://iiif-manifest.lib.uchicago.edu/mvol/0004/1930/0103/mvol-0004-1930-0103.json
+      str: An iiif-collection url, e.g. https://iiif-manifest.lib.uchicago.edu/mvol/0004/1930/0103/mvol-0004-1930-0103.json
    
     """
   
     pieces = self.identifier.split("-")
-    if re.match(r"^mvol-[0-9]{4}-[0-9]{4}-[0-9]{4}$", self.identifier):
-      return "http://iiif-manifest.lib.uchicago.edu/" + "/".join(pieces) + "/" + self.identifier + ".json"
+    if re.match(r"^mvol-\d{4}-\d{4}-\d{4}$", self.identifier):
+      return "https://iiif-manifest.lib.uchicago.edu/" + "/".join(pieces) + "/" + self.identifier + ".json"
+    else:
+      return ValueError
+
+  def sequence_url(self):
+    """Build a uchicago IIIF sequence URL for an mvol identifier. 
+    Takes identifiers like mvol-0004-1930-0103
+  
+    Returns:
+      str: An iiif-collection url, e.g. https://iiif-manifest.lib.uchicago.edu/mvol/0004/1930/0103/mvol-0004-1930-0103.json
+   
+    """
+
+    pieces = self.identifier.split("-")
+    if re.match(r"^mvol-\d{4}-\d{4}-\d{4}$", self.identifier):
+      return "https://iiif-manifest.lib.uchicago.edu/" + "/".join(pieces) + "/" + self.identifier + ".json"
     else:
       return ValueError
   
