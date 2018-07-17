@@ -1,7 +1,10 @@
 import argparse
+import csv
 import json
 import os
 import re   
+
+import xml.etree.ElementTree as ElementTree
 
 from mvol_identifier import MvolIdentifier
 
@@ -22,8 +25,45 @@ class IIIFManifest:
     self.mvolidentifier = MvolIdentifier(self.identifier)
     self.year = self.mvolidentifier.get_year()
 
-  def data(self):
+    self.struct_data = None
+    self.mets_data = None
+    self.namespaces = {
+      "mets": "http://www.loc.gov/METS/",
+      "mix": "http://www.loc.gov/mix/v20"
+    }
 
+  def _load_struct(self):
+    self.struct_data = []
+    with open(self.directory + '/' + self.identifier + '.struct.txt', 'r') as f:
+      r = csv .reader(f, delimiter='\t')
+      for row in r:
+        if row[0] == 'object':
+          continue
+        self.struct_data.append(row)
+
+  def get_page(self, n):
+    if not self.struct_data:
+      self._load_struct()
+    return self.struct_data[n][1]
+
+  def _load_mets(self):
+    with open(self.directory + '/' + self.identifier + '.mets.xml', 'r') as f:
+     self.mets_data = ElementTree.parse(f)
+
+  def get_width(self, n):
+    if not self.mets_data:
+      self._load_mets()
+    return int(self.mets_data.find('mets:amdSec/mets:techMD[' + str(n + 1) + ']/mets:mdWrap/mets:xmlData/mix:mix/mix:BasicImageInformation/mix:BasicImageCharacteristics/mix:imageWidth', self.namespaces).text)
+
+  def get_height(self, n):
+    if not self.mets_data:
+      self._load_mets()
+    return int(self.mets_data.find('mets:amdSec/mets:techMD[' + str(n + 1) + ']/mets:mdWrap/mets:xmlData/mix:mix/mix:BasicImageInformation/mix:BasicImageCharacteristics/mix:imageHeight', self.namespaces).text)
+
+  def get_s3_directory(self):
+    return 'https://s3.lib.uchicago.edu/owncloud/index.php/apps/files/?dir=/IIIF_Files/' + self.identifier.replace('-', '/') + '/JPEG'
+
+  def data(self):
     manifest = {
       '@context': 'http://iiif.io/api/presentation/2/context.json',
       '@id': self.mvolidentifier.manifest_url(),
@@ -58,28 +98,28 @@ class IIIFManifest:
       'viewingDirection': 'left-to-right'
     }
 
-    for e, entry in enumerate(os.listdir(self.directory)):
+    for e, entry in enumerate(os.listdir(self.directory + '/JPEG/')):
        manifest['sequences'][0]['canvases'].append({
         '@id': self.mvolidentifier.sequence_url(),
         '@type': 'sc:Canvas',
-        'label': get_page(e),
-        'height': get_height(e),
-        'width': get_width(e),
+        'label': 'Page ' + self.get_page(e),
+        'height': self.get_height(e),
+        'width': self.get_width(e),
         'images': [
           {
             '@context': 'http://iiif.io/api/presentation/2/context.json',
-            '@id': 'some url',
+            '@id': self.get_s3_directory(),
             '@type': 'oa:Annotation',
             'motivation': 'sc:Painting',
             'resource': {
-              '@id': 'http://iiif-server.lib.uchicago.edu/mvol%2F0004%2F1929%2F0103%2FTIFF%2Fmvol-0004-1929-0103_0001.tif/full/full/0/default.jpg',
+              '@id': self.get_s3_directory(),
               '@type': 'dctypes:Image',
-              'format': 'image/jpeg??????',
-              'height': get_height(e),
-              'width': get_width(e),
+              'format': 'image/jpeg',
+              'height': self.get_height(e),
+              'width': self.get_width(e),
               'service': {
                 '@context': 'http://iiif.io/api/image/2/context.json',
-                '@id': 'https://iiif-server.lib.uchicago.edu/mvol%2F0004%2F1929%2F0103%2FTIFF%2Fmvol-0004-1929-0103_0001.tif',
+                '@id': self.get_s3_directory(),
                 'profile': [
                    'http://iiif.io/api/image/2/level2.json',
                    {
@@ -106,7 +146,7 @@ class IIIFManifest:
                 ]
               }
             },
-            'on': this.mvolidentifier.get_sequence_url()
+            'on': self.mvolidentifier.manifest_url(),
           }
         ]
       })
