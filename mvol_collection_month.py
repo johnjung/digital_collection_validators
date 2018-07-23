@@ -1,7 +1,10 @@
 import argparse
+import getpass
 import json
 import os
+import owncloud
 import re
+import sys
 
 from mvol_identifier import MvolIdentifier
 
@@ -11,7 +14,8 @@ class IIIFCollectionMonth:
 
   """
 
-  def __init__(self, title, identifier, description, attribution, directory):
+  def __init__(self, oc, title, identifier, description, attribution, directory):
+    self.oc = oc
     self.title = title
     self.identifier = identifier
     self.description = description
@@ -35,9 +39,18 @@ class IIIFCollectionMonth:
       'members': []
     }
 
-    for entry in os.listdir(self.directory):
-      if os.path.isdir(self.directory + "/" + entry) and re.match(r"^\d{4}$", entry):
-        entry_identifier = '-'.join(self.identifier.split('-')[:3]) + '-' + entry
+    for entry in self.oc.list(self.directory):
+      if not entry.file_type == 'dir':
+        continue
+
+      pieces = entry.path.split('/')
+      if entry.path[-1:] == '/':
+        pieces.pop()
+
+      entry_filename = pieces.pop()
+
+      if re.match(r"^[0-9]{4}$", entry_filename):
+        entry_identifier = '-'.join(self.identifier.split('-')[:3]) + '-' + entry_filename
         entry_mvolidentifier = MvolIdentifier(entry_identifier)
         if entry_mvolidentifier.get_month() == self.month:
           collection['members'].append({
@@ -58,9 +71,19 @@ if __name__ == '__main__':
     return s
 
   parser = argparse.ArgumentParser()
+  parser.add_argument("username", help="WebDAV username.")
   parser.add_argument("identifier", help="e.g. mvol-0004-1931-01", type=mvol_month)
-  parser.add_argument("directory", help="e.g. /Volumes/webdav/...")
+  parser.add_argument("directory", help="e.g. /Volumes/webdav/0004/1931")
   args = parser.parse_args()
+
+  try:
+    oc = owncloud.Client(os.environ['WEBDAV_CLIENT'])
+  except KeyError:
+    sys.stderr.write("WEBDAV_CLIENT environmental variable not set.\n")
+    sys.exit()
+
+  password = getpass.getpass('WebDAV password: ')
+  oc.login(args.username, password)
 
   if args.identifier.startswith('mvol-0004'):
     title = 'Daily Maroon'
@@ -71,6 +94,7 @@ if __name__ == '__main__':
   print(
     json.dumps(
       IIIFCollectionMonth(
+        oc,
         title,
         args.identifier,
         description,
