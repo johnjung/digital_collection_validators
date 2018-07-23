@@ -1,13 +1,22 @@
 import argparse
 import csv
+import getpass
 import json
 import os
+import owncloud
 import re
 import requests
+import sys
 import urllib
+
+from io import StringIO
 
 def get_identifier_from_path(path):
   pieces = path.split('/')
+
+  if path[-1:] == '/':
+    pieces.pop()
+    
   while pieces[0] != 'mvol':
     pieces.pop(0)
   return '-'.join(pieces)
@@ -29,24 +38,23 @@ def get_image_info_url(identifier_and_object_number):
   url_encoded_part = urllib.parse.quote('/'.join(pieces) + '/TIFF/' + identifier_and_object_number + '.tif')
   return 'https://iiif-server.lib.uchicago.edu/' + url_encoded_part + '/info.json'
 
-# /Volumes/webdav/IIIF_Files/mvol/0004/1931/mvol-0004-1931-0106.struct.txt
-def get_struct_txt_filename(directory, identifier):
-  pieces = identifier.split('-')
-  return directory + '/' + pieces[3] + '/' + identifier + '.struct.txt'
+# IIIF_Files/mvol/0004/1931/
+# IIIF_Files/mvol/0004/1931/mvol-0004-1931-0106.struct.txt
+def get_struct_txt_path(path):
+  return path + '/' + get_identifier_from_path(path) + '.struct.txt'
 
-def get_page_numbers(struct_txt_filename):
+def get_page_numbers(oc, struct_txt_path):
+  file_str = oc.get_file_contents(struct_txt_path).decode('utf-8')
+
   page_numbers = []
-  with open(struct_txt_filename, 'r') as f:
-    r = csv.reader(f, delimiter='\t')
-    for row in r:
-      if row[0] == 'object':
-        continue
-      page_numbers.append(row[1])
+  f = StringIO(file_str)
+  r = csv.reader(f, delimiter='\t')
+  for row in r:
+    if row[0] == 'object':
+      continue
+    page_numbers.append(row[1])
   return page_numbers
 
-def get_tiff_directory(directory, identifier):
-  return directory + '/' + identifier.split('-')[3] + '/TIFF'
-      
 if __name__ == '__main__':
   """ Produce an input file for a year's worth of mvol data.
       This checks to be sure that files are available via specific URLs, and it produces an input file for the OCR building script. 
@@ -55,26 +63,29 @@ if __name__ == '__main__':
   pubs = []
 
   parser = argparse.ArgumentParser()
-  parser.add_argument("directory", help="e.g. /Volumes/webdav/IIIF_Files/.../1931")
+  parser.add_argument("username", help="WebDAV username.")
+  parser.add_argument("directory", help="e.g. IIIF_Files/mvol/0004/1931")
   args = parser.parse_args()
 
-  for date_folder in os.listdir(args.directory):
-    if not re.match('^\d{4}$', date_folder):
+  try:
+    oc = owncloud.Client(os.environ['WEBDAV_CLIENT'])
+  except KeyError:
+    sys.stderr.write("WEBDAV_CLIENT environmental variable not set.\n")
+    sys.exit()
+
+  password = getpass.getpass('WebDAV password: ')
+  oc.login(args.username, password)
+
+  for date_folder in oc.list(args.directory):
+  
+    if not date_folder.file_type == 'dir':
       continue
 
-    # JEJ
-    if date_folder == '0505':
-      continue
-    if date_folder == '1109':
-      continue
-    if date_folder == '1118':
-      continue
-    if date_folder == '1216':
+    if not re.match('^.*[/]\d{4}[/]$', date_folder.path):
       continue
 
-    print(date_folder)
+    identifier = get_identifier_from_path(date_folder.path)
 
-    identifier = get_identifier_from_path(args.directory + '/' + date_folder)
     ocr_url = get_ocr_url(identifier)
 
     r = requests.head(ocr_url)
@@ -94,11 +105,11 @@ if __name__ == '__main__':
       'pages': []
     }
 
-    page_numbers = get_page_numbers(get_struct_txt_filename(args.directory, identifier))
+    page_numbers = get_page_numbers(oc, get_struct_txt_path(date_folder.path))
 
     n = 0
-    for image_file in os.listdir(get_tiff_directory(args.directory, identifier)):
-      identifier_and_object_number = image_file.split('.')[0]
+    for image_file in oc.list(date_folder.path + '/TIFF'):
+      identifier_and_object_number = image_file.path.split('/').pop().split('.')[0]
       image_url = get_image_url(identifier_and_object_number)
 
       r = requests.head(image_url)
