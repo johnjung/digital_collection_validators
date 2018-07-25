@@ -102,40 +102,48 @@ def validate_jpeg_folder(date_path):
 def validate_tiff_folder(date_path):
   return validate_folders(oc, date_path, 'TIFF', 'tif')
 
-def validate_dc_xml(date_path):
-  pass
-  # get the identifier from this path.
-  # a file exists that matches date_path/path.dc.xml.
-  # it is an xml file. 
-  # make sure it validates according to the dtd.
-  # make sure the identifier is correct.
-  # if we are in mvol-0004 make sure the date is correct.
+def validate_dc_xml(oc, f):
+  """Make sure that a given dc.xml file is well-formed and valid, and that the
+     date element is arranged as yyyy-mm-dd. 
 
-def validate_mets_xml(date_path):
-  pass
-  # get the identifier from this path.
-  # a file exists that matches date_path/path.mets.xml.
-  # it is an xml file. 
-  # make sure it validates.
+     Arguments:
+     oc -- an owncloud object, or None, for testing.
+     f  -- a file object containing a dc.xml file. 
+  """
 
-def validate_pdf(date_path):
-  pass
-  # get the identifier from this path.
-  # a file exists that matches date_path/path.pdf
-  # it is a PDF.
+  raise NotImplementedError
 
-def validate_struct_txt(date_path):
-  pass
-  # get the identifier from this path.
-  # a file exists that matches date_path/identifier.struct.txt
-  # every line contains three fields. 
-  # the first row is for headers: it contains object, page, milestone. 
+def validate_mets_xml(oc, f):
+  """Make sure that a given mets file is well-formed and valid.
 
-def validate_struct_txt(date_path):
-  pass
-  # get the identifier from this path.
-  # a file exists that matches date_path/identifier.txt
-  # it contains something. 
+     Arguments:
+     oc -- an owncloud object, or None, for testing.
+     f  -- a file object containing a mets.xml file. 
+  """
+
+  raise NotImplementedError
+
+def validate_pdf(oc, f):
+  """Make sure that a given PDF is valid.
+
+     Arguments:
+     oc -- an owncloud object, or None, for testing.
+     f  -- a file object containing a PDF.
+  """
+
+  raise NotImplementedError
+
+def validate_struct_txt(oc, f):
+  """Make sure that a given struct.txt is valid. It should be tab-delimited
+     data, with a header row. Each record should contains a field for object,
+     page and milestone.
+
+     Arguments:
+     oc -- an owncloud object, or None, for testing.
+     f  -- a file object containing a struct.txt file.
+  """
+ 
+  raise NotImplementedError
 
 def get_identifier_from_path(path):
   pieces = path.split('/')
