@@ -104,7 +104,7 @@ def validate_jpeg_folder(date_path):
 def validate_tiff_folder(date_path):
   return validate_folders(oc, date_path, 'TIFF', 'tif')
 
-def validate_dc_xml(oc, f):
+def validate_dc_xml(oc, identifier, f):
   """Make sure that a given dc.xml file is well-formed and valid, and that the
      date element is arranged as yyyy-mm-dd. 
 
@@ -112,32 +112,27 @@ def validate_dc_xml(oc, f):
      oc -- an owncloud object, or None, for testing.
      f  -- a file object containing a dc.xml file. 
   """
-  dtdfd = io.StringIO("""<!ELEMENT metadata (title,date,description,identifier)>
+
+  dtdf = io.StringIO("""<!ELEMENT metadata (title,date,description,identifier)>
                         <!ELEMENT title (#PCDATA)>
                         <!ELEMENT date (#PCDATA)>
                         <!ELEMENT description (#PCDATA)>
                         <!ELEMENT identifier (#PCDATA)>""")
-  dtd = etree.DTD(dtdfd)
-  xml_handler = open(f, 'r')
-  try:
-    xparse = etree.parse(xml_handler).getroot()
-  except Exception as e:
-    print("The XML is ill-formed.")
-    print (os.path.abspath(f)) #gives path to file, only works if files is in same folder
-    print(str(e))
-    xml_handler.close()
-    dtdfd.close()
-    return
-  result = dtd.validate(xparse)
-  if result:
-    print("The XML is valid.")
-  else:
-    print("The XML is not valid:")
-    print(dtd.error_log)
-  xml_handler.close()
-  dtdfd.close()
+  dtd = etree.DTD(dtdf)
+  dtdf.close()
 
-def validate_mets_xml(oc, f):
+  errors = []
+
+  try:
+    metadata = etree.fromstring(f.read())
+    if not dtd.validate(metadata):
+      errors.append(identifier + ' is not valid.')
+  except etree.XMLSyntaxError as e:
+    errors.append(identifier + ' is not well-formed.')
+
+  return errors
+
+def validate_mets_xml(oc, identifier, f):
   """Make sure that a given mets file is well-formed and valid.
 
      Arguments:
@@ -147,7 +142,7 @@ def validate_mets_xml(oc, f):
 
   raise NotImplementedError
 
-def validate_pdf(oc, f):
+def validate_pdf(oc, identifier, f):
   """Make sure that a given PDF is valid.
 
      Arguments:
@@ -157,7 +152,7 @@ def validate_pdf(oc, f):
 
   raise NotImplementedError
 
-def validate_struct_txt(oc, f):
+def validate_struct_txt(oc, identifier, f):
   """Make sure that a given struct.txt is valid. It should be tab-delimited
      data, with a header row. Each record should contains a field for object,
      page and milestone.
