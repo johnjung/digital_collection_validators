@@ -5,6 +5,8 @@ import os
 import owncloud
 import re
 import sys
+import io
+from lxml import etree
 
 def validate_year_folder(oc, year_path):
   '''
@@ -110,8 +112,30 @@ def validate_dc_xml(oc, f):
      oc -- an owncloud object, or None, for testing.
      f  -- a file object containing a dc.xml file. 
   """
-
-  raise NotImplementedError
+  dtdfd = io.StringIO("""<!ELEMENT metadata (title,date,description,identifier)>
+                        <!ELEMENT title (#PCDATA)>
+                        <!ELEMENT date (#PCDATA)>
+                        <!ELEMENT description (#PCDATA)>
+                        <!ELEMENT identifier (#PCDATA)>""")
+  dtd = etree.DTD(dtdfd)
+  xml_handler = open(f, 'r')
+  try:
+    xparse = etree.parse(xml_handler).getroot()
+  except Exception as e:
+    print("The XML is ill-formed.")
+    print (os.path.abspath(f)) #gives path to file, only works if files is in same folder
+    print(str(e))
+    xml_handler.close()
+    dtdfd.close()
+    return
+  result = dtd.validate(xparse)
+  if result:
+    print("The XML is valid.")
+  else:
+    print("The XML is not valid:")
+    print(dtd.error_log)
+  xml_handler.close()
+  dtdfd.close()
 
 def validate_mets_xml(oc, f):
   """Make sure that a given mets file is well-formed and valid.
