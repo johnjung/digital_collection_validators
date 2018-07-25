@@ -127,6 +127,20 @@ def validate_dc_xml(oc, identifier, f):
     metadata = etree.fromstring(f.read())
     if not dtd.validate(metadata):
       errors.append(identifier + ' is not valid.')
+    else:
+      datepull = etree.ElementTree(metadata).findtext("date")
+      pattern = re.compile("^\d{4}-\d{2}-\d{2}")
+      attemptmatch = pattern.fullmatch(datepull)
+      if attemptmatch:
+        sections = [int(s) for s in re.findall(r'\b\d+\b', datepull)]
+        if (sections[0] < 1700) | (sections[0] > 2100):
+          errors.append(identifier + ' has an incorrect year field.')
+        if (sections[1] < 1) | (sections[1] > 12):
+          errors.append(identifier + ' has an incorrect month field.')
+        if (sections[2] < 1) | (sections[2] > 31):
+          errors.append(identifier + ' has an incorrect day field.')
+      else:
+        errors.append(identifier + ' has a date with a wrong format')
   except etree.XMLSyntaxError as e:
     errors.append(identifier + ' is not well-formed.')
 
