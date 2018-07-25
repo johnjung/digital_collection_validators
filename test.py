@@ -18,6 +18,7 @@ def ordered(obj):
 
 class TestIIIFTools(unittest.TestCase):
 
+  '''
   def test_iiif_collection_year(self): 
     url = 'http://iiif-collection.lib.uchicago.edu/mvol/0004/mvol-0004-1930.json'
     live_data = json.load(urllib.request.urlopen(url))
@@ -53,6 +54,7 @@ class TestIIIFTools(unittest.TestCase):
       '/Volumes/webdav/IIIF_Files/mvol/0004/1929'
     ).data()
     self.assertTrue(ordered(live_data) == ordered(test_data))
+  '''
 
 class TestMvolValidator(unittest.TestCase):
  
@@ -60,25 +62,27 @@ class TestMvolValidator(unittest.TestCase):
     """dc.xml validator catches well-formedness errors."""
     xml_str = '<not_well></formed_xml>'
     f = io.StringIO(xml_str)
-    self.assertTrue(len(validate_dc_xml(None, f)) > 0)
+    self.assertTrue(len(validate_dc_xml(None, 'mvol-0004-1901-0101', f)) > 0)
 
   def test_dc_xml_outer_element(self):
     """dc.xml validator makes sure outer element is <metadata>."""
     xml_str = '<dublin_core><title>test</title><date>2000-01-01</date><description>test</description><identifier>mvol-0004-1900-0101</identifier></dublin_core>'
     f = io.StringIO(xml_str)
-    self.assertTrue(len(validate_dc_xml(None, f)) > 0)
+    self.assertTrue(len(validate_dc_xml(None, 'mvol-0004-1901-0101', f)) > 0)
 
   def test_dc_xml_date(self):
     """dc.xml validator makes sure the text of the date element is yyyy-mm-dd."""
     xml_str = '<metadata><title>test</title><date>2000-31-01</date><description>test</description><identifier>mvol-0004-1900-0101</identifier></metadata>'
     f = io.StringIO(xml_str)
-    self.assertTrue(len(validate_dc_xml(None, f)) > 0)
+    self.assertTrue(len(validate_dc_xml(None, 'mvol-0004-1901-0101', f)) > 0)
 
   def test_dc_xml(self):
     """dc.xml validator accepts a correctly formed file."""
     xml_str = '<metadata><title>test</title><date>2000-01-31</date><description>test</description><identifier>mvol-0004-1900-0101</identifier></metadata>'
     f = io.StringIO(xml_str)
-    self.assertTrue(len(validate_dc_xml(None, f)) == 0)
+    errors = validate_dc_xml(None, 'mvol-0004-1901-0101', f)
+    print(errors)
+    self.assertTrue(len(errors) == 0)
     
 if __name__ == '__main__':
   unittest.main()
