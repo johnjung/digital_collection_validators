@@ -7,8 +7,7 @@ import os
 from mvol_collection_year import IIIFCollectionYear
 from mvol_collection_month import IIIFCollectionMonth
 from mvol_manifest import IIIFManifest
-from mvol_validator import validate_dc_xml
-from mvol_validator import validate_mets_xml
+from mvol_validator import validate_dc_xml, validate_mets_xml, validate_pdf
 
 def ordered(obj):
   if isinstance(obj, dict):
@@ -60,11 +59,29 @@ class TestIIIFTools(unittest.TestCase):
 
 class TestMvolValidator(unittest.TestCase):
 
-  def test_mets_xml_wellformedness_pass(self):
+  def test_pdf_notempty(self):
     fileDir = os.path.dirname(os.path.realpath('__file__'))
-    file = os.path.join(fileDir, 'testdocs\good.xml')
+    file = os.path.join(fileDir, 'testdocs\mini-sueto.pdf')
     f = open(file, 'r')
-    self.assertTrue(len(validate_mets_xml(None, 'good.xml', f)) == 0)
+    self.assertTrue(len(validate_pdf(None, 'mini-sueto.pdf', f)) == 0)
+
+  def test_pdf_empty(self):
+    fileDir = os.path.dirname(os.path.realpath('__file__'))
+    file = os.path.join(fileDir, 'testdocs\empty.pdf')
+    f = open(file, 'r')
+    self.assertTrue(len(validate_pdf(None, 'empty.pdf', f)) > 0)
+
+  def test_mets_xml_pass(self):
+    fileDir = os.path.dirname(os.path.realpath('__file__'))
+    file = os.path.join(fileDir, 'testdocs\good.mets.xml')
+    f = open(file, 'r')
+    self.assertTrue(len(validate_mets_xml(None, 'good.mets.xml', f)) == 0)
+
+  def test_mets_xml_wellformed_not_mets(self):
+    fileDir = os.path.dirname(os.path.realpath('__file__'))
+    file = os.path.join(fileDir, 'testdocs\mvol-0004-1942-0407.dc.xml')
+    f = open(file, 'r')
+    self.assertTrue(len(validate_mets_xml(None, 'mvol-0004-1942-0407.dc.xml', f)) > 0)
 
   def test_dc_xml_wellformedness(self):
     """dc.xml validator catches well-formedness errors."""

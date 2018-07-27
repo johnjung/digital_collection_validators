@@ -160,9 +160,9 @@ def validate_mets_xml(oc, identifier, f):
   schemfd.close()
   xmlschema = etree.XMLSchema(schemdoc)
 
-  fdoc = etree.fromstring(f.read())
+  fdoc = etree.parse(f).getroot()
   if not xmlschema.validate(fdoc):
-    errors.append(identifier + ' is not well-formed.')
+    errors.append(identifier + ' does not follow mets standards')
 
   return errors
 
@@ -173,8 +173,14 @@ def validate_pdf(oc, identifier, f):
      oc -- an owncloud object, or None, for testing.
      f  -- a file object containing a PDF.
   """
+  errors = []
 
-  raise NotImplementedError
+  f.seek(0, os.SEEK_END)
+  size = f.tell()
+  
+  if not size:
+    errors.append(identifier + ' is an empty file.')
+  return errors
 
 def validate_struct_txt(oc, identifier, f):
   """Make sure that a given struct.txt is valid. It should be tab-delimited
