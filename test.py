@@ -64,24 +64,28 @@ class TestMvolValidator(unittest.TestCase):
     file = os.path.join(fileDir, 'testdocs\mini-sueto.pdf')
     f = open(file, 'r')
     self.assertTrue(len(validate_pdf(None, 'mini-sueto.pdf', f)) == 0)
+    f.close()
 
   def test_pdf_empty(self):
     fileDir = os.path.dirname(os.path.realpath('__file__'))
     file = os.path.join(fileDir, 'testdocs\empty.pdf')
     f = open(file, 'r')
     self.assertTrue(len(validate_pdf(None, 'empty.pdf', f)) > 0)
+    f.close()
 
   def test_mets_xml_pass(self):
     fileDir = os.path.dirname(os.path.realpath('__file__'))
     file = os.path.join(fileDir, 'testdocs\good.mets.xml')
     f = open(file, 'r')
     self.assertTrue(len(validate_mets_xml(None, 'good.mets.xml', f)) == 0)
+    f.close()
 
   def test_mets_xml_wellformed_not_mets(self):
     fileDir = os.path.dirname(os.path.realpath('__file__'))
     file = os.path.join(fileDir, 'testdocs\mvol-0004-1942-0407.dc.xml')
     f = open(file, 'r')
     self.assertTrue(len(validate_mets_xml(None, 'mvol-0004-1942-0407.dc.xml', f)) > 0)
+    f.close()
 
   def test_dc_xml_wellformedness(self):
     """dc.xml validator catches well-formedness errors."""
