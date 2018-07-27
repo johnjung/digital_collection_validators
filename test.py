@@ -2,11 +2,13 @@ import io
 import json
 import unittest
 import urllib.request
+import os
 
 from mvol_collection_year import IIIFCollectionYear
 from mvol_collection_month import IIIFCollectionMonth
 from mvol_manifest import IIIFManifest
 from mvol_validator import validate_dc_xml
+from mvol_validator import validate_mets_xml
 
 def ordered(obj):
   if isinstance(obj, dict):
@@ -57,7 +59,13 @@ class TestIIIFTools(unittest.TestCase):
   '''
 
 class TestMvolValidator(unittest.TestCase):
- 
+
+  def test_mets_xml_wellformedness_pass(self):
+    fileDir = os.path.dirname(os.path.realpath('__file__'))
+    file = os.path.join(fileDir, 'testdocs\good.xml')
+    f = open(file, 'r')
+    self.assertTrue(len(validate_mets_xml(None, 'good.xml', f)) == 0)
+
   def test_dc_xml_wellformedness(self):
     """dc.xml validator catches well-formedness errors."""
     xml_str = '<not_well></formed_xml>'
