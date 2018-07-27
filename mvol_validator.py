@@ -153,8 +153,18 @@ def validate_mets_xml(oc, identifier, f):
      oc -- an owncloud object, or None, for testing.
      f  -- a file object containing a mets.xml file. 
   """
+  errors = []
+  
+  schemfd = open("mets.xsd.xml", 'r', encoding = 'utf8') #alternatively StringIO
+  schemdoc = etree.parse(schemfd)
+  schemfd.close()
+  xmlschema = etree.XMLSchema(schemdoc)
 
-  raise NotImplementedError
+  fdoc = etree.fromstring(f.read())
+  if not xmlschema.validate(fdoc):
+    errors.append(identifier + ' is not well-formed.')
+
+  return errors
 
 def validate_pdf(oc, identifier, f):
   """Make sure that a given PDF is valid.
