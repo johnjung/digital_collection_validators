@@ -7,7 +7,7 @@ import os
 from mvol_collection_year import IIIFCollectionYear
 from mvol_collection_month import IIIFCollectionMonth
 from mvol_manifest import IIIFManifest
-from mvol_validator import validate_dc_xml, validate_mets_xml, validate_pdf
+from mvol_validator import validate_dc_xml, validate_mets_xml, validate_pdf, validate_struct_txt
 
 def ordered(obj):
   if isinstance(obj, dict):
@@ -58,6 +58,28 @@ class TestIIIFTools(unittest.TestCase):
   '''
 
 class TestMvolValidator(unittest.TestCase):
+
+  def test_struct_bad(self):
+    fileDir = os.path.dirname(os.path.realpath('__file__'))
+    file = os.path.join(fileDir, 'testdocs\\bad.struct.txt')
+    f = open(file, 'r')
+    self.assertTrue(validate_struct_txt(None, 'bad.struct.txt', f)[0] ==
+      "bad.struct.txt has an error in line 4.")
+    f.close()
+
+  def test_struct_correct(self):
+    fileDir = os.path.dirname(os.path.realpath('__file__'))
+    file = os.path.join(fileDir, 'testdocs\good.struct.txt')
+    f = open(file, 'r')
+    self.assertTrue(len(validate_struct_txt(None, 'good.struct.txt', f)) == 0)
+    f.close()
+
+  def test_struct_correct_extra_line(self):
+    fileDir = os.path.dirname(os.path.realpath('__file__'))
+    file = os.path.join(fileDir, 'testdocs\good_with_extra_line.struct.txt')
+    f = open(file, 'r')
+    self.assertTrue(len(validate_struct_txt(None, 'good_with_extra_line.struct.txt', f)) == 0)
+    f.close()
 
   def test_pdf_notempty(self):
     fileDir = os.path.dirname(os.path.realpath('__file__'))

@@ -191,8 +191,26 @@ def validate_struct_txt(oc, identifier, f):
      oc -- an owncloud object, or None, for testing.
      f  -- a file object containing a struct.txt file.
   """
- 
-  raise NotImplementedError
+  errors = []
+
+  num_lines = sum(1 for line in f)
+  f.seek(0,0)
+  firstline = f.readline()
+  firstlinepattern = re.compile("^object\tpage\tmilestone\n")
+  if not firstlinepattern.fullmatch(firstline):
+    errors.append(identifier + ' has an error in the first line.')
+  currlinenum = 2
+  midlinespattern = re.compile('^\d{8}\t\d\n')
+  finlinepattern = re.compile('^\d{8}\t\d')
+  currline = f.readline()
+  while(currline):
+    if not midlinespattern.fullmatch(currline):
+        if not ((currlinenum == num_lines) and finlinepattern.fullmatch(currline)):
+          errors.append(identifier + ' has an error in line %d.' % currlinenum)
+    currlinenum += 1
+    currline = f.readline()
+
+  return errors
 
 def get_identifier_from_path(path):
   pieces = path.split('/')
