@@ -7,7 +7,7 @@ import os
 from mvol_collection_year import IIIFCollectionYear
 from mvol_collection_month import IIIFCollectionMonth
 from mvol_manifest import IIIFManifest
-from mvol_validator import validate_dc_xml, validate_mets_xml, validate_pdf, validate_struct_txt
+from mvol_validator import _validate_dc_xml_file, validate_mets_xml, validate_pdf, validate_struct_txt
 
 from pathlib import Path
 
@@ -115,25 +115,25 @@ class TestMvolValidator(unittest.TestCase):
     '''dc.xml validator catches well-formedness errors.'''
     xml_str = '<not_well></formed_xml>'
     f = io.StringIO(xml_str)
-    self.assertTrue(len(validate_dc_xml(None, 'mvol-0004-1901-0101', f)) > 0)
+    self.assertTrue(len(_validate_dc_xml_file(None, 'mvol-0004-1901-0101', f)) > 0)
 
   def test_dc_xml_outer_element(self):
     '''dc.xml validator makes sure outer element is <metadata>.'''
     xml_str = '<dublin_core><title>test</title><date>2000-01-01</date><description>test</description><identifier>mvol-0004-1900-0101</identifier></dublin_core>'
     f = io.StringIO(xml_str)
-    self.assertTrue(len(validate_dc_xml(None, 'mvol-0004-1901-0101', f)) > 0)
+    self.assertTrue(len(_validate_dc_xml_file(None, 'mvol-0004-1901-0101', f)) > 0)
 
   def test_dc_xml_date(self):
     '''dc.xml validator makes sure the text of the date element is yyyy-mm-dd.'''
     xml_str = '<metadata><title>test</title><date>2000-31-01</date><description>test</description><identifier>mvol-0004-1900-0101</identifier></metadata>'
     f = io.StringIO(xml_str)
-    self.assertTrue(len(validate_dc_xml(None, 'mvol-0004-1901-0101', f)) > 0)
+    self.assertTrue(len(_validate_dc_xml_file(None, 'mvol-0004-1901-0101', f)) > 0)
 
   def test_dc_xml(self):
     '''dc.xml validator accepts a correctly formed file.'''
     xml_str = '<metadata><title>test</title><date>2000-01-31</date><description>test</description><identifier>mvol-0004-1900-0101</identifier></metadata>'
     f = io.StringIO(xml_str)
-    self.assertTrue(len(validate_dc_xml(None, 'mvol-0004-1901-0101', f)) == 0)
+    self.assertTrue(len(_validate_dc_xml_file(None, 'mvol-0004-1901-0101', f)) == 0)
 
   def test_mets_xml_wellformedness(self):
     '''mets validator catches well-formedness errors.'''

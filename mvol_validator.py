@@ -223,13 +223,14 @@ def validate_tiff_directory(oc, identifier, f):
   """
   return validate_directory(oc, identifier, f, 'TIFF')
 
-def validate_dc_xml(oc, identifier, f):
+def _validate_dc_xml_file(oc, identifier, file_object):
   """Make sure that a given dc.xml file is well-formed and valid, and that the
      date element is arranged as yyyy-mm-dd. 
 
      Arguments:
-     oc -- an owncloud object, or None, for testing.
-     f  -- a file object containing a dc.xml file. 
+     oc          -- an owncloud object, or None, for testing.
+     identifier  -- for error messages.
+     file_object -- a file object, the .dc.xml file.
   """
 
   dtdf = io.StringIO("""<!ELEMENT metadata (title,date,description,identifier)>
@@ -243,7 +244,7 @@ def validate_dc_xml(oc, identifier, f):
   errors = []
 
   try:
-    metadata = etree.fromstring(f.read())
+    metadata = etree.fromstring(file_object.read())
     if not dtd.validate(metadata):
       errors.append(identifier + ' is not valid.')
     else:
@@ -262,8 +263,26 @@ def validate_dc_xml(oc, identifier, f):
         errors.append(identifier + ' has a date with a wrong format')
   except etree.XMLSyntaxError as e:
     errors.append(identifier + ' is not well-formed.')
+    pass
 
   return errors
+
+def validate_dc_xml(oc, identifier, file_info):
+  """Make sure that a given dc.xml file is well-formed and valid, and that the
+     date element is arranged as yyyy-mm-dd. 
+
+     Arguments:
+     oc         -- an owncloud object, or None, for testing.
+     identifier -- for error messages.
+     file_info  -- a fileinfo object, the mmdd directory containing the .dc.xml
+                   file.
+  """
+  try:
+    file_object = io.BytesIO(oc.get_file_contents('{}/{}.dc.xml'.format(
+                    file_info.path, get_identifier_from_fileinfo(oc, f))))
+    return _validate_dc_xml_file(oc, identifier, file_object)
+  except owncloud.HTTPResponseError:
+    return [identifier + '.dc.xml does not exist.']
 
 def validate_mets_xml(oc, identifier, f):
   """Make sure that a given mets file is well-formed and valid.
