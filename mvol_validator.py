@@ -284,7 +284,23 @@ def validate_dc_xml(oc, identifier, file_info):
   except owncloud.HTTPResponseError:
     return [identifier + '.dc.xml does not exist.']
 
-def validate_mets_xml(oc, identifier, f):
+def validate_mets_xml_file(oc, identifier, file_info):
+  """Make sure that a given mets.xml file is well-formed and valid, and that the
+     date element is arranged as yyyy-mm-dd. 
+
+     Arguments:
+     oc         -- an owncloud object, or None, for testing.
+     identifier -- for error messages.
+     file_info  -- a fileinfo object, the mmdd directory containing the .mets.xml
+  """
+  try:
+    file_object = io.BytesIO(oc.get_file_contents('{}/{}.mets.xml'.format(
+                    file_info.path, get_identifier_from_fileinfo(oc, f))))
+    return _validate_mets_xml_file(oc, identifier, file_object)
+  except owncloud.HTTPResponseError:
+    return [identifier + '.mets.xml does not exist.']
+
+def _validate_mets_xml_file(oc, identifier, f):
   """Make sure that a given mets file is well-formed and valid.
 
      Arguments:
@@ -308,7 +324,23 @@ def validate_mets_xml(oc, identifier, f):
 
   return errors
 
-def validate_pdf(oc, identifier, f):
+def validate_pdf_file(oc, identifier, file_info):
+  """Make sure that a given .pdf file is well-formed and valid, and that the
+     date element is arranged as yyyy-mm-dd. 
+
+     Arguments:
+     oc         -- an owncloud object, or None, for testing.
+     identifier -- for error messages.
+     file_info  -- a fileinfo object, the mmdd directory containing the struct.txt
+  """
+  try:
+    file_object = io.BytesIO(oc.get_file_contents('{}/{}.pdf'.format(
+                    file_info.path, get_identifier_from_fileinfo(oc, f))))
+    return _validate_pdf_file(oc, identifier, file_object)
+  except owncloud.HTTPResponseError:
+    return [identifier + '.pdf does not exist.']
+
+def _validate_pdf_file(oc, identifier, f):
   """Make sure that a given PDF is valid.
 
      Arguments:
@@ -324,7 +356,23 @@ def validate_pdf(oc, identifier, f):
     errors.append(identifier + ' is an empty file.')
   return errors
 
-def validate_struct_txt(oc, identifier, f):
+def validate_struct_txt(oc, identifier, file_info):
+  """Make sure that a given struct.txt file is well-formed and valid, and that the
+     date element is arranged as yyyy-mm-dd. 
+
+     Arguments:
+     oc         -- an owncloud object, or None, for testing.
+     identifier -- for error messages.
+     file_info  -- a fileinfo object, the mmdd directory containing the struct.txt
+  """
+  try:
+    file_object = io.BytesIO(oc.get_file_contents('{}/{}.struct.txt'.format(
+                    file_info.path, get_identifier_from_fileinfo(oc, f))))
+    return _validate_struct_txt_file(oc, identifier, file_object)
+  except owncloud.HTTPResponseError:
+    return [identifier + '.struct.txt does not exist.']
+
+def _validate_struct_txt_file(oc, identifier, f):
   """Make sure that a given struct.txt is valid. It should be tab-delimited
      data, with a header row. Each record should contains a field for object,
      page and milestone.

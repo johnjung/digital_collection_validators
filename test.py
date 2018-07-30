@@ -7,7 +7,7 @@ import os
 from mvol_collection_year import IIIFCollectionYear
 from mvol_collection_month import IIIFCollectionMonth
 from mvol_manifest import IIIFManifest
-from mvol_validator import _validate_dc_xml_file, validate_mets_xml, validate_pdf, validate_struct_txt
+from mvol_validator import _validate_dc_xml_file, _validate_mets_xml_file, _validate_pdf_file, _validate_struct_txt_file
 
 from pathlib import Path
 
@@ -65,7 +65,7 @@ class TestMvolValidator(unittest.TestCase):
     """catches illformed struct"""
     file = Path('testdocs/bad.struct.txt')
     f = open(file, 'r')
-    self.assertTrue(validate_struct_txt(None, 'bad.struct.txt', f)[0] ==
+    self.assertTrue(_validate_struct_txt_file(None, 'bad.struct.txt', f)[0] ==
       "bad.struct.txt has an error in line 4.")
     f.close()
 
@@ -73,42 +73,42 @@ class TestMvolValidator(unittest.TestCase):
     """confirms struct is wellformed, without the extra empty line"""
     file = Path('testdocs/good.struct.txt')
     f = open(file, 'r')
-    self.assertTrue(len(validate_struct_txt(None, 'good.struct.txt', f)) == 0)
+    self.assertTrue(len(_validate_struct_txt_file(None, 'good.struct.txt', f)) == 0)
     f.close()
 
   def test_struct_correct_extra_line(self):
     """confirms struct is wellformed, including ones with an extra empty line at end"""
     file = Path('testdocs/good_with_extra_line.struct.txt')
     f = open(file, 'r')
-    self.assertTrue(len(validate_struct_txt(None, 'good_with_extra_line.struct.txt', f)) == 0)
+    self.assertTrue(len(_validate_struct_txt_file(None, 'good_with_extra_line.struct.txt', f)) == 0)
     f.close()
 
   def test_pdf_notempty(self):
     """confirms pdf is nonempty, though not whether it's actually a pdf"""
     file = Path('testdocs/mini-sueto.pdf')
     f = open(file, 'r')
-    self.assertTrue(len(validate_pdf(None, 'mini-sueto.pdf', f)) == 0)
+    self.assertTrue(len(_validate_pdf_file(None, 'mini-sueto.pdf', f)) == 0)
     f.close()
 
   def test_pdf_empty(self):
     """catches if pdf is empty file"""
     file = Path('testdocs/empty.pdf')
     f = open(file, 'r')
-    self.assertTrue(len(validate_pdf(None, 'empty.pdf', f)) > 0)
+    self.assertTrue(len(_validate_pdf_file(None, 'empty.pdf', f)) > 0)
     f.close()
 
   def test_mets_xml_pass(self):
     """mets validator confirms wellformed xml following mets standards"""
     file = Path('testdocs/good.mets.xml')
     f = open(file, 'r')
-    self.assertTrue(len(validate_mets_xml(None, 'good.mets.xml', f)) == 0)
+    self.assertTrue(len(_validate_mets_xml_file(None, 'good.mets.xml', f)) == 0)
     f.close()
 
   def test_mets_xml_wellformed_not_mets(self):
     """mets validator catches if wellformed, but not at mets standards"""
     file = Path('testdocs/mvol-0004-1942-0407.dc.xml')
     f = open(file, 'r')
-    self.assertTrue(len(validate_mets_xml(None, 'mvol-0004-1942-0407.dc.xml', f)) > 0)
+    self.assertTrue(len(_validate_mets_xml_file(None, 'mvol-0004-1942-0407.dc.xml', f)) > 0)
     f.close()
 
   def test_dc_xml_wellformedness(self):
@@ -139,18 +139,18 @@ class TestMvolValidator(unittest.TestCase):
     '''mets validator catches well-formedness errors.'''
     xml_str = '<not_well></formed_xml>'
     f = io.StringIO(xml_str)
-    self.assertTrue(len(validate_mets_xml(None, 'mvol-0004-1901-0101', f)) > 0)
+    self.assertTrue(len(_validate_mets_xml_file(None, 'mvol-0004-1901-0101', f)) > 0)
 
   def test_mets_xml_valid(self):
     '''mets validator catches validation errors.'''
     xml_str = '<mets:mets xmlns:mets="http://www.loc.gov/METS/"/>'
     f = io.StringIO(xml_str)
-    self.assertTrue(len(validate_mets_xml(None, 'mvol-0004-1901-0101', f)) > 0)
+    self.assertTrue(len(_validate_mets_xml_file(None, 'mvol-0004-1901-0101', f)) > 0)
 
   def test_pdf_is_not_zero_length(self):
     '''pdf validator makes sure PDF file contains some content.'''
     f = io.StringIO('')
-    self.assertTrue(len(validate_pdf(None, 'mvol-0004-1901-0101', f)) > 0)
+    self.assertTrue(len(_validate_pdf_file(None, 'mvol-0004-1901-0101', f)) > 0)
 
   def test_struct_txt_has_headers(self):
     '''struct.txt validator requires headers.'''
@@ -158,7 +158,7 @@ class TestMvolValidator(unittest.TestCase):
 00000002	2
 00000003	3
 00000004	4''')
-    self.assertTrue(len(validate_struct_txt(None, 'mvol-0004-1901-0101', f)) > 0)
+    self.assertTrue(len(_validate_struct_txt_file(None, 'mvol-0004-1901-0101', f)) > 0)
 
   def test_struct_txt_has_tabs(self):
     '''struct.txt validator requires headers.'''
@@ -166,7 +166,7 @@ class TestMvolValidator(unittest.TestCase):
 00000002,2,
 00000003,3,
 00000004,4,''')
-    self.assertTrue(len(validate_struct_txt(None, 'mvol-0004-1901-0101', f)) > 0)
+    self.assertTrue(len(_validate_struct_txt_file(None, 'mvol-0004-1901-0101', f)) > 0)
 
   def test_struct_txt_has_tabs(self):
     '''struct.txt validator requires headers.'''
@@ -174,7 +174,7 @@ class TestMvolValidator(unittest.TestCase):
 00000002	2
 00000003	3
 00000004	4''')
-    self.assertTrue(len(validate_struct_txt(None, 'mvol-0004-1901-0101', f)) == 0)
+    self.assertTrue(len(_validate_struct_txt_file(None, 'mvol-0004-1901-0101', f)) == 0)
 
 if __name__ == '__main__':
   unittest.main()
