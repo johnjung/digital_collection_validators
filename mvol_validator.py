@@ -284,7 +284,7 @@ def validate_dc_xml(oc, identifier, file_info):
   except owncloud.HTTPResponseError:
     return [identifier + '.dc.xml does not exist.']
 
-def validate_mets_xml_file(oc, identifier, file_info):
+def validate_mets_xml(oc, identifier, file_info):
   """Make sure that a given mets.xml file is well-formed and valid, and that the
      date element is arranged as yyyy-mm-dd. 
 
@@ -324,7 +324,7 @@ def _validate_mets_xml_file(oc, identifier, f):
 
   return errors
 
-def validate_pdf_file(oc, identifier, file_info):
+def validate_pdf(oc, identifier, file_info):
   """Make sure that a given .pdf file is well-formed and valid, and that the
      date element is arranged as yyyy-mm-dd. 
 
