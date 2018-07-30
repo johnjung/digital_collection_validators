@@ -160,9 +160,13 @@ def validate_mets_xml(oc, identifier, f):
   schemfd.close()
   xmlschema = etree.XMLSchema(schemdoc)
 
-  fdoc = etree.parse(f).getroot()
-  if not xmlschema.validate(fdoc):
-    errors.append(identifier + ' does not follow mets standards')
+  try:
+    fdoc = etree.parse(f).getroot()
+    if not xmlschema.validate(fdoc):
+      errors.append(identifier + ' does not follow mets standards')
+  except etree.XMLSyntaxError:
+    errors.append(identifier + ' is not a well-formed XML file.')
+    pass
 
   return errors
 

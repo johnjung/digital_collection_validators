@@ -9,6 +9,8 @@ from mvol_collection_month import IIIFCollectionMonth
 from mvol_manifest import IIIFManifest
 from mvol_validator import validate_dc_xml, validate_mets_xml, validate_pdf, validate_struct_txt
 
+from pathlib import Path
+
 def ordered(obj):
   if isinstance(obj, dict):
     return sorted((k, ordered(v)) for k, v in obj.items())
@@ -61,8 +63,7 @@ class TestMvolValidator(unittest.TestCase):
 
   def test_struct_bad(self):
     """catches illformed struct"""
-    fileDir = os.path.dirname(os.path.realpath('__file__'))
-    file = os.path.join(fileDir, 'testdocs\\bad.struct.txt')
+    file = Path('testdocs/bad.struct.txt')
     f = open(file, 'r')
     self.assertTrue(validate_struct_txt(None, 'bad.struct.txt', f)[0] ==
       "bad.struct.txt has an error in line 4.")
@@ -70,48 +71,42 @@ class TestMvolValidator(unittest.TestCase):
 
   def test_struct_correct(self):
     """confirms struct is wellformed, without the extra empty line"""
-    fileDir = os.path.dirname(os.path.realpath('__file__'))
-    file = os.path.join(fileDir, 'testdocs\good.struct.txt')
+    file = Path('testdocs/good.struct.txt')
     f = open(file, 'r')
     self.assertTrue(len(validate_struct_txt(None, 'good.struct.txt', f)) == 0)
     f.close()
 
   def test_struct_correct_extra_line(self):
     """confirms struct is wellformed, including ones with an extra empty line at end"""
-    fileDir = os.path.dirname(os.path.realpath('__file__'))
-    file = os.path.join(fileDir, 'testdocs\good_with_extra_line.struct.txt')
+    file = Path('testdocs/good_with_extra_line.struct.txt')
     f = open(file, 'r')
     self.assertTrue(len(validate_struct_txt(None, 'good_with_extra_line.struct.txt', f)) == 0)
     f.close()
 
   def test_pdf_notempty(self):
     """confirms pdf is nonempty, though not whether it's actually a pdf"""
-    fileDir = os.path.dirname(os.path.realpath('__file__'))
-    file = os.path.join(fileDir, 'testdocs\mini-sueto.pdf')
+    file = Path('testdocs/mini-sueto.pdf')
     f = open(file, 'r')
     self.assertTrue(len(validate_pdf(None, 'mini-sueto.pdf', f)) == 0)
     f.close()
 
   def test_pdf_empty(self):
     """catches if pdf is empty file"""
-    fileDir = os.path.dirname(os.path.realpath('__file__'))
-    file = os.path.join(fileDir, 'testdocs\empty.pdf')
+    file = Path('testdocs/empty.pdf')
     f = open(file, 'r')
     self.assertTrue(len(validate_pdf(None, 'empty.pdf', f)) > 0)
     f.close()
 
   def test_mets_xml_pass(self):
     """mets validator confirms wellformed xml following mets standards"""
-    fileDir = os.path.dirname(os.path.realpath('__file__'))
-    file = os.path.join(fileDir, 'testdocs\good.mets.xml')
+    file = Path('testdocs/good.mets.xml')
     f = open(file, 'r')
     self.assertTrue(len(validate_mets_xml(None, 'good.mets.xml', f)) == 0)
     f.close()
 
   def test_mets_xml_wellformed_not_mets(self):
     """mets validator catches if wellformed, but not at mets standards"""
-    fileDir = os.path.dirname(os.path.realpath('__file__'))
-    file = os.path.join(fileDir, 'testdocs\mvol-0004-1942-0407.dc.xml')
+    file = Path('testdocs/mvol-0004-1942-0407.dc.xml')
     f = open(file, 'r')
     self.assertTrue(len(validate_mets_xml(None, 'mvol-0004-1942-0407.dc.xml', f)) > 0)
     f.close()
