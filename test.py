@@ -147,7 +147,7 @@ class TestMvolValidator(unittest.TestCase):
     f = io.StringIO(xml_str)
     self.assertTrue(len(validate_mets_xml(None, 'mvol-0004-1901-0101', f)) > 0)
 
-    def test_pdf_is_not_zero_length(self):
+  def test_pdf_is_not_zero_length(self):
     '''pdf validator makes sure PDF file contains some content.'''
     f = io.StringIO('')
     self.assertTrue(len(validate_pdf(None, 'mvol-0004-1901-0101', f)) > 0)
