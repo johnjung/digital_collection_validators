@@ -8,55 +8,113 @@ import sys
 import io
 from lxml import etree
 
-def validate_year_folder(oc, year_path):
-  '''
-     A year folder should be in the form (18|19|20)/d{2}
-  '''
+def get_ancestor_fileinfo(oc, f, n):
+  """Get an ancestor owncloud.FileInfo object. 
+     format (18|19|20)\d{2}
 
-  errors = []
+     Arguments:
+     oc -- an owncloud object.
+     f  -- an owncloud.FileInfo object.
+     n  -- ancestor number. 1 = parent, 2 = grandparent, etc. 
 
-  pieces = year_path.split()
-  if year_path[-1:] == '/':
+     Returns:
+     an owncloud.FileInfo object for a directory n levels up in the filesystem.
+  """
+
+  pieces = f.get_path().split('/')
+  while n:
     pieces.pop()
+    n = n - 1
 
-  if not re.match('^.*[/]\d{4}$', year_path):
-    errors.append(year_path + ' is not a valid year.')
+  return oc.file_info('/'.join(pieces))
 
-  for entry in oc.list(year_path):
-    if entry.file_type == 'dir':
-      if not re.match('^.*[/]\d{4}[/]$', entry.path):
-        errors.append(year_path + ' contains folders that are not mmdd.')
-    else:
-      if not re.match('^.*\.csv$', entry.path):
-        errors.append(year_path + ' contains files that are not .csv.')
+def get_identifier_from_fileinfo(oc, f):
+  """Get an identifier string from a fileinfo object that represents a mmdd directory.
 
-  return errors
+     Arguments:
+     oc -- an owncloud object.
+     f  -- an owncloud.FileInfo object.
 
-def validate_date_folder(oc, date_path):
-  '''
-     A date folder should be mmdd. 
-     output: list of validation errors. 
-  '''
+     Returns:
+     an identifier string, e.g. 'mvol-0004-1930-0103'.
+  """
+  return '%s-%s-%s-%s' % (
+    get_ancestor_fileinfo(oc, f, 3).get_name(),
+    get_ancestor_fileinfo(oc, f, 2).get_name(),
+    get_ancestor_fileinfo(oc, f, 1).get_name(),
+    f.get_name()
+  )
 
-  errors = []
+def validate_mvol_directory(oc, identifier, f):
+  """Make sure that the great-grandparent of this directory is a folder called
+     'mvol'.
 
-  pieces = date_path.split('/')
-  pieces.pop()
-  month_date = pieces.pop()
+     Arguments:
+     oc         -- an owncloud object.
+     identifier -- for error messages.
+     f          -- an owncloud.FileInfo object for an mvol mmdd directory.
 
-  if int(month_date[:2]) < 1:
-    errors.append(date_path + ' is not a valid date.')
+     Returns:
+     A list of error messages, or an empty list. 
+  """
 
-  if int(month_date[:2]) > 12:
-    errors.append(date_path + ' is not a valid date.')
+  if get_ancestor_fileinfo(oc, f, 3).get_name() == 'mvol':
+    return []
+  else:
+    return [identifier + ' is contained in a great-grandparent folder that is not called "mvol".']
 
-  if int(month_date[2:4]) < 1:
-    errors.append(date_path + ' is not a valid date.')
+def validate_mvol_number_directory(oc, identifier, f):
+  """Make sure that the grandparent of this directory is a four-digit mvol
+     number, in the format /d{4}.
 
-  if int(month_date[2:4]) > 31:
-    errors.append(date_path + ' is not a valid date.')
+     Arguments:
+     oc         -- an owncloud object.
+     identifier -- for error messages.
+     f          -- an owncloud.FileInfo object for an mvol mmdd directory.
 
-  return errors
+     Returns:
+     A list of error messages, or an empty list. 
+  """
+
+  if re.match('^\d{4}$', get_ancestor_fileinfo(oc, f, 2).get_name()):
+    return []
+  else:
+    return [identifier + ' is contained in a grandparent folder that is not a valid mvol number.']
+
+def validate_year_directory(oc, identifier, f):
+  """Make sure that the parent of this directory is a year folder, in the
+     format (18|19|20)\d{2}
+
+     Arguments:
+     oc         -- an owncloud object.
+     identifier -- for error messages.
+     f          -- an owncloud.FileInfo object for an mvol mmdd directory.
+
+     Returns:
+     A list of error messages, or an empty list. 
+  """
+
+  if re.match('^(18|19|20)\d{2}$', get_ancestor_fileinfo(oc, f, 1).get_name()):
+    return []
+  else:
+    return [identifier + ' is contained in a parent folder that is not a valid year.']
+
+def validate_date_directory(oc, identifier, f):
+  """Make sure that this folder is in the format (0\d|1[012])[0123]\d.
+
+     Arguments:
+     oc         -- an owncloud object, or None, for testing.
+     identifier -- for error messages.
+     f          -- a file object that referrs to a mmdd directory.
+
+     Returns:
+     A list of error messages, or an empty list. 
+  """
+
+  if re.match('^(0\d|1[012])[0123]\d$', f.get_name()):
+    return []
+  else:
+    return [identifier + ' is not a valid mmdd folder name.']
 
 def get_identifier(path):
   pieces = entry.path.split('/')
@@ -72,37 +130,98 @@ def get_identifier(path):
       identifier = [piece] + pieces[0:1]
 
   return '-'.join(identifier)
-   
-def validate_folder(oc, date_path, folder_type, extension):
+
+def validate_directory(oc, identifier, f, folder_name):
+  """A helper function to validate ALTO, JPEG, and TIFF folders inside mmdd
+     folders. 
+
+     Arguments:
+     oc          -- an owncloud object.
+     identifier  -- for error messages.
+     f           -- a file object that referrs to a mmdd directory (the parent
+		    of the ALTO, JPEG, or TIFF directory being validated.)
+     folder_name -- the name of the folder: ALTO|JPEG|TIFF
+
+     Returns:
+     A list of error messages, or an empty list. 
+  """
+
+  extensions = {
+    'ALTO': 'xml',
+    'JPEG': 'jpg',
+    'TIFF': 'tif'
+  }
+
+  if not folder_name in extensions.keys():
+    raise ValueError('unsupported folder_name.')
+
   errors = []
 
-  folder_exists = False
-  for entry in oc.list(date_path):
-    if '/' + folder_type + '/' in entry.path and entry.file_type == 'dir':
-      folder_exists = True
+  filename_re = '^%s-%s-%s-%s_\d{4}\.%s$' % (
+    get_ancestor_fileinfo(oc, f, 3).get_name(),
+    get_ancestor_fileinfo(oc, f, 2).get_name(),
+    get_ancestor_fileinfo(oc, f, 1).get_name(),
+    f.get_name(),
+    extensions[folder_name]
+  )
 
-  if folder_exists:
-    for entry in oc.list(date_path + '/' + folder_type):
-      if not entry.file_type == 'file':
-        errors.append(date_path + '/' + folder_type + '/ contains things that are not files.')
-
-      identifier_match = get_identifier(entry.path).replace('-', '\-')
-   
-      if not re.match(identifier_match + '\d{4}\.' + extension + '$', entry.path):
-        errors.append(date_math + '/' + folder_type + ' contains incorrectly named files.')
-  else:
-    errors.append(date_path + ' does not include an ALTO directory.')
+  try:
+    folder_f = oc.file_info(f.get_path() + '/' + folder_name)
+    for entry in oc.list(folder_f.get_path()):
+      if not entry.is_dir():
+        if not re.match(filename_re, entry.get_name()):
+          errors.append(identifier + '/' + folder_name + ' contains incorrectly named files.')
+        if entry.get_size() == 0:
+          errors.append(identifier + '/' + folder_name + ' contains a 0 byte file.')
+  except owncloud.HTTPResponseError:
+    errors.append(identifier + ' does not contain a ' + folder_name + ' folder.')
 
   return errors
 
-def validate_alto_folder(oc, date_path):
-  return validate_folder(oc, date_path, 'ALTO', 'xml')
+def validate_alto_directory(oc, identifier, f):
+  """Validate that an ALTO folder exists. Make sure it contains appropriate
+     files.
 
-def validate_jpeg_folder(date_path):
-  return validate_folders(oc, date_path, 'JPEG', 'jpg')
+     Arguments:
+     oc          -- an owncloud object.
+     identifier  -- for error messages.
+     f           -- a file object that refers to a mmdd directory (the parent
+                    of the directory being validated.)
 
-def validate_tiff_folder(date_path):
-  return validate_folders(oc, date_path, 'TIFF', 'tif')
+     Returns:
+     A list of error messages, or an empty list. 
+  """
+  return validate_directory(oc, identifier, f, 'ALTO')
+
+def validate_jpeg_directory(oc, identifier, f):
+  """Validate that an JPEG folder exists. Make sure it contains appropriate
+     files.
+
+     Arguments:
+     oc          -- an owncloud object.
+     identifier  -- for error messages.
+     f           -- a file object that refers to a mmdd directory (the parent
+                    of the directory being validated.)
+
+     Returns:
+     A list of error messages, or an empty list. 
+  """
+  return validate_directory(oc, identifier, f, 'JPEG')
+
+def validate_tiff_directory(oc, identifier, f):
+  """Validate that an TIFF folder exists. Make sure it contains appropriate
+     files.
+
+     Arguments:
+     oc          -- an owncloud object.
+     identifier  -- for error messages.
+     f           -- a file object that refers to a mmdd directory (the parent
+                    of the directory being validated.)
+
+     Returns:
+     A list of error messages, or an empty list. 
+  """
+  return validate_directory(oc, identifier, f, 'TIFF')
 
 def validate_dc_xml(oc, identifier, f):
   """Make sure that a given dc.xml file is well-formed and valid, and that the
@@ -216,43 +335,50 @@ def validate_struct_txt(oc, identifier, f):
 
   return errors
 
-def get_identifier_from_path(path):
-  pieces = path.split('/')
-
-  if path[-1:] == '/':
-    pieces.pop()
-    
-  while pieces[0] != 'mvol':
-    pieces.pop(0)
-  return '-'.join(pieces)
 
 if __name__ == '__main__':
   """ Produce an input file for a year's worth of mvol data.
-      This checks to be sure that files are available via specific URLs, and it produces an input file for the OCR building script. 
+      This checks to be sure that files are available via specific URLs, and it
+      produces an input file for the OCR building script. 
   """
 
   parser = argparse.ArgumentParser()
   parser.add_argument("username", help="WebDAV username.")
-  parser.add_argument("directory", help="e.g. IIIF_Files/mvol/0004/1931")
+  parser.add_argument("directory", help="e.g. IIIF_Files/mvol/0004/1930/0105")
   args = parser.parse_args()
 
   try:
-    oc = owncloud.Client(os.environ['WEBDAV_CLIENT'])
+    oc = owncloud.Client(os.environ['OWNCLOUD_SERVER'])
   except KeyError:
-    sys.stderr.write("WEBDAV_CLIENT environmental variable not set.\n")
+    sys.stderr.write("OWNCLOUD_SERVER environmental variable not set.\n")
     sys.exit()
 
   password = getpass.getpass('WebDAV password: ')
-  oc.login(args.username, password)
+
+  try:
+    oc.login(args.username, password)
+  except owncloud.HTTPResponseError:
+    sys.stderr.write('incorrect WebDAV password.\n')
+    sys.exit()
 
   errors = []
 
-  errors = errors + validate_year_folder(oc, args.directory)
-
-  for date_folder in oc.list(args.directory):
-    if date_folder.file_type == 'dir':
-      errors = errors + validate_date_folder(oc, date_folder.path)
+  try:
+    f = oc.file_info(args.directory)
+    identifier = get_identifier_from_fileinfo(oc, f)
+    errors = errors + validate_mvol_directory(oc, identifier, f)
+    errors = errors + validate_mvol_number_directory(oc, identifier, f)
+    errors = errors + validate_year_directory(oc, identifier, f)
+    errors = errors + validate_date_directory(oc, identifier, f)
+    errors = errors + validate_alto_directory(oc, identifier, f)
+    errors = errors + validate_jpeg_directory(oc, identifier, f)
+    errors = errors + validate_tiff_directory(oc, identifier, f)
+    errors = errors + validate_dc_xml(oc, identifier, f)
+    errors = errors + validate_mets_xml(oc, identifier, f)
+    errors = errors + validate_pdf(oc, identifier, f)
+    errors = errors + validate_struct_txt(oc, identifier, f)
+  except owncloud.HTTPResponseError:
+    errors = errors + [args.directory + ' does not exist.']
 
   for e in errors:
     print(e)
-  
