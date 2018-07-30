@@ -127,6 +127,20 @@ def validate_dc_xml(oc, identifier, f):
     metadata = etree.fromstring(f.read())
     if not dtd.validate(metadata):
       errors.append(identifier + ' is not valid.')
+    else:
+      datepull = etree.ElementTree(metadata).findtext("date")
+      pattern = re.compile("^\d{4}-\d{2}-\d{2}")
+      attemptmatch = pattern.fullmatch(datepull)
+      if attemptmatch:
+        sections = [int(s) for s in re.findall(r'\b\d+\b', datepull)]
+        if (sections[0] < 1700) | (sections[0] > 2100):
+          errors.append(identifier + ' has an incorrect year field.')
+        if (sections[1] < 1) | (sections[1] > 12):
+          errors.append(identifier + ' has an incorrect month field.')
+        if (sections[2] < 1) | (sections[2] > 31):
+          errors.append(identifier + ' has an incorrect day field.')
+      else:
+        errors.append(identifier + ' has a date with a wrong format')
   except etree.XMLSyntaxError as e:
     errors.append(identifier + ' is not well-formed.')
 
@@ -139,8 +153,18 @@ def validate_mets_xml(oc, identifier, f):
      oc -- an owncloud object, or None, for testing.
      f  -- a file object containing a mets.xml file. 
   """
+  errors = []
+  
+  schemfd = open("mets.xsd.xml", 'r', encoding = 'utf8') #alternatively StringIO
+  schemdoc = etree.parse(schemfd)
+  schemfd.close()
+  xmlschema = etree.XMLSchema(schemdoc)
 
-  raise NotImplementedError
+  fdoc = etree.parse(f).getroot()
+  if not xmlschema.validate(fdoc):
+    errors.append(identifier + ' does not follow mets standards')
+
+  return errors
 
 def validate_pdf(oc, identifier, f):
   """Make sure that a given PDF is valid.
@@ -149,8 +173,14 @@ def validate_pdf(oc, identifier, f):
      oc -- an owncloud object, or None, for testing.
      f  -- a file object containing a PDF.
   """
+  errors = []
 
-  raise NotImplementedError
+  f.seek(0, os.SEEK_END)
+  size = f.tell()
+  
+  if not size:
+    errors.append(identifier + ' is an empty file.')
+  return errors
 
 def validate_struct_txt(oc, identifier, f):
   """Make sure that a given struct.txt is valid. It should be tab-delimited
@@ -161,8 +191,26 @@ def validate_struct_txt(oc, identifier, f):
      oc -- an owncloud object, or None, for testing.
      f  -- a file object containing a struct.txt file.
   """
- 
-  raise NotImplementedError
+  errors = []
+
+  num_lines = sum(1 for line in f)
+  f.seek(0,0)
+  firstline = f.readline()
+  firstlinepattern = re.compile("^object\tpage\tmilestone\n")
+  if not firstlinepattern.fullmatch(firstline):
+    errors.append(identifier + ' has an error in the first line.')
+  currlinenum = 2
+  midlinespattern = re.compile('^\d{8}\t\d\n')
+  finlinepattern = re.compile('^\d{8}\t\d')
+  currline = f.readline()
+  while(currline):
+    if not midlinespattern.fullmatch(currline):
+        if not ((currlinenum == num_lines) and finlinepattern.fullmatch(currline)):
+          errors.append(identifier + ' has an error in line %d.' % currlinenum)
+    currlinenum += 1
+    currline = f.readline()
+
+  return errors
 
 def get_identifier_from_path(path):
   pieces = path.split('/')

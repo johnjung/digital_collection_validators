@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mets xsi:schemaLocation="http://www.loc.gov/METS/ http://www.loc.gov/standards/mets/mets.xsd http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd http://www.loc.gov/mix/v20 http://www.loc.gov/standards/mix/mix20/mix20.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:premis="http://purl.org/dc/elements/1.1/premis" xmlns:mix="http://purl.org/dc/elements/1.1/mix" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.loc.gov/METS/">
+  <metsHdr CREATEDATE="2018-03-01T08:40:47" RECORDSTATUS="Complete">
+    <agent ROLE="CREATOR" TYPE="ORGANIZATION">
+      <name>LIMB</name>
+    </agent>
+    <agent ROLE="ARCHIVIST" TYPE="ORGANIZATION">
+      <name>LIMB</name>
+    </agent>
+    <agent ROLE="ARCHIVIST" TYPE="INDIVIDUAL">
+      <name>LIMB</name>
+    </agent>
+  </metsHdr>
+  <dmdSec ID="DMD1">
+    <mdWrap MIMETYPE="text/xml" MDTYPE="MODS" LABEL="MODS Metadata" />
+  </dmdSec>
+  <dmdSec ID="DMD2">
+    <mdWrap MIMETYPE="text/xml" MDTYPE="DC" LABEL="DC Metadata" />
+  </dmdSec>
+  <dmdSec ID="DMD3">
+    <mdWrap MIMETYPE="text/xml" MDTYPE="MARC" LABEL="MARC Metadata">
+  <xmlData>
+    <record xmlns="http://www.loc.gov/MARC21/slim" xsi:schemaLocation="http://www.loc.gov/MARC21/slim http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">
+      <leader>      am         3u     </leader>
+      <datafield tag="042" ind1=" " ind2=" ">
+        <subfield code="a">dc</subfield>
+      </datafield>
+      <datafield tag="720" ind1="0" ind2="0">
+        <subfield code="e">collaborator</subfield>
+      </datafield>
+      <datafield tag="720" ind1=" " ind2=" ">
+        <subfield code="e">author</subfield>
+      </datafield>
+      <datafield tag="655" ind1="7" ind2=" ">
+        <subfield code="2">local</subfield>
+      </datafield>
+    </record>
+  </xmlData>
+</mdWrap>
+  </dmdSec>
+  <amdSec ID="AMD">
+    <techMD ID="AMD_TECHMD_JPG0001">
+      <mdWrap MDTYPE="NISOIMG" MIMETYPE="text/xml" LABEL="NISO MIX Metadata">
+  <xmlData>
+    <mix:mix xsi:schemaLocation="http://www.loc.gov/mix/v20 http://www.loc.gov/standards/mix/mix20/mix20.xsd" xmlns:mix="http://www.loc.gov/mix/v20" xmlns="http://hul.harvard.edu/ois/xml/ns/jhove">
+      <mix:BasicDigitalObjectInformation>
+        <mix:ObjectIdentifier>
+          <mix:objectIdentifierType>Pathname</mix:objectIdentifierType>
+          <mix:objectIdentifierValue>..\..\..\..\..\..\..\..\\\HF-NC-DOCYARD3\y\JOBS\UNIVERSITY_OF_CHICAGO\55617_MarchProject\RAW\1924\1118\JPEG\mvol-0004-1924-1118_0149.jpg</mix:objectIdentifierValue>
+        </mix:ObjectIdentifier>
+        <mix:byteOrder>big endian</mix:byteOrder>
+        <mix:Compression>
+          <mix:compressionScheme>JPEG</mix:compressionScheme>
+        </mix:Compression>
+        <mix:Fixity>
+          <mix:messageDigestAlgorithm>MD5</mix:messageDigestAlgorithm>
+          <mix:messageDigest>13f4a80b7baea8c8b923b6b0c0a532f0</mix:messageDigest>
+        </mix:Fixity>
+        <mix:Fixity>
+          <mix:messageDigestAlgorithm>CRC32</mix:messageDigestAlgorithm>
+          <mix:messageDigest>9dbbc50b</mix:messageDigest>
+        </mix:Fixity>
+        <mix:Fixity>
+          <mix:messageDigestAlgorithm>SHA-1</mix:messageDigestAlgorithm>
+          <mix:messageDigest>e28b34754344a030e8a57987c42d402b914965cb</mix:messageDigest>
+        </mix:Fixity>
+      </mix:BasicDigitalObjectInformation>
+      <mix:BasicImageInformation>
+        <mix:BasicImageCharacteristics>
+          <mix:imageWidth>5759</mix:imageWidth>
+          <mix:imageHeight>7514</mix:imageHeight>
+          <mix:PhotometricInterpretation>
+            <mix:colorSpace>YCbCr</mix:colorSpace>
+          </mix:PhotometricInterpretation>
+        </mix:BasicImageCharacteristics>
+      </mix:BasicImageInformation>
+      <mix:ImageCaptureMetadata>
+        <mix:GeneralCaptureInformation>
+          <mix:dateTimeCreated>2018-03-01T08:40:32-05:00</mix:dateTimeCreated>
+        </mix:GeneralCaptureInformation>
+      </mix:ImageCaptureMetadata>
+      <mix:ImageAssessmentMetadata>
+        <mix:SpatialMetrics>
+          <mix:samplingFrequencyUnit>in.</mix:samplingFrequencyUnit>
+          <mix:xSamplingFrequency>
+            <mix:numerator>400</mix:numerator>
+          </mix:xSamplingFrequency>
+          <mix:ySamplingFrequency>
+            <mix:numerator>400</mix:numerator>
+          </mix:ySamplingFrequency>
+        </mix:SpatialMetrics>
+        <mix:ImageColorEncoding>
+          <mix:BitsPerSample>
+            <mix:bitsPerSampleValue>8</mix:bitsPerSampleValue>
+            <mix:bitsPerSampleUnit>integer</mix:bitsPerSampleUnit>
+          </mix:BitsPerSample>
+          <mix:samplesPerPixel>1</mix:samplesPerPixel>
+        </mix:ImageColorEncoding>
+      </mix:ImageAssessmentMetadata>
+    </mix:mix>
+  </xmlData>
+</mdWrap>
+    </techMD>
+    <techMD ID="AMD_TECHMD_JPG0002">
+      <mdWrap MDTYPE="NISOIMG" MIMETYPE="text/xml" LABEL="NISO MIX Metadata">
+  <xmlData>
+    <mix:mix xsi:schemaLocation="http://www.loc.gov/mix/v20 http://www.loc.gov/standards/mix/mix20/mix20.xsd" xmlns:mix="http://www.loc.gov/mix/v20" xmlns="http://hul.harvard.edu/ois/xml/ns/jhove">
+      <mix:BasicDigitalObjectInformation>
+        <mix:ObjectIdentifier>
+          <mix:objectIdentifierType>Pathname</mix:objectIdentifierType>
+          <mix:objectIdentifierValue>..\..\..\..\..\..\..\..\\\HF-NC-DOCYARD3\y\JOBS\UNIVERSITY_OF_CHICAGO\55617_MarchProject\RAW\1924\1118\JPEG\mvol-0004-1924-1118_0150.jpg</mix:objectIdentifierValue>
+        </mix:ObjectIdentifier>
+        <mix:byteOrder>big endian</mix:byteOrder>
+        <mix:Compression>
+          <mix:compressionScheme>JPEG</mix:compressionScheme>
+        </mix:Compression>
+        <mix:Fixity>
+          <mix:messageDigestAlgorithm>MD5</mix:messageDigestAlgorithm>
+          <mix:messageDigest>7e5b1f82e10859639bebf994588f51db</mix:messageDigest>
+        </mix:Fixity>
+        <mix:Fixity>
+          <mix:messageDigestAlgorithm>CRC32</mix:messageDigestAlgorithm>
+          <mix:messageDigest>a8909cb7</mix:messageDigest>
+        </mix:Fixity>
+        <mix:Fixity>
+          <mix:messageDigestAlgorithm>SHA-1</mix:messageDigestAlgorithm>
+          <mix:messageDigest>ce17958763a92abfea8be6b1f6abe3ba0dd42d13</mix:messageDigest>
+        </mix:Fixity>
+      </mix:BasicDigitalObjectInformation>
+      <mix:BasicImageInformation>
+        <mix:BasicImageCharacteristics>
+          <mix:imageWidth>5738</mix:imageWidth>
+          <mix:imageHeight>7536</mix:imageHeight>
+          <mix:PhotometricInterpretation>
+            <mix:colorSpace>YCbCr</mix:colorSpace>
+          </mix:PhotometricInterpretation>
+        </mix:BasicImageCharacteristics>
+      </mix:BasicImageInformation>
+      <mix:ImageCaptureMetadata>
+        <mix:GeneralCaptureInformation>
+          <mix:dateTimeCreated>2018-03-01T08:40:31-05:00</mix:dateTimeCreated>
+        </mix:GeneralCaptureInformation>
+      </mix:ImageCaptureMetadata>
+      <mix:ImageAssessmentMetadata>
+        <mix:SpatialMetrics>
+          <mix:samplingFrequencyUnit>in.</mix:samplingFrequencyUnit>
+          <mix:xSamplingFrequency>
+            <mix:numerator>400</mix:numerator>
+          </mix:xSamplingFrequency>
+          <mix:ySamplingFrequency>
+            <mix:numerator>400</mix:numerator>
+          </mix:ySamplingFrequency>
+        </mix:SpatialMetrics>
+        <mix:ImageColorEncoding>
+          <mix:BitsPerSample>
+            <mix:bitsPerSampleValue>8</mix:bitsPerSampleValue>
+            <mix:bitsPerSampleUnit>integer</mix:bitsPerSampleUnit>
+          </mix:BitsPerSample>
+          <mix:samplesPerPixel>1</mix:samplesPerPixel>
+        </mix:ImageColorEncoding>
+      </mix:ImageAssessmentMetadata>
+    </mix:mix>
+  </xmlData>
+</mdWrap>
+    </techMD>
+    <techMD ID="AMD_TECHMD_JPG0003">
+      <mdWrap MDTYPE="NISOIMG" MIMETYPE="text/xml" LABEL="NISO MIX Metadata">
+  <xmlData>
+    <mix:mix xsi:schemaLocation="http://www.loc.gov/mix/v20 http://www.loc.gov/standards/mix/mix20/mix20.xsd" xmlns:mix="http://www.loc.gov/mix/v20" xmlns="http://hul.harvard.edu/ois/xml/ns/jhove">
+      <mix:BasicDigitalObjectInformation>
+        <mix:ObjectIdentifier>
+          <mix:objectIdentifierType>Pathname</mix:objectIdentifierType>
+          <mix:objectIdentifierValue>..\..\..\..\..\..\..\..\\\HF-NC-DOCYARD3\y\JOBS\UNIVERSITY_OF_CHICAGO\55617_MarchProject\RAW\1924\1118\JPEG\mvol-0004-1924-1118_0151.jpg</mix:objectIdentifierValue>
+        </mix:ObjectIdentifier>
+        <mix:byteOrder>big endian</mix:byteOrder>
+        <mix:Compression>
+          <mix:compressionScheme>JPEG</mix:compressionScheme>
+        </mix:Compression>
+        <mix:Fixity>
+          <mix:messageDigestAlgorithm>MD5</mix:messageDigestAlgorithm>
+          <mix:messageDigest>a20c1ef04b1dad400091f7fd40bc6c51</mix:messageDigest>
+        </mix:Fixity>
+        <mix:Fixity>
+          <mix:messageDigestAlgorithm>CRC32</mix:messageDigestAlgorithm>
+          <mix:messageDigest>dde6271b</mix:messageDigest>
+        </mix:Fixity>
+        <mix:Fixity>
+          <mix:messageDigestAlgorithm>SHA-1</mix:messageDigestAlgorithm>
+          <mix:messageDigest>4655328da464c3ce98be4e8b4425a98551b03f51</mix:messageDigest>
+        </mix:Fixity>
+      </mix:BasicDigitalObjectInformation>
+      <mix:BasicImageInformation>
+        <mix:BasicImageCharacteristics>
+          <mix:imageWidth>5761</mix:imageWidth>
+          <mix:imageHeight>7519</mix:imageHeight>
+          <mix:PhotometricInterpretation>
+            <mix:colorSpace>YCbCr</mix:colorSpace>
+          </mix:PhotometricInterpretation>
+        </mix:BasicImageCharacteristics>
+      </mix:BasicImageInformation>
+      <mix:ImageCaptureMetadata>
+        <mix:GeneralCaptureInformation>
+          <mix:dateTimeCreated>2018-03-01T08:40:31-05:00</mix:dateTimeCreated>
+        </mix:GeneralCaptureInformation>
+      </mix:ImageCaptureMetadata>
+      <mix:ImageAssessmentMetadata>
+        <mix:SpatialMetrics>
+          <mix:samplingFrequencyUnit>in.</mix:samplingFrequencyUnit>
+          <mix:xSamplingFrequency>
+            <mix:numerator>400</mix:numerator>
+          </mix:xSamplingFrequency>
+          <mix:ySamplingFrequency>
+            <mix:numerator>400</mix:numerator>
+          </mix:ySamplingFrequency>
+        </mix:SpatialMetrics>
+        <mix:ImageColorEncoding>
+          <mix:BitsPerSample>
+            <mix:bitsPerSampleValue>8</mix:bitsPerSampleValue>
+            <mix:bitsPerSampleUnit>integer</mix:bitsPerSampleUnit>
+          </mix:BitsPerSample>
+          <mix:samplesPerPixel>1</mix:samplesPerPixel>
+        </mix:ImageColorEncoding>
+      </mix:ImageAssessmentMetadata>
+    </mix:mix>
+  </xmlData>
+</mdWrap>
+    </techMD>
+    <techMD ID="AMD_TECHMD_JPG0004">
+      <mdWrap MDTYPE="NISOIMG" MIMETYPE="text/xml" LABEL="NISO MIX Metadata">
+  <xmlData>
+    <mix:mix xsi:schemaLocation="http://www.loc.gov/mix/v20 http://www.loc.gov/standards/mix/mix20/mix20.xsd" xmlns:mix="http://www.loc.gov/mix/v20" xmlns="http://hul.harvard.edu/ois/xml/ns/jhove">
+      <mix:BasicDigitalObjectInformation>
+        <mix:ObjectIdentifier>
+          <mix:objectIdentifierType>Pathname</mix:objectIdentifierType>
+          <mix:objectIdentifierValue>..\..\..\..\..\..\..\..\\\HF-NC-DOCYARD3\y\JOBS\UNIVERSITY_OF_CHICAGO\55617_MarchProject\RAW\1924\1118\JPEG\mvol-0004-1924-1118_0152.jpg</mix:objectIdentifierValue>
+        </mix:ObjectIdentifier>
+        <mix:byteOrder>big endian</mix:byteOrder>
+        <mix:Compression>
+          <mix:compressionScheme>JPEG</mix:compressionScheme>
+        </mix:Compression>
+        <mix:Fixity>
+          <mix:messageDigestAlgorithm>MD5</mix:messageDigestAlgorithm>
+          <mix:messageDigest>b74c24d4dbf1bf7e95810efc6d4a89e6</mix:messageDigest>
+        </mix:Fixity>
+        <mix:Fixity>
+          <mix:messageDigestAlgorithm>CRC32</mix:messageDigestAlgorithm>
+          <mix:messageDigest>c82bfb77</mix:messageDigest>
+        </mix:Fixity>
+        <mix:Fixity>
+          <mix:messageDigestAlgorithm>SHA-1</mix:messageDigestAlgorithm>
+          <mix:messageDigest>e37f7002e6d755544fa97adb85b9d26ee5ac3a3f</mix:messageDigest>
+        </mix:Fixity>
+      </mix:BasicDigitalObjectInformation>
+      <mix:BasicImageInformation>
+        <mix:BasicImageCharacteristics>
+          <mix:imageWidth>5731</mix:imageWidth>
+          <mix:imageHeight>7538</mix:imageHeight>
+          <mix:PhotometricInterpretation>
+            <mix:colorSpace>YCbCr</mix:colorSpace>
+          </mix:PhotometricInterpretation>
+        </mix:BasicImageCharacteristics>
+      </mix:BasicImageInformation>
+      <mix:ImageCaptureMetadata>
+        <mix:GeneralCaptureInformation>
+          <mix:dateTimeCreated>2018-03-01T08:40:31-05:00</mix:dateTimeCreated>
+        </mix:GeneralCaptureInformation>
+      </mix:ImageCaptureMetadata>
+      <mix:ImageAssessmentMetadata>
+        <mix:SpatialMetrics>
+          <mix:samplingFrequencyUnit>in.</mix:samplingFrequencyUnit>
+          <mix:xSamplingFrequency>
+            <mix:numerator>400</mix:numerator>
+          </mix:xSamplingFrequency>
+          <mix:ySamplingFrequency>
+            <mix:numerator>400</mix:numerator>
+          </mix:ySamplingFrequency>
+        </mix:SpatialMetrics>
+        <mix:ImageColorEncoding>
+          <mix:BitsPerSample>
+            <mix:bitsPerSampleValue>8</mix:bitsPerSampleValue>
+            <mix:bitsPerSampleUnit>integer</mix:bitsPerSampleUnit>
+          </mix:BitsPerSample>
+          <mix:samplesPerPixel>1</mix:samplesPerPixel>
+        </mix:ImageColorEncoding>
+      </mix:ImageAssessmentMetadata>
+    </mix:mix>
+  </xmlData>
+</mdWrap>
+    </techMD>
+    <techMD ID="AMD_TECHMD_TIF0001">
+      <mdWrap MDTYPE="NISOIMG" MIMETYPE="text/xml" LABEL="NISO MIX Metadata">
+  <xmlData>
+    <mix:mix xsi:schemaLocation="http://www.loc.gov/mix/v20 http://www.loc.gov/standards/mix/mix20/mix20.xsd" xmlns:mix="http://www.loc.gov/mix/v20" xmlns="http://hul.harvard.edu/ois/xml/ns/jhove">
+      <mix:BasicDigitalObjectInformation>
+        <mix:ObjectIdentifier>
+          <mix:objectIdentifierType>Pathname</mix:objectIdentifierType>
+          <mix:objectIdentifierValue>..\..\..\..\..\..\..\..\\\HF-NC-DOCYARD3\y\JOBS\UNIVERSITY_OF_CHICAGO\55617_MarchProject\RAW\1924\1118\TIFF\mvol-0004-1924-1118_0149.tif</mix:objectIdentifierValue>
+        </mix:ObjectIdentifier>
+        <mix:byteOrder>little endian</mix:byteOrder>
+        <mix:Compression>
+          <mix:compressionScheme>Uncompressed</mix:compressionScheme>
+        </mix:Compression>
+        <mix:Fixity>
+          <mix:messageDigestAlgorithm>MD5</mix:messageDigestAlgorithm>
+          <mix:messageDigest>d8504be8859df01350580dd46777c1ec</mix:messageDigest>
+        </mix:Fixity>
+        <mix:Fixity>
+          <mix:messageDigestAlgorithm>CRC32</mix:messageDigestAlgorithm>
+          <mix:messageDigest>39144311</mix:messageDigest>
+        </mix:Fixity>
+        <mix:Fixity>
+          <mix:messageDigestAlgorithm>SHA-1</mix:messageDigestAlgorithm>
+          <mix:messageDigest>4f7bd72aa1b9ec31d42923064ccdfc312e293d88</mix:messageDigest>
+        </mix:Fixity>
+      </mix:BasicDigitalObjectInformation>
+      <mix:BasicImageInformation>
+        <mix:BasicImageCharacteristics>
+          <mix:imageWidth>5759</mix:imageWidth>
+          <mix:imageHeight>7514</mix:imageHeight>
+          <mix:PhotometricInterpretation>
+            <mix:colorSpace>BlackIsZero</mix:colorSpace>
+          </mix:PhotometricInterpretation>
+        </mix:BasicImageCharacteristics>
+      </mix:BasicImageInformation>
+      <mix:ImageCaptureMetadata>
+        <mix:GeneralCaptureInformation>
+          <mix:dateTimeCreated>2018-03-01T08:40:33-05:00</mix:dateTimeCreated>
+        </mix:GeneralCaptureInformation>
+        <mix:orientation>normal*</mix:orientation>
+      </mix:ImageCaptureMetadata>
+      <mix:ImageAssessmentMetadata>
+        <mix:SpatialMetrics>
+          <mix:samplingFrequencyUnit>in.</mix:samplingFrequencyUnit>
+          <mix:xSamplingFrequency>
+            <mix:numerator>400</mix:numerator>
+          </mix:xSamplingFrequency>
+          <mix:ySamplingFrequency>
+            <mix:numerator>400</mix:numerator>
+          </mix:ySamplingFrequency>
+        </mix:SpatialMetrics>
+        <mix:ImageColorEncoding>
+          <mix:BitsPerSample>
+            <mix:bitsPerSampleValue>8</mix:bitsPerSampleValue>
+            <mix:bitsPerSampleUnit>integer</mix:bitsPerSampleUnit>
+          </mix:BitsPerSample>
+          <mix:samplesPerPixel>1</mix:samplesPerPixel>
+        </mix:ImageColorEncoding>
+      </mix:ImageAssessmentMetadata>
+    </mix:mix>
+  </xmlData>
+</mdWrap>
+    </techMD>
+  </amdSec>
+  <fileSec>
+    <fileGrp ID="JPEG">
+      <file ID="JPG0001" ADMID="AMD_TECHMD_JPG0001" MIMETYPE="image/jpg">
+        <FLocat LOCTYPE="URL" xlink:href="..\..\..\..\..\..\..\..\\\HF-NC-DOCYARD3\y\JOBS\UNIVERSITY_OF_CHICAGO\55617_MarchProject\RAW\1924\1118\JPEG\mvol-0004-1924-1118_0149.jpg" />
+      </file>
+      <file ID="JPG0002" ADMID="AMD_TECHMD_JPG0002" MIMETYPE="image/jpg">
+        <FLocat LOCTYPE="URL" xlink:href="..\..\..\..\..\..\..\..\\\HF-NC-DOCYARD3\y\JOBS\UNIVERSITY_OF_CHICAGO\55617_MarchProject\RAW\1924\1118\JPEG\mvol-0004-1924-1118_0150.jpg" />
+      </file>
+      <file ID="JPG0003" ADMID="AMD_TECHMD_JPG0003" MIMETYPE="image/jpg">
+        <FLocat LOCTYPE="URL" xlink:href="..\..\..\..\..\..\..\..\\\HF-NC-DOCYARD3\y\JOBS\UNIVERSITY_OF_CHICAGO\55617_MarchProject\RAW\1924\1118\JPEG\mvol-0004-1924-1118_0151.jpg" />
+      </file>
+      <file ID="JPG0004" ADMID="AMD_TECHMD_JPG0004" MIMETYPE="image/jpg">
+        <FLocat LOCTYPE="URL" xlink:href="..\..\..\..\..\..\..\..\\\HF-NC-DOCYARD3\y\JOBS\UNIVERSITY_OF_CHICAGO\55617_MarchProject\RAW\1924\1118\JPEG\mvol-0004-1924-1118_0152.jpg" />
+      </file>
+    </fileGrp>
+    <fileGrp ID="ALTO">
+      <file ID="ALT0001" MIMETYPE="application/alto">
+        <FLocat LOCTYPE="URL" xlink:href="..\..\..\..\..\..\..\..\\\HF-NC-DOCYARD3\y\JOBS\UNIVERSITY_OF_CHICAGO\55617_MarchProject\RAW\1924\1118\ALTO\mvol-0004-1924-1118_0149.xml" />
+      </file>
+      <file ID="ALT0002" MIMETYPE="application/alto">
+        <FLocat LOCTYPE="URL" xlink:href="..\..\..\..\..\..\..\..\\\HF-NC-DOCYARD3\y\JOBS\UNIVERSITY_OF_CHICAGO\55617_MarchProject\RAW\1924\1118\ALTO\mvol-0004-1924-1118_0150.xml" />
+      </file>
+      <file ID="ALT0003" MIMETYPE="application/alto">
+        <FLocat LOCTYPE="URL" xlink:href="..\..\..\..\..\..\..\..\\\HF-NC-DOCYARD3\y\JOBS\UNIVERSITY_OF_CHICAGO\55617_MarchProject\RAW\1924\1118\ALTO\mvol-0004-1924-1118_0151.xml" />
+      </file>
+      <file ID="ALT0004" MIMETYPE="application/alto">
+        <FLocat LOCTYPE="URL" xlink:href="..\..\..\..\..\..\..\..\\\HF-NC-DOCYARD3\y\JOBS\UNIVERSITY_OF_CHICAGO\55617_MarchProject\RAW\1924\1118\ALTO\mvol-0004-1924-1118_0152.xml" />
+      </file>
+    </fileGrp>
+    <fileGrp ID="TIFF">
+      <file ID="TIF0001" ADMID="AMD_TECHMD_TIF0001" MIMETYPE="application/tif">
+        <FLocat LOCTYPE="URL" xlink:href="..\..\..\..\..\..\..\..\\\HF-NC-DOCYARD3\y\JOBS\UNIVERSITY_OF_CHICAGO\55617_MarchProject\RAW\1924\1118\TIFF\mvol-0004-1924-1118_0149.tif" />
+      </file>
+    </fileGrp>
+  </fileSec>
+  <structMap TYPE="physical">
+    <div DMDID="DMD1" LABEL="" TYPE="volume">
+      <div ORDER="1" TYPE="page">
+        <fptr FILEID="JPG0001" />
+        <fptr FILEID="ALT0001" />
+      </div>
+      <div ORDER="2" TYPE="page">
+        <fptr FILEID="JPG0002" />
+        <fptr FILEID="ALT0002" />
+      </div>
+      <div ORDER="3" TYPE="page">
+        <fptr FILEID="JPG0003" />
+        <fptr FILEID="ALT0003" />
+      </div>
+      <div ORDER="4" TYPE="page">
+        <fptr FILEID="JPG0004" />
+        <fptr FILEID="ALT0004" />
+      </div>
+    </div>
+  </structMap>
+  <structMap TYPE="logical">
+    <div ORDER="1" LABEL="" TYPE="volume"></div>
+  </structMap>
+</mets>
