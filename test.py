@@ -65,8 +65,7 @@ class TestMvolValidator(unittest.TestCase):
     """catches illformed struct"""
     file = Path('testdocs/bad.struct.txt')
     f = open(file, 'r')
-    self.assertTrue(_validate_struct_txt_file(None, 'bad.struct.txt', f)[0] ==
-      "bad.struct.txt has an error in line 4.")
+    self.assertTrue(len(_validate_struct_txt_file(None, 'bad.struct.txt', f)) > 0)
     f.close()
 
   def test_struct_correct(self):
