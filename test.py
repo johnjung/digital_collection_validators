@@ -7,7 +7,7 @@ import os
 from mvol_collection_year import IIIFCollectionYear
 from mvol_collection_month import IIIFCollectionMonth
 from mvol_manifest import IIIFManifest
-from mvol_validator import _validate_dc_xml_file, _validate_mets_xml_file, _validate_pdf_file, _validate_struct_txt_file
+from mvol_validator import _validate_dc_xml_file, _validate_mets_xml_file, _validate_file_notempty, _validate_struct_txt_file
 
 from pathlib import Path
 
@@ -87,14 +87,28 @@ class TestMvolValidator(unittest.TestCase):
     """confirms pdf is nonempty, though not whether it's actually a pdf"""
     file = Path('testdocs/mini-sueto.pdf')
     f = open(file, 'r')
-    self.assertTrue(len(_validate_pdf_file(None, 'mini-sueto.pdf', f)) == 0)
+    self.assertTrue(len(_validate_file_notempty(None, 'mini-sueto.pdf', f)) == 0)
     f.close()
 
   def test_pdf_empty(self):
     """catches if pdf is empty file"""
     file = Path('testdocs/empty.pdf')
     f = open(file, 'r')
-    self.assertTrue(len(_validate_pdf_file(None, 'empty.pdf', f)) > 0)
+    self.assertTrue(len(_validate_file_notempty(None, 'empty.pdf', f)) > 0)
+    f.close()
+
+  def test_txt_notempty(self):
+    """confirms txt is nonempty, though not whether it's actually a pdf"""
+    file = Path('testdocs/mvol-0004-1942-0407.txt')
+    f = open(file, 'r')
+    self.assertTrue(len(_validate_file_notempty(None, 'mvol-0004-1942-0407.txt', f)) == 0)
+    f.close()
+
+  def test_txt_empty(self):
+    """catches if txt is empty file"""
+    file = Path('testdocs/empty.txt')
+    f = open(file, 'r')
+    self.assertTrue(len(_validate_file_notempty(None, 'empty.txt', f)) > 0)
     f.close()
 
   def test_mets_xml_pass(self):
@@ -109,6 +123,12 @@ class TestMvolValidator(unittest.TestCase):
     file = Path('testdocs/mvol-0004-1942-0407.dc.xml')
     f = open(file, 'r')
     self.assertTrue(len(_validate_mets_xml_file(None, 'mvol-0004-1942-0407.dc.xml', f)) > 0)
+    f.close()
+
+  def test_mets_xml_red_dot(self):
+    file = Path('testdocs/mvol-0004-1942-0407.dc.xml')
+    f = open(file, 'r')
+    self.assertTrue(len(_validate_mets_xml_file(None, 'mvol-0004-1941-0307.mets.xml', f)) > 0)
     f.close()
 
   def test_dc_xml_wellformedness(self):
@@ -146,11 +166,6 @@ class TestMvolValidator(unittest.TestCase):
     xml_str = '<mets:mets xmlns:mets="http://www.loc.gov/METS/"/>'
     f = io.StringIO(xml_str)
     self.assertTrue(len(_validate_mets_xml_file(None, 'mvol-0004-1901-0101', f)) > 0)
-
-  def test_pdf_is_not_zero_length(self):
-    '''pdf validator makes sure PDF file contains some content.'''
-    f = io.StringIO('')
-    self.assertTrue(len(_validate_pdf_file(None, 'mvol-0004-1901-0101', f)) > 0)
 
   def test_struct_txt_has_headers(self):
     '''struct.txt validator requires headers.'''
