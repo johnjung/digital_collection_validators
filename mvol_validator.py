@@ -246,7 +246,7 @@ def _validate_dc_xml_file(oc, identifier, file_object):
   try:
     metadata = etree.fromstring(file_object.read())
     if not dtd.validate(metadata):
-      errors.append(identifier + ' is not valid.')
+      errors.append(identifier + '.dc.xml is not valid.')
     else:
       datepull = etree.ElementTree(metadata).findtext("date")
       pattern = re.compile("^\d{4}-\d{2}-\d{2}")
@@ -300,12 +300,13 @@ def validate_mets_xml(oc, identifier, file_info):
   except owncloud.HTTPResponseError:
     return [identifier + '.mets.xml does not exist.']
 
-def _validate_mets_xml_file(oc, identifier, f):
+def _validate_mets_xml_file(oc, identifier, file_object):
   """Make sure that a given mets file is well-formed and valid.
 
      Arguments:
-     oc -- an owncloud object, or None, for testing.
-     f  -- a file object containing a mets.xml file. 
+     oc          -- an owncloud object, or None, for testing.
+     identifier  -- for error messages.
+     file_object -- a file object containing a mets.xml file. 
   """
   errors = []
   
@@ -315,20 +316,27 @@ def _validate_mets_xml_file(oc, identifier, f):
   xmlschema = etree.XMLSchema(schemdoc)
 
   try:
-    fdoc = etree.parse(f).getroot()
+    fdoc = etree.parse(file_object).getroot()
     if not xmlschema.validate(fdoc):
-      errors.append(identifier + ' does not follow mets standards')
+      errors.append(identifier + '.mets.xml does not validate against schema.')
   except etree.XMLSyntaxError:
     errors.append(identifier + ' is not a well-formed XML file.')
     pass
 
   return errors
 
-def _validate_file_notempty(oc, identifier, file_info):
+def _validate_file_notempty(oc, identifier, file_object):
+  """Make sure that a given file is not empty.
+
+     Arguments:
+     oc          -- an owncloud object, or None, for testing.
+     identifier  -- for error messages.
+     file_object -- a file object containing a mets.xml file. 
+  """
   errors = []
 
-  file_info.seek(0, os.SEEK_END)
-  size = file_info.tell()
+  file_object.seek(0, os.SEEK_END)
+  size = file_object.tell()
   
   if not size:
     errors.append(identifier + ' is an empty file.')
@@ -382,33 +390,34 @@ def validate_struct_txt(oc, identifier, file_info):
   except owncloud.HTTPResponseError:
     return [identifier + '.struct.txt does not exist.']
 
-def _validate_struct_txt_file(oc, identifier, f):
+def _validate_struct_txt_file(oc, identifier, file_object):
   """Make sure that a given struct.txt is valid. It should be tab-delimited
      data, with a header row. Each record should contains a field for object,
      page and milestone.
 
      Arguments:
-     oc -- an owncloud object, or None, for testing.
-     f  -- a file object containing a struct.txt file.
+     oc          -- an owncloud object, or None, for testing.
+     identifier  -- for error messages.
+     file_object -- a file object containing a struct.txt file.
   """
   errors = []
 
-  num_lines = sum(1 for line in f)
-  f.seek(0,0)
-  firstline = f.readline()
+  num_lines = sum(1 for line in file_object)
+  file_object.seek(0,0)
+  firstline = file_object.readline()
   firstlinepattern = re.compile("^object\tpage\tmilestone\n")
   if not firstlinepattern.fullmatch(firstline):
-    errors.append(identifier + ' has an error in the first line.')
+    errors.append(identifier + '.struct.txt has an error in the first line.')
   currlinenum = 2
   midlinespattern = re.compile('^\d{8}\t\d\n')
   finlinepattern = re.compile('^\d{8}\t\d')
-  currline = f.readline()
+  currline = file_object.readline()
   while(currline):
     if not midlinespattern.fullmatch(currline):
         if not ((currlinenum == num_lines) and finlinepattern.fullmatch(currline)):
-          errors.append(identifier + ' has an error in line %d.' % currlinenum)
+          errors.append(identifier + '.struct.txt has an error in line %d.' % currlinenum)
     currlinenum += 1
-    currline = f.readline()
+    currline = file_object.readline()
 
   return errors
 
