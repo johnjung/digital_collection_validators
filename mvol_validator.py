@@ -325,6 +325,23 @@ def _validate_mets_xml_file(oc, identifier, file_object):
 
   return errors
 
+def _validate_file_notempty(oc, identifier, file_object):
+  """Make sure that a given file is not empty.
+
+     Arguments:
+     oc          -- an owncloud object, or None, for testing.
+     identifier  -- for error messages.
+     file_object -- a file object containing a mets.xml file. 
+  """
+  errors = []
+
+  file_object.seek(0, os.SEEK_END)
+  size = file_object.tell()
+  
+  if not size:
+    errors.append(identifier + ' is an empty file.')
+  return errors
+
 def validate_pdf(oc, identifier, file_info):
   """Make sure that a given .pdf file is well-formed and valid, and that the
      date element is arranged as yyyy-mm-dd. 
@@ -337,26 +354,25 @@ def validate_pdf(oc, identifier, file_info):
   try:
     file_object = io.BytesIO(oc.get_file_contents('{}/{}.pdf'.format(
                     file_info.path, get_identifier_from_fileinfo(oc, f))))
-    return _validate_pdf_file(oc, identifier, file_object)
+    return _validate_file_notempty(oc, identifier, file_object)
   except owncloud.HTTPResponseError:
     return [identifier + '.pdf does not exist.']
 
-def _validate_pdf_file(oc, identifier, file_object):
-  """Make sure that a given PDF is valid.
+def validate_txt(oc, identifier, file_info):
+  """Make sure that a given .txt file is well-formed and valid, and that the
+     date element is arranged as yyyy-mm-dd. 
 
      Arguments:
-     oc          -- an owncloud object, or None, for testing.
-     identifier  -- for error messages.
-     file_object -- a file object containing a PDF.
+     oc         -- an owncloud object, or None, for testing.
+     identifier -- for error messages.
+     file_info  -- a fileinfo object, the mmdd directory containing the struct.txt
   """
-  errors = []
-
-  file_object.seek(0, os.SEEK_END)
-  size = file_object.tell()
-  
-  if not size:
-    errors.append(identifier + '.pdf is an empty file.')
-  return errors
+  try:
+    file_object = io.BytesIO(oc.get_file_contents('{}/{}.txt'.format(
+                    file_info.path, get_identifier_from_fileinfo(oc, f))))
+    return _validate_file_notempty(oc, identifier, file_object)
+  except owncloud.HTTPResponseError:
+    return [identifier + '.txt does not exist.']
 
 def validate_struct_txt(oc, identifier, file_info):
   """Make sure that a given struct.txt file is well-formed and valid, and that the
