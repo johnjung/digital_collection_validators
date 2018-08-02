@@ -6,14 +6,6 @@ import sys
 import re
 import tempfile
 
-def lowest_directory_check(oc, file_info):
-  mmddpattern = re.compile("^\d{4}")
-  i = 0
-  for child in oc.list(file_info.get_path()):
-    if mmddpattern.fullmatch(child.get_name()):
-      return False
-  return True
-
 def get_mvol_mmdd_directories(oc, p):
   '''be sure the current file_info is a directory.
      get full path- if the end of the full path matches mvol/\d{4}/\d{4}/\d{4}$, this is an mvol directory, return it. 
@@ -67,24 +59,17 @@ def runutil(oc, file_info, mode):
      TODO: 
      create files in a temporary directory.
   '''
- 
-  '''
-  temptuple = tempfile.mkstemp()
-  fd = os.fdopen(temptuple[0])
-  fd.close()
-  os.rename(temptuple[1], "ready")
   sentinels = get_sentinel_files(oc, file_info)
   if mode == "addready" and len(sentinels) == 0:
     oc.put_file(file_info, "ready")
   elif mode == "fix" and len(sentinels) > 1:
     for s in sentinels:
-      #oc.delete(s)
+      if s.get_name() in ('ready', 'queue', 'valid', 'invalid'):
+        oc.delete(s)
   elif mode == "deleteall":
     for s in sentinels:
-      #oc.delete(s)
-  os.remove("ready")
-  '''
-  pass
+      if s.get_name() in ('ready', 'queue', 'valid', 'invalid'):
+        oc.delete(s)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
@@ -113,7 +98,15 @@ if __name__ == '__main__':
   except owncloud.HTTPResponseError:
     sys.stderr.write('incorrect WebDAV password.\n')
     sys.exit()
- 
+  
+  if(args.mode == "addready"):
+    temptuple = tempfile.mkstemp()
+    fd = os.fdopen(temptuple[0])
+    fd.close()
+    os.rename(temptuple[1], "ready")
+  
   for p in get_mvol_mmdd_directories(oc, args.directory):
-    print(p)
-    #runutil(oc, oc.file_info(file_info), args.mode)
+    runutil(oc, oc.file_info(p), args.mode)
+
+  if(args.mode == "addready"):
+    os.remove("ready")
