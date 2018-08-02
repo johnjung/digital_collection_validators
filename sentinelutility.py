@@ -7,14 +7,14 @@ import re
 import tempfile
 
 def get_mvol_mmdd_directories(oc, p):
-  '''be sure the current file_info is a directory.
-     get full path- if the end of the full path matches mvol/\d{4}/\d{4}/\d{4}$, this is an mvol directory, return it. 
-     else, this is not yet an mmdd. for each entry in this directory, return get_mvol_mmdd_directories(oc, entry)
+  '''Get a list of mvol mmdd directories from a given path. 
 
-     oc- owncloud object.
-     p- a string, path to a directory. 
- 
-     returns a list of strings, paths to mmdd directories. 
+     Arguments:
+     oc, an owncloud object.
+     p, the directory path as a string, e.g. "IIIF_Files/mvol/0004/1930"
+
+     Returns: 
+     a list of strings, paths to mmdd directories. 
   '''
 
   if re.match('^/?IIIF_Files/mvol/\d{4}/\d{4}/\d{4}/?$', p):
@@ -55,9 +55,6 @@ def runutil(oc, file_info, mode):
 
      Side effect:
      manages sentinel files.
-  
-     TODO: 
-     create files in a temporary directory.
   '''
   sentinels = get_sentinel_files(oc, file_info)
   if mode == "addready" and len(sentinels) == 0:
@@ -80,9 +77,8 @@ if __name__ == '__main__':
                       deleteall to delete all sentinel files''')
   args = parser.parse_args()
  
-  # TODO can we move this into add_argument above? 
   if not args.mode in ('addready', 'fix', 'deleteall'):
-    sys.stderr.write("Mode is invalid, use addready, fix, or deleteall.")
+    sys.stderr.write("Mode is invalid, use addready, fix, or deleteall.\n")
     sys.exit()
   
   try:
