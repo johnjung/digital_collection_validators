@@ -14,16 +14,28 @@ def lowest_directory_check(oc, file_info):
       return False
   return True
 
-def get_mvol_mmdd_directories(oc, file_info):
-  directories = []
-  if not lowest_directory_check(oc, file_info):
-    for child in oc.list(file_info.get_path()):
-      directories.append(get_mvol_mmdd_directories(oc, child))
+def get_mvol_mmdd_directories(oc, p):
+  '''be sure the current file_info is a directory.
+     get full path- if the end of the full path matches mvol/\d{4}/\d{4}/\d{4}$, this is an mvol directory, return it. 
+     else, this is not yet an mmdd. for each entry in this directory, return get_mvol_mmdd_directories(oc, entry)
+
+     oc- owncloud object.
+     p- a string, path to a directory. 
+ 
+     returns a list of strings, paths to mmdd directories. 
+  '''
+
+  if re.match('^/?IIIF_Files/mvol/\d{4}/\d{4}/\d{4}/?$', p):
+    return [p]
+  elif re.match('^/?IIIF_Files/mvol(/\d{4}){0,3}/?$', p):
+    directories = []
+    for e in oc.list(p):
+      if e.is_dir():
+        directories = directories + get_mvol_mmdd_directories(oc, e.path)
+    return directories
   else:
-    print(file_info.path)
-    directories.append(file_info.path)
-  return directories 
-    
+    return []
+
 def get_sentinel_files(oc, file_info):
   '''Get the sentinel files in a given mmdd directory.
 
@@ -55,6 +67,8 @@ def runutil(oc, file_info, mode):
      TODO: 
      create files in a temporary directory.
   '''
+ 
+  '''
   temptuple = tempfile.mkstemp()
   fd = os.fdopen(temptuple[0])
   fd.close()
@@ -64,11 +78,13 @@ def runutil(oc, file_info, mode):
     oc.put_file(file_info, "ready")
   elif mode == "fix" and len(sentinels) > 1:
     for s in sentinels:
-      oc.delete(s)
+      #oc.delete(s)
   elif mode == "deleteall":
     for s in sentinels:
-      oc.delete(s)
+      #oc.delete(s)
   os.remove("ready")
+  '''
+  pass
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
@@ -90,8 +106,7 @@ if __name__ == '__main__':
     sys.stderr.write("OWNCLOUD_SERVER environmental variable not set.\n")
     sys.exit()
   
-  #password = getpass.getpass('WebDAV password: ')
-  password = "BTtrAANZTF92"
+  password = getpass.getpass('WebDAV password: ')
   
   try:
     oc.login(args.username, password)
@@ -99,5 +114,6 @@ if __name__ == '__main__':
     sys.stderr.write('incorrect WebDAV password.\n')
     sys.exit()
  
-  for file_info in get_mvol_mmdd_directories(oc, oc.file_info(args.directory)):
-    runutil(oc, oc.file_info(file_info), args.mode)
+  for p in get_mvol_mmdd_directories(oc, args.directory):
+    print(p)
+    #runutil(oc, oc.file_info(file_info), args.mode)
