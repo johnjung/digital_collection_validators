@@ -19,8 +19,22 @@ h2 {
 		color: #800000; 
     font-family:Arial, Helvetica, sans-serif
 }
-#mvoltable
-{
-    border-collapse:separate;
-    border-spacing:0 10px;
+#mvoltable {
+    border-collapse: collapse;
+    width: 100%;
+}
+#mvoldata {
+    border: 1px solid black;
+    text-align: left;
+    padding: 8px;
+}
+#topdirectory {
+    color: #800000; 
+    background-color: transparent; 
+    text-decoration: none;
+}
+#topdirectory:hover {
+    color: black;
+    background-color: transparent;
+    text-decoration: underline;
 }

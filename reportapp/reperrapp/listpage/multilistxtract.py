@@ -2,6 +2,8 @@ import datetime
 import argparse
 import sys
 
+#Allows multilist to be viewed via command line
+
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument("req", help = "all, none, ready, queue, valid, invalid")

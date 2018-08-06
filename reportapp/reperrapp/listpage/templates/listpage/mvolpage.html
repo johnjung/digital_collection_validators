@@ -9,7 +9,7 @@
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
             <title>                
-                {{ name }}
+                {{ name.0 }}
             </title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -21,18 +21,59 @@
                 <td id = "toptd">
                     <h1> 
                         {% for parent in parents %}
-                            <a href = "{% url 'hierarch' parent.0 %}"> {{ parent.1 }}</a>
+                            <a id = "topdirectory" href = "{% url 'hierarch' parent.0 %}"> {{ parent.1 }}</a>
                         {% endfor %}
-                        {{ finalpiece }}
+                        {{ name.1 }}
                     </h1>
                 </td>
             </tr>
         </table>
         <table id = "mvoltable">
+            <tr>
+                <td id = "mvoldata">
+                    Name:
+                </td>
+                <td id = "mvoldata">
+                    Last modified date:
+                </td>
+                <td id = "mvoldata">
+                    Verified:
+                </td>
+                <td id = "mvoldata">
+                    Last Development upload date:
+                </td>
+                <td id = "mvoldata">
+                    Development synced:
+                </td>
+                <td id = "mvoldata">
+                    Last Production upload date:
+                </td>
+                <td id = "mvoldata">
+                    Production synced:
+                </td>
+            </tr>
             {% for child in children %}
             <tr>
-                <td>
-                    <a href = "{% url 'hierarch' child.name %}"> {{ child.name }}</a>
+                <td id = "mvoldata">
+                    <a href = "{% url 'hierarch' child.0.name %}"> {{ child.0.name }}</a>
+                </td>
+                <td id = "mvoldata">
+                    {{ child.0.date }}
+                </td>
+                <td id = "mvoldata">
+                    {{ child.1 }}
+                </td>
+                <td id = "mvoldata">
+                    {{ child.0.dev }}
+                </td>
+                <td id = "mvoldata">
+                    {{ child.2 }}
+                </td>
+                <td id = "mvoldata">
+                    {{ child.0.pro }}
+                </td>
+                <td id = "mvoldata">
+                    {{ child.3 }}
                 </td>
             </tr>
             {% endfor %}

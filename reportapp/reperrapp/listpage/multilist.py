@@ -2,7 +2,7 @@ import datetime
 import pytz
 
 class multilist():
- 	"""docstring for multilist"""
+ 	#Reflects flag status lists
  	lists = {
  	"none" : [],
  	"ready" : [],

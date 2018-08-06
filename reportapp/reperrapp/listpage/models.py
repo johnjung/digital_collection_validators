@@ -10,6 +10,6 @@ class Folder(models.Model):
 class mvolFolder(Folder):
 	date = models.DateTimeField(null = True)
 	valid = models.NullBooleanField(null = True)
-	loc1 = models.DateTimeField(null = True)
-	loc2 = models.DateTimeField(null = True)
+	dev = models.DateTimeField(null = True)
+	pro = models.DateTimeField(null = True)
 	parent = models.ForeignKey('self', on_delete=models.CASCADE, null = True, related_name = 'children')
