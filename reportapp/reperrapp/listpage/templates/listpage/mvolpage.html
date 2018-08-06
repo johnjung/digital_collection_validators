@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+{% load static %}
+
+<head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <title>                
+                {{ name }}
+            </title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" type = "text/css" href="{% static 'erpage/mystyle.css' %}">
+    </head>
+    <body>
+        <table width = "100%" border = "0">
+            <tr>
+                <td id = "toptd">
+                    <h1> 
+                        {% for parent in parents %}
+                            <a href = "{% url 'hierarch' parent.0 %}"> {{ parent.1 }}</a>
+                        {% endfor %}
+                        {{ finalpiece }}
+                    </h1>
+                </td>
+            </tr>
+        </table>
+        <table id = "mvoltable">
+            {% for child in children %}
+            <tr>
+                <td>
+                    <a href = "{% url 'hierarch' child.name %}"> {{ child.name }}</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </body>
+</html>
