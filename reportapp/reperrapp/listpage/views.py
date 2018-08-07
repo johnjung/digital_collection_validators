@@ -28,11 +28,12 @@ def hierarch(request, mvolfolder_name):
 	prelist = target.children.all()
 	prelist = prelist.extra(order_by = ['name'])
 	childlist = []
-
 	check = html.unescape("&#10004;")
 	ex = html.unescape("&#10006;")
 	
 	def retrievevalsyn(child):
+		#recursively tells if upper levels in hierarchy are completely
+		# valid and synced
 		potentialchildren = child.children.all()
 		link = False
 		if potentialchildren:
@@ -77,18 +78,19 @@ def hierarch(request, mvolfolder_name):
 			prosync = ex
 			if child.valid:
 				valid = check
-			if child.dev:
-				if child.date < child.dev:
-					devsync = check
-			if child.pro:
-				if child.date < child.pro:
-					prosync = check
+				if child.dev:
+					if child.date < child.dev:
+						devsync = check
+				if child.pro:
+					if child.date < child.pro:
+						prosync = check
 		return(child, valid, devsync, prosync, link)
 
 	for child in prelist:
 		childlist.append(retrievevalsyn(child))
 	context = {'name' : (mvolfolder_name, finalchunk),
 						'parents' : parentlist,
-						'children' : childlist}
+						'children' : childlist,
+	}
 	
 	return render(request, 'listpage/mvolpage.html', context)

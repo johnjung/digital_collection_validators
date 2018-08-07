@@ -36,6 +36,14 @@
                 <td id = "mvoldata">
                     Last modified date:
                 </td>
+                {% if children.0.4 == False %}
+                    <td id = "mvoldata">
+                        <form method = "post">
+                        {% csrf_token %}
+                        <input type = "submit" value = "Validate All" />
+                        </form>
+                    </td>
+                {% endif %}
                 <td id = "mvoldata">
                     Verified:
                 </td>
@@ -48,6 +56,14 @@
                 <td id = "mvoldata">
                     Last Production upload date:
                 </td>
+                {% if children.0.4 == False %}
+                    <td id = "mvoldata">
+                        <form method = "post">
+                        {% csrf_token %}
+                        <input type = "submit" value = "Push All to Production" />
+                        </form>
+                    </td>
+                {% endif %}
                 <td id = "mvoldata">
                     Production synced:
                 </td>
@@ -64,6 +80,14 @@
                 <td id = "mvoldata">
                     {{ child.0.date }}
                 </td>
+                {% if children.0.4 == False %}
+                    <td id = "mvoldata">
+                        <form method = "post">
+                        {% csrf_token %}
+                        <input type = "submit" value = "Validate" />
+                        </form>
+                    </td>
+                {% endif %}
                 <td id = "mvoldata">
                     {{ child.1 }}
                 </td>
@@ -76,6 +100,14 @@
                 <td id = "mvoldata">
                     {{ child.0.pro }}
                 </td>
+                {% if children.0.4 == False %}
+                    <td id = "mvoldata">
+                        <form method = "post">
+                        {% csrf_token %}
+                        <input type = "submit" value = "Push" />
+                        </form>
+                    </td>
+                {% endif %}
                 <td id = "mvoldata">
                     {{ child.3 }}
                 </td>
