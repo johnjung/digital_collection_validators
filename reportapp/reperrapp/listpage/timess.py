@@ -3,17 +3,12 @@ import datetime
 
 class timess():
  	#Reflects update statuses for the two servers
- 	lists = {
- 	"none" : [],
- 	"uploaded" : [],
- 	}
- 	servername = ""
-
  	def __init__(self, nonay, uplay, servertype):
- 		self.lists["none"] =  nonay
- 		self.lists["uploaded"] = uplay
+ 		self.lists = {
+ 			"none" :  nonay,
+ 			"uploaded" : uplay,
+ 		}
  		self.servername = servertype
-
 timezone = pytz.timezone("America/Chicago")
 
 d1 = datetime.datetime(1999, 8, 12, 12, 32, 41)

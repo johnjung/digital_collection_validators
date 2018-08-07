@@ -55,7 +55,11 @@
             {% for child in children %}
             <tr>
                 <td id = "mvoldata">
+                    {% if child.4 == True %}
                     <a href = "{% url 'hierarch' child.0.name %}"> {{ child.0.name }}</a>
+                    {% else %}
+                    {{ child.0.name }}
+                    {% endif %}
                 </td>
                 <td id = "mvoldata">
                     {{ child.0.date }}
