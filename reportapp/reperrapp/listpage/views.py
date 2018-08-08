@@ -19,6 +19,8 @@ def hierarch(request, mvolfolder_name):
 	curr = target
 	namesections = mvolfolder_name.split("/")
 	finalchunk = namesections.pop()
+	#finalchunk taken seperately as it's only section in breadcrumb
+	# trail that does not have a link
 	i = len(namesections) - 1
 	while(curr.parent):
 		parentlist = [(curr.parent, namesections[i] + '/')] + parentlist
@@ -31,9 +33,19 @@ def hierarch(request, mvolfolder_name):
 	check = html.unescape("&#10004;")
 	ex = html.unescape("&#10006;")
 	
+	def chxistnrecent(lasttime, comparetime):
+		# checks if two times exist and compares them
+		if lasttime and comparetime:
+			if comparetime > lasttime:
+					lasttime = comparetime
+		else:
+			if comparetime:
+						lasttime = comparetime
+		return lasttime
+
 	def retrievevalsyn(child):
 		#recursively tells if upper levels in hierarchy are completely
-		# valid and synced
+		# valid and synced based on lower levels
 		potentialchildren = child.children.all()
 		link = False
 		if potentialchildren:
@@ -43,6 +55,8 @@ def hierarch(request, mvolfolder_name):
 			prosync = check
 			lastdev = None
 			lastpro = None
+			#lastdev and prodev give a folder's most recent upload time
+			# to both servers so that upper levels can update their own times
 			child.valid = True
 			for grandchild in potentialchildren:
 				info = retrievevalsyn(grandchild)
@@ -55,18 +69,8 @@ def hierarch(request, mvolfolder_name):
 					devsync = ex
 				if info[3] == ex:
 					prosync = ex
-				if lastdev and grandchild.dev:
-					if grandchild.dev > lastdev:
-						lastdev = grandchild.dev
-				else:
-					if grandchild.dev:
-						lastdev = grandchild.dev
-				if lastpro and grandchild.pro:
-					if grandchild.pro > lastpro:
-						lastpro = grandchild.pro
-				else:
-					if grandchild.pro:
-						lastpro = grandchild.pro
+				lastdev = chxistnrecent(lastdev, grandchild.dev)
+				lastpro = chxistnrecent(lastpro, grandchild.pro)
 			if devsync == check:
 				child.dev = lastdev
 			if prosync == check:

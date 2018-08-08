@@ -11,6 +11,9 @@ class timess():
  		self.servername = servertype
 timezone = pytz.timezone("America/Chicago")
 
+#below sets up two sample timess objects
+# with upload times for each server
+
 d1 = datetime.datetime(1999, 8, 12, 12, 32, 41)
 d2 = datetime.datetime(1996, 8, 12, 12, 32, 41)
 d3 = datetime.datetime(2004, 8, 12, 12, 32, 41)
