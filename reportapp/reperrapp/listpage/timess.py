@@ -3,9 +3,8 @@ import datetime
 
 class timess():
  	#Reflects update statuses for the two servers
- 	def __init__(self, nonay, uplay, servertype):
+ 	def __init__(self, uplay, servertype):
  		self.lists = {
- 			"none" :  nonay,
  			"uploaded" : uplay,
  		}
  		self.servername = servertype
@@ -32,34 +31,13 @@ p2a = timezone.localize(p2)
 p3a = timezone.localize(p3)
 p4a = timezone.localize(p4)
 
-dnonay = [
-	("mvol/0004/1905/0404", None),
-	("mvol/0004/1920/1111", None),
-	("mvol/0004/1930/0812", None),
-	("mvol/0004/1905/0214", None),
-	("mvol/0004/1930/1001", None),
-	("mvol/0004/1905/0917", None),
-	("mvol/0004/1930/0712", None),
-	("mvol/0004/1920/1202", None),
-]
-
 duplay = [
 	("mvol/0004/1905/0130", d1a),
 	("mvol/0004/1920/0624", d2a),
 	("mvol/0004/1930/0311", d3a),
 ]
 
-dtimess = timess(dnonay, duplay, "development")
-
-pnonay = [
-	("mvol/0004/1905/0130", None),
-	("mvol/0004/1920/1111", None),
-	("mvol/0004/1905/0214", None),
-	("mvol/0004/1930/0311", None),
-	("mvol/0004/1905/0917", None),
-	("mvol/0004/1930/0712", None),
-	("mvol/0004/1920/0624", None)
-]
+dtimess = timess(duplay, "development")
 
 puplay = [
 	("mvol/0004/1905/0404", p1a),
@@ -68,4 +46,4 @@ puplay = [
 	("mvol/0004/1930/1001", p4a),
 ]
 
-ptimess = timess(pnonay, puplay, "production")
+ptimess = timess(puplay, "production")

@@ -17,13 +17,13 @@ def hierarch(request, mvolfolder_name):
 
 	parentlist = []
 	curr = target
-	namesections = mvolfolder_name.split("/")
+	namesections = mvolfolder_name.split("-")
 	finalchunk = namesections.pop()
 	#finalchunk taken seperately as it's only section in breadcrumb
 	# trail that does not have a link
 	i = len(namesections) - 1
 	while(curr.parent):
-		parentlist = [(curr.parent, namesections[i] + '/')] + parentlist
+		parentlist = [(curr.parent, namesections[i] + '-')] + parentlist
 		curr = curr.parent
 		i -= 1
 	
