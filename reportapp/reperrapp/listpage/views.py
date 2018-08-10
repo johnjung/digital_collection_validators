@@ -29,6 +29,17 @@ def hierarch(request, mvolfolder_name):
 		else:
 			return None
 
+	def chxistnrecentx(status):
+		# checks if two times exist and compares them
+		checkd = html.unescape("&#10004;")
+		exd = html.unescape("&#10006;")
+		if status == "in-sync":
+			return checkd
+		elif status == "out-of-sync":
+			return exd
+		else:
+			return None
+
 	def localize(child):
 		timezone = pytz.timezone("America/Chicago")	
 		try:
@@ -52,7 +63,7 @@ def hierarch(request, mvolfolder_name):
 	parentlist = []
 	namehold = ""
 	first = True
-	with open('listpage/holdname.json', "r") as jsonfile:
+	with open('listpage/snar.json', "r") as jsonfile:
 		fjson = json.load(jsonfile)
 
 	currdir = fjson
@@ -87,8 +98,8 @@ def hierarch(request, mvolfolder_name):
 		devsync = ex
 		localize(child)		
 		currtime = child[1]['owncloud'][1]
-		devsync = chxistnrecent(currtime, child[1]['development'][1])
-		prosync = chxistnrecent(currtime, child[1]['production'][1])
+		devsync = chxistnrecentx(child[1]['development'][0])
+		prosync = chxistnrecentx(child[1]['production'][0])
 		if child[1]['owncloud'][0] == "valid":
 			valid = check
 		childlist.append((list(childnames)[i], child, valid, devsync, prosync))
