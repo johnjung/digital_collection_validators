@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+{% load static %}
+
+<head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <title>                
+                {{ name.0 }}
+            </title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" type = "text/css" href="{% static 'erpage/mystyle.css' %}">
+    </head>
+    <body>
+        <table width = "100%" border = "0">
+            <tr>
+                <td id = "toptd">
+                    <h1> 
+                        {% for parent in parents %}<a id = "topdirectory" href = "{% url 'hierarch' parent.0 %}">{{parent.1}}</a>-{% endfor %}{{ name.1 }}
+                    </h1>
+                </td>
+            </tr>
+        </table>
+        <table id = "mvoltable">
+            <tr>
+                <td id = "mvoldata" width= "185px">
+                    Name:              
+                </td>
+                <td id = "mvoldata">
+                    Last modified date:
+                </td>
+                {% if oneupfrombottom == True %}
+                    <td id = "mvoldata">
+                        <form method = "post">
+                        {% csrf_token %}
+                        <input type = "submit" value = "Validate All" />
+                        </form>
+                    </td>
+                {% endif %}
+                <td id = "mvoldata">
+                    Verified:
+                </td>
+                <td id = "mvoldata">
+                    Last Development upload date:
+                </td>
+                <td id = "mvoldata">
+                    Development synced:
+                </td>
+                <td id = "mvoldata">
+                    Last Production upload date:
+                </td>
+                {% if oneupfrombottom == True %}
+                    <td id = "mvoldata">
+                        <form method = "post">
+                        {% csrf_token %}
+                        <input type = "submit" value = "Push All" />
+                        </form>
+                    </td>
+                {% endif %}
+                <td id = "mvoldata">
+                    Production synced:
+                </td>
+            </tr>
+            {% for child in children %}
+            <tr>
+                <td id = "mvoldata">
+                    {% if oneupfrombottom == False %}
+                    <a href = "{% url 'hierarch' child.0 %}"> {{ child.0 }}</a>
+                    {% else %}
+                    {{ child.0 }}
+                    {% endif %}
+                </td>
+                <td id = "mvoldata">
+                    {{ child.1.1.owncloud.1 }}
+                </td>
+                {% if oneupfrombottom == True %}
+                    <td id = "mvoldata">
+                        <form method = "post">
+                        {% csrf_token %}
+                        <input type = "submit" value = "Validate" />
+                        </form>
+                    </td>
+                {% endif %}
+                <td id = "mvoldata">
+                   {{child.2}}
+                </td>
+                <td id = "mvoldata">
+                    {% if child.1.1.development %}
+                        {{ child.1.1.development.1 }}
+                    {% else %}
+                        None
+                    {% endif %}
+                </td>
+                <td id = "mvoldata">
+                    {{ child.3 }}
+                </td>
+                <td id = "mvoldata">
+                    {% if child.1.1.production %}
+                        {{ child.1.1.production.1 }}
+                    {% else %}
+                        None
+                    {% endif %}
+                </td>
+                {% if oneupfrombottom == True %}
+                    <td id = "mvoldata">
+                        <form method = "post">
+                        {% csrf_token %}
+                        <input type = "submit" value = "Push to Production" />
+                        </form>
+                    </td>
+                {% endif %}
+                <td id = "mvoldata">
+                    {{ child.4 }}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </body>
+</html>

@@ -18,4 +18,9 @@ ul {
 }
 #toptd {
     background-color: #FFFFFF
+    white-space: nowrap;
+}
+
+table {
+	table-layout: auto !important
 }
