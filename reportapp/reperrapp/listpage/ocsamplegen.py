@@ -7,27 +7,6 @@ import tempfile
 import json
 import random
 
-def get_mvol_mmdd_directories(oc, p):
-  '''be sure the current file_info is a directory.
-     get full path- if the end of the full path matches mvol/\d{4}/\d{4}/\d{4}$, this is an mvol directory, return it. 
-     else, this is not yet an mmdd. for each entry in this directory, return get_mvol_mmdd_directories(oc, entry)
-     oc- owncloud object.
-     p- a string, path to a directory. 
- 
-     returns a list of strings, paths to mmdd directories. 
-  '''
-
-  if re.match('^/?IIIF_Files/mvol/\d{4}/\d{4}/\d{4}/?$', p):
-    return [p]
-  elif re.match('^/?IIIF_Files/mvol/0004(/\d{4}){0,2}/?$', p):
-    directories = []
-    for e in oc.list(p):
-      if e.is_dir():
-        directories = directories + get_mvol_mmdd_directories(oc, e.path)
-    return directories
-  else:
-    return []
-
 def statusrecurse(start):
   #print("pass")
   if not 'children' in start:
@@ -159,7 +138,7 @@ if __name__ == '__main__':
     sys.exit()
   
   username = "ldr_oc_admin"
-  password = "uXcUgB7ZqDkM"
+  password = ""
   
   try:
     oc.login(username, password)
