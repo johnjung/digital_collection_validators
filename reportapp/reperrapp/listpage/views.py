@@ -27,7 +27,7 @@ def hierarch(request, mvolfolder_name):
 			else:
 				return checkd
 		else:
-			return None
+			return "none"
 
 	def chxistnrecentx(status):
 		# checks if two times exist and compares them
@@ -38,7 +38,7 @@ def hierarch(request, mvolfolder_name):
 		elif status == "out-of-sync":
 			return exd
 		else:
-			return None
+			return "none"
 
 	def localize(child):
 		timezone = pytz.timezone("America/Chicago")	
@@ -94,12 +94,18 @@ def hierarch(request, mvolfolder_name):
 	ex = html.unescape("&#10006;")
 	for child in prechildlist.items():
 		valid = ex
-		prosync = ex
-		devsync = ex
+		prosync = "none"
+		devsync = "none"
 		localize(child)		
 		currtime = child[1]['owncloud'][1]
-		devsync = chxistnrecentx(child[1]['development'][0])
-		prosync = chxistnrecentx(child[1]['production'][0])
+		if child[1]['development'][0] == "in-sync":
+			devsync = check
+		elif child[1]['development'][0] == "out-of-sync":
+			devsync = ex
+		if child[1]['production'][0] == "in-sync":
+			prosync = check
+		elif child[1]['production'][0] == "out-of-sync":
+			prosync = ex
 		if child[1]['owncloud'][0] == "valid":
 			valid = check
 		childlist.append((list(childnames)[i], child, valid, devsync, prosync))
