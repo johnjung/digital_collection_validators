@@ -11,9 +11,20 @@ import pytz
 
 # Create your views here.
 
-def main(request):
+def homepage(request):
+	context = {}
+	return render(request, 'listpage/homepage.html', context)
+
+def errpage(request):
+    errors = ["This thing was bad.",
+              "This other thing was even worse.",
+              "Whoa, slow down now, what is this."]
+    context = {'errarray' : errors}
+    return render(request, 'listpage/errpage.html', context)
+
+def listpage(request):
 	context = {'allists' : exmultilist.lists}
-	return render(request, 'listpage/main.html', context)
+	return render(request, 'listpage/listpage.html', context)
 
 def hierarch(request, mvolfolder_name):
 

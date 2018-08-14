@@ -18,6 +18,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('errors/', include('erpage.urls')),
-    path('', include('listpage.urls'))
+    path('emilproject/', include('listpage.urls'))
 ]
