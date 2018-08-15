@@ -1,4 +1,5 @@
 import json
+import random
 
 def directorytrawl(start):
 	#check if we're in second to last row
@@ -9,9 +10,29 @@ def directorytrawl(start):
 	if nograndchildren:
 		for child in start.items():
 			if child[1]['owncloud'][0] == "valid":
-				valay.append((child[0], child[1]['owncloud'][1]))
+				share = random.randint(0,4)
+				if share == 0:
+					valay.append((child[0], child[1]['owncloud'][1]))
+				elif share == 1:
+					valay.append((child[0], child[1]['owncloud'][1]))
+				elif share == 2:
+					queay.append((child[0], child[1]['owncloud'][1]))
+				elif share == 3:
+					queay.append((child[0], child[1]['owncloud'][1]))
+				else:
+					nonay.append((child[0], child[1]['owncloud'][1]))
 			elif child[1]['owncloud'][0] == "invalid":
-				invay.append((child[0], child[1]['owncloud'][1]))
+				share = random.randint(0,4)
+				if share == 0:
+					invay.append((child[0], child[1]['owncloud'][1]))
+				elif share == 1:
+					invay.append((child[0], child[1]['owncloud'][1]))
+				elif share == 2:
+					reaay.append((child[0], child[1]['owncloud'][1]))
+				elif share == 3:
+					reaay.append((child[0], child[1]['owncloud'][1]))
+				else:
+					nonay.append((child[0], child[1]['owncloud'][1]))
 	else:
 		for child in start.items():
 			directorytrawl(child[1]["children"])

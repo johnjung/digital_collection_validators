@@ -20,7 +20,7 @@ def errpage(request):
     return render(request, 'listpage/errpage.html', context)
 
 def listpage(request):
-	def localize(start):
+	def localized(start):
 		timezone = pytz.timezone("America/Chicago")	
 		for child in start.items():
 			for grandchild in child[1]:
@@ -28,7 +28,7 @@ def listpage(request):
 
 	with open('listpage/listsnar.json', "r") as jsonfile:
 		fjson = json.load(jsonfile)
-	localize(fjson)
+	localized(fjson)
 	context = {"allists" : fjson}
 	return render(request, 'listpage/listpage.html', context)
 
