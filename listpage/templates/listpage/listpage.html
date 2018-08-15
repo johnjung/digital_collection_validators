@@ -7,15 +7,15 @@
 {% block content %}
 <h1>Directory Status Report</h1>
 <div class = "row">
-    <div class = "col-sm-5">
-        <h3 style = "margin-top: 10px; margin-bottom: -20px"><a info = "top" href = "{% url 'home' %}">Homepage</a></h3>
+    <div class = "col-sm-7">
+        <h3 style = "margin-top: 10px"><a info = "top" href = "{% url 'home' %}">Homepage</a></h3>
     </div>
-    <div class = "col-sm-6">
-        <ul class = "nav nav-pills" style = "position:fixed;background-color: lightblue; border-radius: 25px">
+    <div class = "col-sm-5">
+        <ul class = "nav nav-pills" style = "position:fixed;background-color: #dadada; border-radius: 5px">
             {% if allists %}
             {% for key, value in allists.items %}
             <li class = "nav-item">
-                <a class = "nav-link" href= "#{{ key }}">{{ key }} </a>
+                <a class = "nav-link active" href= "#{{ key }}">{{ key }} </a>
             </li>
             {% endfor %}
             {% endif %}
@@ -25,26 +25,31 @@
         </ul>
     </div>
 </div>
-<table>
-    <tr>
-        <td>
-            {% if allists %}
-            {% for key, value in allists.items %}
-            <a id = "{{ key }}"> <h2> {{ key }} </h2></a>
-            <ul>
-                {% for sect in value %}
-                <li>
-                    <p class = "text-monospace">
-                    {{ sect.0 }} -   - {{ sect.1 }}
-                </p>
-                </li>
-                {% endfor %}
-            </ul>
-            {% endfor %}
-            {% else %}
-            <p> "Rip" </p>
-            {% endif %}
-        </td>
-    </tr>
-</table>
+{% if allists %}
+<div class = "col-sm-7">
+    <table class = "table table-hover table-sm">
+        {% for key, value in allists.items %}
+        <thead>
+            <tr>
+                <th>
+                    <a id = "{{ key }}">{{ key }}</a>
+                </th>
+            </tr>
+        </thead>
+        {% for sect in value %}
+        <tr>
+            <td>
+               {{ sect.0 }} 
+           </td>
+           <td>
+               {{ sect.1 }} 
+           </td>
+       </tr>
+       {% endfor %}
+       {% endfor %}
+       {% else %}
+       <p> "Rip" </p>
+       {% endif %}
+   </table>
+</div>
 {% endblock %}
