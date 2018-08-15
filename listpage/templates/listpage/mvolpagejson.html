@@ -1,0 +1,109 @@
+{% extends "base/intranet_base.html" %}
+{% load wagtailcore_tags %}
+{% load core_intranet_tags %}
+
+{% block body_class %}template-{{ self.get_verbose_name|slugify }}{% endblock %}
+
+{% block content %}
+<h1 style = "color:#800000"> 
+    {% for parent in parents %}<a href = "{% url 'hierarch' parent.0 %}">{{parent.1}}</a>-{% endfor %}{{ name.1 }}
+</h1>
+<h3><a href = "{% url 'home' %}">Homepage</a></h3>
+
+<table class = "table table-hover table-sm">
+    <thead>
+        <tr>
+            <th width= "185px">
+                Name:              
+            </th>
+            <th>
+                Last modified date:
+            </th>
+            {% if oneupfrombottom == True %}
+            <th>
+                <form method = "post">
+                    {% csrf_token %}
+                    <input type = "submit" class="btn btn-outline-primary" value = "Validate All" />
+                </form>
+            </th>
+            {% endif %}
+            <th>
+                Verified:
+            </th>
+            <th>
+                Last Development upload date:
+            </th>
+            <th>
+                Development synced:
+            </th>
+            <th>
+                Last Production upload date:
+            </th>
+            {% if oneupfrombottom == True %}
+            <th>
+                <form method = "post">
+                    {% csrf_token %}
+                    <input type = "submit" class="btn btn-outline-primary"  value = "Push All" />
+                </form>
+            </th>
+            {% endif %}
+            <th>
+                Production synced:
+            </th>
+        </tr>
+    </thead>
+    {% for child in children %}
+    <tr>
+        <td style = "color:   blue">
+            {% if oneupfrombottom == False %}
+            <a href = "{% url 'hierarch' child.0 %}"> {{ child.0 }}</a>
+            {% else %}
+            {{ child.0 }}
+            {% endif %}
+        </td>
+        <td>
+            {{ child.1.1.owncloud.1 }}
+        </td>
+        {% if oneupfrombottom == True %}
+        <td>
+            <form method = "post">
+                {% csrf_token %}
+                <input type = "submit" class="btn btn-outline-primary btn-sm" value = "Validate" />
+            </form>
+        </td>
+        {% endif %}
+        <td>
+           {{child.2}}
+       </td>
+       <td>
+        {% if child.1.1.development %}
+        {{ child.1.1.development.1 }}
+        {% else %}
+        None
+        {% endif %}
+    </td>
+    <td>
+        {{ child.3 }}
+    </td>
+    <td>
+        {% if child.1.1.production %}
+        {{ child.1.1.production.1 }}
+        {% else %}
+        None
+        {% endif %}
+    </td>
+    {% if oneupfrombottom == True %}
+    <td>
+        <form method = "post">
+            {% csrf_token %}
+            <input type = "submit" class="btn btn-outline-primary btn-sm" value = "Push to Production" />
+        </form>
+    </td>
+    {% endif %}
+    <td>
+        {{ child.4 }}
+    </td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

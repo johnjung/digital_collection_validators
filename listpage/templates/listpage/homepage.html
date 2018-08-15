@@ -1,0 +1,14 @@
+{% extends "base/intranet_base.html" %}
+{% load wagtailcore_tags %}
+{% load core_intranet_tags %}
+
+{% block body_class %}template-{{ self.get_verbose_name|slugify }}{% endblock %}
+
+{% block content %}
+    <h1>Emil Project Homepage</h1>
+    <h3><a href = "{% url 'listpage' %}">Directory Report</a></h3>
+    <h3><a href = "{% url 'errpage' %}">Error Report</a></h3>
+    <h3><a href = "{% url 'hierarch' 'mvol' %}">Directory Viewer</a></h3>
+    <h3></h3>
+    <h5><a href = "/departments/bridge/">Back</a>
+{% endblock %}
