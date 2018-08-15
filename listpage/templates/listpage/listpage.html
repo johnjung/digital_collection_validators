@@ -7,12 +7,21 @@
 {% block content %}
 <h1>Directory Status Report</h1>
 <h3><a href = "{% url 'home' %}">Homepage</a></h3>
+<ul class = "nav nav-pills">
+    {% if allists %}
+    {% for key, value in allists.items %}
+    <li class = "nav-item">
+        <a class = "nav-link" href= "#{{ key }}"> {{ key }} </a>
+    </li>
+    {% endfor %}
+    {% endif %}
+</ul>
 <table>
     <tr>
         <td>
             {% if allists %}
             {% for key, value in allists.items %}
-            <h2> {{ key }} </h2>
+            <a id = "{{ key }}"> <h2> {{ key }} </h2></a>
             <ul>
                 {% for sect in value %}
                 <li>

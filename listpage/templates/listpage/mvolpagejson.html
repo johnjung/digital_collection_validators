@@ -5,7 +5,7 @@
 {% block body_class %}template-{{ self.get_verbose_name|slugify }}{% endblock %}
 
 {% block content %}
-<h1 style = "color:#800000"> 
+<h1> 
     {% for parent in parents %}<a href = "{% url 'hierarch' parent.0 %}">{{parent.1}}</a>-{% endfor %}{{ name.1 }}
 </h1>
 <h3><a href = "{% url 'home' %}">Homepage</a></h3>
@@ -54,7 +54,7 @@
     </thead>
     {% for child in children %}
     <tr>
-        <td style = "color:   blue">
+        <td style = "color:#5B8FA8">
             {% if oneupfrombottom == False %}
             <a href = "{% url 'hierarch' child.0 %}"> {{ child.0 }}</a>
             {% else %}
@@ -62,8 +62,8 @@
             {% endif %}
         </td>
         <td>
-            {{ child.1.1.owncloud.1 }}
-        </td>
+            {{ child.1.1.owncloud.1 }
+}        </td>
         {% if oneupfrombottom == True %}
         <td>
             <form method = "post">

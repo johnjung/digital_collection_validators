@@ -1,8 +1,5 @@
 from django.shortcuts import render
 from django.http import HttpResponse
-from listpage.multilist import *
-from listpage.multilistxtract import *
-from listpage.models import mvolFolder
 import html
 import json
 import datetime
@@ -23,7 +20,16 @@ def errpage(request):
     return render(request, 'listpage/errpage.html', context)
 
 def listpage(request):
-	context = {'allists' : exmultilist.lists}
+	def localize(start):
+		timezone = pytz.timezone("America/Chicago")	
+		for child in start.items():
+			for grandchild in child[1]:
+				grandchild[1] = timezone.localize(datetime.datetime.fromtimestamp(grandchild[1]))
+
+	with open('listpage/listsnar.json', "r") as jsonfile:
+		fjson = json.load(jsonfile)
+	localize(fjson)
+	context = {"allists" : fjson}
 	return render(request, 'listpage/listpage.html', context)
 
 def hierarch(request, mvolfolder_name):
