@@ -5,51 +5,26 @@
 {% block body_class %}template-{{ self.get_verbose_name|slugify }}{% endblock %}
 
 {% block content %}
-<h1>Directory Status Report</h1>
-<div class = "row">
-    <div class = "col-sm-7">
-        <h3 style = "margin-top: 10px"><a info = "top" href = "{% url 'home' %}">Homepage</a></h3>
-    </div>
-    <div class = "col-sm-5">
-        <ul class = "nav nav-pills" style = "position:fixed;background-color: #dadada; border-radius: 5px">
-            {% if allists %}
-            {% for key, value in allists.items %}
-            <li class = "nav-item">
-                <a class = "nav-link active" href= "#{{ key }}">{{ key }} </a>
-            </li>
-            {% endfor %}
-            {% endif %}
-            <li class = "nav-item">
-                <a class = "nav-link" href ="#top">back to top</a>
-            </li>
-        </ul>
-    </div>
-</div>
+{% for breadcrumb in breadcrumbs %}
+    <a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a>
+    {% if not forloop.last %} &gt; {% endif %}
+{% endfor %}
+<h1>Mvol Directory Report</h1>
+<h3> {{ name }} </h3>
 {% if allists %}
-<div class = "col-sm-7">
     <table class = "table table-hover table-sm">
-        {% for key, value in allists.items %}
-        <thead>
-            <tr>
-                <th>
-                    <a id = "{{ key }}">{{ key }}</a>
-                </th>
-            </tr>
-        </thead>
-        {% for sect in value %}
+        {% for key in allists %}
         <tr>
             <td>
-               {{ sect.0 }} 
+               {{ key.0 }} 
            </td>
            <td>
-               {{ sect.1 }} 
+               {{ key.1 }} 
            </td>
        </tr>
-       {% endfor %}
        {% endfor %}
        {% else %}
        <p> "Rip" </p>
        {% endif %}
    </table>
-</div>
 {% endblock %}

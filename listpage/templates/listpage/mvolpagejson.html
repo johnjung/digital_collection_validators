@@ -5,10 +5,17 @@
 {% block body_class %}template-{{ self.get_verbose_name|slugify }}{% endblock %}
 
 {% block content %}
+{% for breadcrumb in breadcrumbs %}
+    <a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a>
+    {% if not forloop.last %} &gt; {% endif %}
+{% endfor %}
+<!--
 <h1> 
     {% for parent in parents %}<a href = "{% url 'hierarch' parent.0 %}">{{parent.1}}</a>-{% endfor %}{{ name.1 }}
+</h1> -->
+<h1> 
+    {% for parent in parents %}{{parent.1}}-{% endfor %}{{ name.1 }}
 </h1>
-<h3><a href = "{% url 'home' %}">Homepage</a></h3>
 
 <table class = "table table-hover table-sm">
     <thead>

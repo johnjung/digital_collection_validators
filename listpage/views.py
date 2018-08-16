@@ -5,34 +5,81 @@ import json
 import datetime
 import time
 import pytz
+from itertools import islice
+from base.views import breadcrumbs
+
 
 # Create your views here.
 
+def take(n, iterable):
+    "Return first n items of the iterable as a list"
+    return list(islice(iterable, n))
+
 def homepage(request):
-	context = {}
+	breadcrumbs = [{
+        "href": "/",
+        "text": "Home"
+    }]
+	context = {"breadcrumbs" : breadcrumbs}
 	return render(request, 'listpage/homepage.html', context)
 
 def errpage(request):
-    errors = ["This thing was bad.",
-              "This other thing was even worse.",
-              "Whoa, slow down now, what is this."]
-    context = {'errarray' : errors}
-    return render(request, 'listpage/errpage.html', context)
+	breadcrumbs = [{
+	"href": "/",
+	"text": "Home"},
+	{"href": "/emilproject", "text": "Emil Project Homepage"}]
+	errors = ["This thing was bad.",
+	"This other thing was even worse.",
+	"Whoa, slow down now, what is this."]
+	context = {'errarray' : errors, "breadcrumbs" : breadcrumbs}
+	return render(request, 'listpage/errpage.html', context)
 
-def listpage(request):
+def prelistpage(request):
+	breadcrumbs = [{
+      "href": "/",
+      "text": "Home"},
+      {"href": "/emilproject", "text": "Emil Project Homepage"}]
+	with open('listpage/listsnar.json', "r") as jsonfile:
+		fjson = json.load(jsonfile)
+	n = 5
+	fjson = {"none" : (take(n, fjson["none"]), len(fjson["none"]) > n),
+		"ready" : (take(n, fjson["ready"]), len(fjson["ready"]) > n),
+		"queue" : (take(n, fjson["queue"]), len(fjson["queue"]) > n),
+		"valid" : (take(n, fjson["valid"]), len(fjson["valid"]) > n),
+		"invalid" : (take(n, fjson["invalid"]), len(fjson["invalid"]) > n)}
+
 	def localized(start):
 		timezone = pytz.timezone("America/Chicago")	
 		for child in start.items():
-			for grandchild in child[1]:
+			for grandchild in child[1][0]:
 				grandchild[1] = timezone.localize(datetime.datetime.fromtimestamp(grandchild[1]))
 
+	localized(fjson)
+	context = {"allists" : fjson, "breadcrumbs": breadcrumbs}
+	return render(request, 'listpage/prelistpage.html', context)
+
+def listpage(request, status):
+	breadcrumbs = [{
+      "href": "/",
+      "text": "Home"},
+      {"href": "/emilproject", "text": "Emil Project Homepage"},
+      {"href": "/emilproject/mvolreport", "text": "Mvol Report"} ]
 	with open('listpage/listsnar.json', "r") as jsonfile:
 		fjson = json.load(jsonfile)
-	localized(fjson)
-	context = {"allists" : fjson}
+	def localizer(start):
+		timezone = pytz.timezone("America/Chicago")	
+		for child in start:
+			child[1] = timezone.localize(datetime.datetime.fromtimestamp(child[1]))
+	localizer(fjson[status])
+	context = {"allists" : fjson[status],
+							"name": status, "breadcrumbs": breadcrumbs}
 	return render(request, 'listpage/listpage.html', context)
 
 def hierarch(request, mvolfolder_name):
+	breadcrumbs = [{
+      "href": "/",
+      "text": "Home"},
+      {"href": "/emilproject", "text": "Emil Project Homepage"}]
 
 	def chxistnrecent(currtime, comparetime):
 		# checks if two times exist and compares them
@@ -92,6 +139,7 @@ def hierarch(request, mvolfolder_name):
 				else:
 					namehold = namehold + "-" + subsect
 				parentlist.append((namehold, subsect))
+				breadcrumbs.append({"href" : "/emilproject/" + namehold, "text" : subsect})
 				try:
 					currdir = currdir[namehold]['children']
 				except Exception as e:
@@ -137,6 +185,7 @@ def hierarch(request, mvolfolder_name):
 						'parents' : parentlist,
 						'children' : childlist,
 						'oneupfrombottom' : oneupfrombottom,
+						'breadcrumbs': breadcrumbs
 	}
 	
 	return render(request, 'listpage/mvolpagejson.html', context)
