@@ -7,11 +7,11 @@ import tempfile
 import json
 import random
 from password import ocpassword
-#This file builds json file from all owncloud directories, and based on commented out lines,
-#gives either all valids or in-syncs, or randoms valids and in-syncs or invalids and out-of-syncs
-
+'''
+This file builds json file from all owncloud directories, and based on commented out lines,
+gives either all valids or in-syncs, or randoms valids and in-syncs or invalids and out-of-syncs
+'''
 def statusrecurse(start):
-  #print("pass")
   if not 'children' in start:
     return (start['owncloud'][0], start['development'][0], start['production'][0])
   else:
@@ -64,16 +64,6 @@ def chxistnrecentnum(currtime, comparetime):
       return comparetime
   else:
     return currtime
-
-def chxistnrecent(currtime, comparetime):
-  # checks if two times exist and compares them, returns out-of-sync or in sync
-  if comparetime:
-    if comparetime < currtime:
-      return "out-of-sync"
-    else:
-      return "in-sync"
-  else:
-    return "out-of-sync"
 
 def builddirectory(start, name, withchildren):
 
@@ -134,17 +124,14 @@ def build(startfolder, namesofar, ocfolder, layer):
     for f in oc.list(ocfolder):
       tname = f.get_name()
       tname = namesofar + "/" + tname
-      #print(tname)
       #if re.match('^/?IIIF_Files/mvol/0004(/\d{4}){0,2}/?$', "IIIF_Files/" + tname):
       if re.match('^/?IIIF_Files/mvol(/\d{4}){0,3}/?$', "IIIF_Files/" + tname):
-        #print("made it")
         builddirectory(startfolder['children'], tname, 1)
         build(startfolder['children'][tname.replace("/", "-")], tname, "IIIF_Files/" + tname, layer + 1)
   else:
     for f in oc.list(ocfolder):
       tname = f.get_name()
       tname = namesofar + "/" + tname
-      #print(tname)
       #if re.match('^/?IIIF_Files/mvol/0004(/\d{4}){0,2}/?$', "IIIF_Files/" + tname):
       if re.match('^/?IIIF_Files/mvol(/\d{4}){0,3}/?$', "IIIF_Files/" + tname):
         builddirectory(startfolder['children'], tname, 0)

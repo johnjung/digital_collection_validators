@@ -1,8 +1,14 @@
 import json
 import random
+'''
+This file generates five lists of directories for the categories valid,
+invalid, ready, queue, and none, by loading the json file storing
+the sample data for the mvol directory section. The data is processed and
+saved in a new json file so it can be used in the mvol directory report
+section.
 
+'''
 def directorytrawl(start):
-	#check if we're in second to last row
 	nograndchildren = True
 	for child in start.items():
 		if 'children' in child[1]:

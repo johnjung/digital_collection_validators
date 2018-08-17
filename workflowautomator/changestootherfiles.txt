@@ -1,7 +1,7 @@
 Added to INSTALLED_APPS in library_website\library_website\settings\base.py
 
-'listpage.apps.ListpageConfig',
+'workflowautomator.apps.WorkflowautomatorConfig',
 
 Added to urlpatterns in library_website\library_website\templates\urls.py
 
-url(r'^emilproject', include('listpage.urls')),
+url(r'^workflowautomator/', include('workflowautomator.urls')),

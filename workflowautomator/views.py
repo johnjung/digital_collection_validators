@@ -6,14 +6,8 @@ import datetime
 import time
 import pytz
 from itertools import islice
-from base.views import breadcrumbs
-
 
 # Create your views here.
-
-def take(n, iterable):
-    "Return first n items of the iterable as a list"
-    return list(islice(iterable, n))
 
 def homepage(request):
 	breadcrumbs = [{
@@ -21,25 +15,28 @@ def homepage(request):
         "text": "Home"
     }]
 	context = {"breadcrumbs" : breadcrumbs}
-	return render(request, 'listpage/homepage.html', context)
+	return render(request, 'workflowautomator/homepage.html', context)
 
 def errpage(request):
 	breadcrumbs = [{
 	"href": "/",
 	"text": "Home"},
-	{"href": "/emilproject", "text": "Emil Project Homepage"}]
+	{"href": "/workflowautomator", "text": "Emil Project Homepage"}]
 	errors = ["This thing was bad.",
 	"This other thing was even worse.",
 	"Whoa, slow down now, what is this."]
 	context = {'errarray' : errors, "breadcrumbs" : breadcrumbs}
-	return render(request, 'listpage/errpage.html', context)
+	return render(request, 'workflowautomator/errpage.html', context)
 
 def prelistpage(request):
-	breadcrumbs = [{
-      "href": "/",
-      "text": "Home"},
-      {"href": "/emilproject", "text": "Emil Project Homepage"}]
-	with open('listpage/listsnar.json', "r") as jsonfile:
+
+	def take(n, iterable):
+  	#Return first n items of the iterable as a list
+		return list(islice(iterable, n))
+	breadcrumbs = [{"href": "/",
+		"text": "Home"},
+		{"href": "/workflowautomator", "text": "Emil Project Homepage"}]
+	with open('workflowautomator/listsnar.json', "r") as jsonfile:
 		fjson = json.load(jsonfile)
 	n = 5
 	fjson = {"none" : (take(n, fjson["none"]), len(fjson["none"]) > n),
@@ -56,15 +53,15 @@ def prelistpage(request):
 
 	localized(fjson)
 	context = {"allists" : fjson, "breadcrumbs": breadcrumbs}
-	return render(request, 'listpage/prelistpage.html', context)
+	return render(request, 'workflowautomator/prelistpage.html', context)
 
 def listpage(request, status):
 	breadcrumbs = [{
       "href": "/",
       "text": "Home"},
-      {"href": "/emilproject", "text": "Emil Project Homepage"},
-      {"href": "/emilproject/mvolreport", "text": "Mvol Report"} ]
-	with open('listpage/listsnar.json', "r") as jsonfile:
+      {"href": "/workflowautomator", "text": "Emil Project Homepage"},
+      {"href": "/workflowautomator/mvolreport", "text": "Mvol Report"} ]
+	with open('workflowautomator/listsnar.json', "r") as jsonfile:
 		fjson = json.load(jsonfile)
 	def localizer(start):
 		timezone = pytz.timezone("America/Chicago")	
@@ -73,36 +70,13 @@ def listpage(request, status):
 	localizer(fjson[status])
 	context = {"allists" : fjson[status],
 							"name": status, "breadcrumbs": breadcrumbs}
-	return render(request, 'listpage/listpage.html', context)
+	return render(request, 'workflowautomator/listpage.html', context)
 
 def hierarch(request, mvolfolder_name):
 	breadcrumbs = [{
       "href": "/",
       "text": "Home"},
-      {"href": "/emilproject", "text": "Emil Project Homepage"}]
-
-	def chxistnrecent(currtime, comparetime):
-		# checks if two times exist and compares them
-		checkd = html.unescape("&#10004;")
-		exd = html.unescape("&#10006;")
-		if comparetime:
-			if comparetime < currtime:
-				return exd
-			else:
-				return checkd
-		else:
-			return "none"
-
-	def chxistnrecentx(status):
-		# checks if two times exist and compares them
-		checkd = html.unescape("&#10004;")
-		exd = html.unescape("&#10006;")
-		if status == "in-sync":
-			return checkd
-		elif status == "out-of-sync":
-			return exd
-		else:
-			return "none"
+      {"href": "/workflowautomator", "text": "Emil Project Homepage"}]
 
 	def localize(child):
 		timezone = pytz.timezone("America/Chicago")	
@@ -119,27 +93,24 @@ def hierarch(request, mvolfolder_name):
 		except Exception:
 			pass
 
-
 	currname = mvolfolder_name
 	namesections = mvolfolder_name.split("-")
 	finalchunk = namesections.pop()
-
 	parentlist = []
 	namehold = ""
 	first = True
-	with open('listpage/snar.json', "r") as jsonfile:
+	with open('workflowautomator/snar.json', "r") as jsonfile:
 		fjson = json.load(jsonfile)
-
 	currdir = fjson
-
 	for subsect in namesections:
+		#breaks directory name into pieces to build breadcrumbs and header
 				if first:
 					namehold = subsect
 					first = False
 				else:
 					namehold = namehold + "-" + subsect
 				parentlist.append((namehold, subsect))
-				breadcrumbs.append({"href" : "/emilproject/" + namehold, "text" : subsect})
+				breadcrumbs.append({"href" : "/workflowautomator/" + namehold, "text" : subsect})
 				try:
 					currdir = currdir[namehold]['children']
 				except Exception as e:
@@ -152,12 +123,14 @@ def hierarch(request, mvolfolder_name):
 			prechildlist = currdir[namehold]['children']
 		except Exception as e:
 			prechildlist = {}
+	
 	childlist = []
 	i = 0
 	childnames = prechildlist.keys()
 	check = html.unescape("&#10004;")
 	ex = html.unescape("&#10006;")
 	for child in prechildlist.items():
+		#determines where checks, exes, and nones should go for each directory
 		valid = ex
 		prosync = "none"
 		devsync = "none"
@@ -188,4 +161,4 @@ def hierarch(request, mvolfolder_name):
 						'breadcrumbs': breadcrumbs
 	}
 	
-	return render(request, 'listpage/mvolpagejson.html', context)
+	return render(request, 'workflowautomator/mvolpagejson.html', context)
