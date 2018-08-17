@@ -9,12 +9,9 @@
     <a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a>
     {% if not forloop.last %} &gt; {% endif %}
 {% endfor %}
-<!--
+
 <h1> 
-    {% for parent in parents %}<a href = "{% url 'hierarch' parent.0 %}">{{parent.1}}</a>-{% endfor %}{{ name.1 }}
-</h1> -->
-<h1> 
-    {% for parent in parents %}{{parent.1}}-{% endfor %}{{ name.1 }}
+    {{ name.0 }}
 </h1>
 
 <table class = "table table-hover table-sm">
@@ -69,7 +66,7 @@
             {% endif %}
         </td>
         <td>
-            {{ child.1.1.owncloud.1 }}
+            {{ child.1.owncloud.1 }}
         </td>
         {% if oneupfrombottom == True %}
         <td>
@@ -83,8 +80,8 @@
            {{child.2}}
        </td>
        <td>
-        {% if child.1.1.development %}
-        {{ child.1.1.development.1 }}
+        {% if child.1.development %}
+        {{ child.1.development.1 }}
         {% else %}
         None
         {% endif %}
@@ -93,8 +90,8 @@
         {{ child.3 }}
     </td>
     <td>
-        {% if child.1.1.production %}
-        {{ child.1.1.production.1 }}
+        {% if child.1.production %}
+        {{ child.1.production.1 }}
         {% else %}
         None
         {% endif %}

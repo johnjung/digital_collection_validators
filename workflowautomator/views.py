@@ -8,20 +8,28 @@ import pytz
 
 # Create your views here.
 
-def localizer(tuples):
+def localizer(target, mode):
     '''Convert unix timestamps to localized python datetime.datetime objects.
        Arguments:
-           tuples: a list of tuples, where each tuple contains two elements:
+           target: if mode is "list": a list of tuples, where each tuple contains two elements:
                first, the state of a given item, and second, the time as
-                   seconds since the unix epoch. 
+                   seconds since the unix epoch. if mode is "hierarch": a single directory dict 
+           mode: "hierarch" or "list" indicating which localize section is to be used 
        Side effect:
        the second element of each tuple is converted to a python
            datetime.datetime object.
     '''
     timezone = pytz.timezone("UTC")
-    for t in tuples:
-        t[1] = timezone.localize(datetime.datetime.fromtimestamp(t[1]))
-
+    if mode == "list":
+        for t in target:
+            t[1] = timezone.localize(datetime.datetime.fromtimestamp(t[1]))
+    elif mode == "hierarch":
+        for s in ('owncloud', 'development', 'production'):
+            try:
+                target[s][1] = timezone.localize(
+                    datetime.datetime.fromtimestamp(target[s][1]))
+            except Exception:
+                pass
 
 def homepage(request):
     breadcrumbs = [{
@@ -60,7 +68,7 @@ def prelistpage(request):
     }
 
     for k, v in fjson.items():
-        localizer(v[0])
+        localizer(v[0], "list")
     context = {"allists": fjson, "breadcrumbs": breadcrumbs}
     return render(request, 'workflowautomator/prelistpage.html', context)
 
@@ -74,100 +82,72 @@ def listpage(request, status):
     with open('workflowautomator/listsnar.json', "r") as jsonfile:
         fjson = json.load(jsonfile)
 
-    localizer(fjson[status])
+    localizer(fjson[status], "list")
     context = {"allists": fjson[status],
                "name": status, "breadcrumbs": breadcrumbs}
     return render(request, 'workflowautomator/listpage.html', context)
 
 
 def hierarch(request, mvolfolder_name):
+    
+    def breadcrumbsmaker(mvolfolder_name):
+        namesections = mvolfolder_name.split("-")
+        breadcrumbs = []
+        for i in range(0, len(namesections) - 1):
+            breadcrumbs.append({
+                "href": "/workflowautomator/" + '-'.join(namesections[: i + 1]),
+                "text": namesections[i]})
+        return breadcrumbs
+    
+    def get_mvol_data(j, mvolfolder_name):
+        namesections = mvolfolder_name.split("-")
+        currdir = j
+        namehold = namesections.pop(0)
+        currdir = currdir[namehold]
+        for namesect in namesections:
+            namehold = '-'.join([namehold, namesect])
+            currdir = currdir['children'][namehold]
+        return currdir
+
     breadcrumbs = [{
         "href": "/",
         "text": "Home"},
         {"href": "/workflowautomator", "text": "Emil Project Homepage"}]
+    breadcrumbs = breadcrumbs + breadcrumbsmaker(mvolfolder_name)
 
-    def localize(child):
-        timezone = pytz.timezone("America/Chicago")
-        try:
-            child[1]['owncloud'][1] = timezone.localize(
-                datetime.datetime.fromtimestamp(child[1]['owncloud'][1]))
-        except Exception:
-            pass
-        try:
-            child[1]['development'][1] = timezone.localize(
-                datetime.datetime.fromtimestamp(child[1]['development'][1]))
-        except Exception:
-            pass
-        try:
-            child[1]['production'][1] = timezone.localize(
-                datetime.datetime.fromtimestamp(child[1]['production'][1]))
-        except Exception:
-            pass
-
-    currname = mvolfolder_name
-    namesections = mvolfolder_name.split("-")
-    finalchunk = namesections.pop()
-    parentlist = []
-    namehold = ""
-    first = True
+    finalchunk = mvolfolder_name.split("-").pop()
+    
     with open('workflowautomator/snar.json', "r") as jsonfile:
         fjson = json.load(jsonfile)
-    currdir = fjson
-    for subsect in namesections:
-        # breaks directory name into pieces to build breadcrumbs and header
-        if first:
-            namehold = subsect
-            first = False
-        else:
-            namehold = namehold + "-" + subsect
-        parentlist.append((namehold, subsect))
-        breadcrumbs.append(
-            {"href": "/workflowautomator/" + namehold, "text": subsect})
-        try:
-            currdir = currdir[namehold]['children']
-        except Exception as e:
-            break
-    if mvolfolder_name == "mvol":
-        prechildlist = currdir['mvol']['children']
-    else:
-        namehold = namehold + "-" + finalchunk
-        try:
-            prechildlist = currdir[namehold]['children']
-        except Exception as e:
-            prechildlist = {}
-
+    prechildlist = get_mvol_data(fjson, mvolfolder_name)['children']
     childlist = []
-    i = 0
-    childnames = prechildlist.keys()
     check = html.unescape("&#10004;")
     ex = html.unescape("&#10006;")
-    for child in prechildlist.items():
+    for name, child in prechildlist.items():
         # determines where checks, exes, and nones should go for each directory
         valid = ex
         prosync = "none"
         devsync = "none"
-        localize(child)
-        currtime = child[1]['owncloud'][1]
-        if child[1]['development'][0] == "in-sync":
+        localizer(child, "hierarch")
+        currtime = child['owncloud'][1]
+        if child['development'][0] == "in-sync":
             devsync = check
-        elif child[1]['development'][0] == "out-of-sync":
+        elif child['development'][0] == "out-of-sync":
             devsync = ex
-        if child[1]['production'][0] == "in-sync":
+        if child['production'][0] == "in-sync":
             prosync = check
-        elif child[1]['production'][0] == "out-of-sync":
+        elif child['production'][0] == "out-of-sync":
             prosync = ex
-        if child[1]['owncloud'][0] == "valid":
+        if child['owncloud'][0] == "valid":
             valid = check
-        childlist.append((list(childnames)[i], child, valid, devsync, prosync))
-        i += 1
+        childlist.append((name, child, valid, devsync, prosync))
 
     oneupfrombottom = False
     if childlist:
-        if 'children' not in childlist[0][1][1]:
+        if 'children' not in childlist[0][1]:
             oneupfrombottom = True
 
-    context = {'name': (currname, finalchunk),
-               'parents': parentlist,
+    context = {'name': (mvolfolder_name, finalchunk),
                'children': childlist,
                'oneupfrombottom': oneupfrombottom,
                'breadcrumbs': breadcrumbs
