@@ -8,13 +8,14 @@ import pytz
 
 # Create your views here.
 
+
 def localizer(target, mode):
     '''Convert unix timestamps to localized python datetime.datetime objects.
        Arguments:
            target: if mode is "list": a list of tuples, where each tuple contains two elements:
                first, the state of a given item, and second, the time as
-                   seconds since the unix epoch. if mode is "hierarch": a single directory dict 
-           mode: "hierarch" or "list" indicating which localize section is to be used 
+                   seconds since the unix epoch. if mode is "hierarch": a single directory dict
+           mode: "hierarch" or "list" indicating which localize section is to be used
        Side effect:
        the second element of each tuple is converted to a python
            datetime.datetime object.
@@ -30,6 +31,7 @@ def localizer(target, mode):
                     datetime.datetime.fromtimestamp(target[s][1]))
             except Exception:
                 pass
+
 
 def homepage(request):
     breadcrumbs = [{
@@ -60,11 +62,11 @@ def prelistpage(request):
         fjson = json.load(jsonfile)
     n = 5
     fjson = {
-        "none"    : (fjson["none"][:n],    len(fjson["none"]) > n),
-        "ready"   : (fjson["ready"][:n],   len(fjson["ready"]) > n),
-        "queue"   : (fjson["queue"][:n],   len(fjson["queue"]) > n),
-        "valid"   : (fjson["valid"][:n],   len(fjson["valid"]) > n),
-        "invalid" : (fjson["invalid"][:n], len(fjson["invalid"]) > n)
+        "none": (fjson["none"][:n], len(fjson["none"]) > n),
+        "ready": (fjson["ready"][:n], len(fjson["ready"]) > n),
+        "queue": (fjson["queue"][:n], len(fjson["queue"]) > n),
+        "valid": (fjson["valid"][:n], len(fjson["valid"]) > n),
+        "invalid": (fjson["invalid"][:n], len(fjson["invalid"]) > n)
     }
 
     for k, v in fjson.items():
@@ -89,7 +91,7 @@ def listpage(request, status):
 
 
 def hierarch(request, mvolfolder_name):
-    
+
     def breadcrumbsmaker(mvolfolder_name):
         namesections = mvolfolder_name.split("-")
         breadcrumbs = []
@@ -98,7 +100,7 @@ def hierarch(request, mvolfolder_name):
                 "href": "/workflowautomator/" + '-'.join(namesections[: i + 1]),
                 "text": namesections[i]})
         return breadcrumbs
-    
+
     def get_mvol_data(j, mvolfolder_name):
         namesections = mvolfolder_name.split("-")
         currdir = j
@@ -116,7 +118,7 @@ def hierarch(request, mvolfolder_name):
     breadcrumbs = breadcrumbs + breadcrumbsmaker(mvolfolder_name)
 
     finalchunk = mvolfolder_name.split("-").pop()
-    
+
     with open('workflowautomator/data/snar.json', "r") as jsonfile:
         fjson = json.load(jsonfile)
     prechildlist = get_mvol_data(fjson, mvolfolder_name)['children']
