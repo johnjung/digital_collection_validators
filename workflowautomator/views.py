@@ -56,7 +56,7 @@ def prelistpage(request):
 
     breadcrumbs = [{"href": "/", "text": "Home"},
                    {"href": "/workflowautomator", "text": "Emil Project Homepage"}]
-    with open('workflowautomator/listsnar.json', "r") as jsonfile:
+    with open('workflowautomator/data/listsnar.json', "r") as jsonfile:
         fjson = json.load(jsonfile)
     n = 5
     fjson = {
@@ -79,7 +79,7 @@ def listpage(request, status):
         "text": "Home"},
         {"href": "/workflowautomator", "text": "Emil Project Homepage"},
         {"href": "/workflowautomator/mvolreport", "text": "Mvol Report"}]
-    with open('workflowautomator/listsnar.json', "r") as jsonfile:
+    with open('workflowautomator/data/listsnar.json', "r") as jsonfile:
         fjson = json.load(jsonfile)
 
     localizer(fjson[status], "list")
@@ -117,7 +117,7 @@ def hierarch(request, mvolfolder_name):
 
     finalchunk = mvolfolder_name.split("-").pop()
     
-    with open('workflowautomator/snar.json', "r") as jsonfile:
+    with open('workflowautomator/data/snar.json', "r") as jsonfile:
         fjson = json.load(jsonfile)
     prechildlist = get_mvol_data(fjson, mvolfolder_name)['children']
     childlist = []
