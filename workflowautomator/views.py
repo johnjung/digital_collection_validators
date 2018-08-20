@@ -47,10 +47,9 @@ def errpage(request):
         "href": "/",
         "text": "Home"},
         {"href": "/workflowautomator", "text": "Emil Project Homepage"}]
-    errors = ["This thing was bad.",
-              "This other thing was even worse.",
-              "Whoa, slow down now, what is this."]
-    context = {'errarray': errors, "breadcrumbs": breadcrumbs}
+    with open('workflowautomator/data/errsnar.json', "r") as jsonfile:
+        fjson = json.load(jsonfile)
+    context = {'errarray': fjson['errors'], "breadcrumbs": breadcrumbs}
     return render(request, 'workflowautomator/errpage.html', context)
 
 
