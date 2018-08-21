@@ -5,6 +5,7 @@ import json
 import datetime
 import time
 import pytz
+import requests
 
 # Create your views here.
 
@@ -103,11 +104,13 @@ def hierarch(request, mvolfolder_name):
     def get_mvol_data(j, mvolfolder_name):
         namesections = mvolfolder_name.split("-")
         currdir = j
-        namehold = namesections.pop(0)
-        currdir = currdir[namehold]
+        namesectone = namesections.pop(0)
+        currdir = currdir[namesectone]
         for namesect in namesections:
-            namehold = '-'.join([namehold, namesect])
-            currdir = currdir['children'][namehold]
+            for child in currdir['children']:
+                for key in child:
+                    if namesect == key:
+                        currdir = child[key]
         return currdir
 
     breadcrumbs = [{
@@ -118,46 +121,56 @@ def hierarch(request, mvolfolder_name):
 
     finalchunk = mvolfolder_name.split("-").pop()
 
-    with open('workflowautomator/data/snar.json', "r") as jsonfile:
-        fjson = json.load(jsonfile)
-    prechildlist = get_mvol_data(fjson, mvolfolder_name)['children']
+    #with open('workflowautomator/data/snar.json', "r") as jsonfile:
+    #    fjson = json.load(jsonfile)
+    #prechildlist = get_mvol_data(fjson, mvolfolder_name)['children']
+    r = requests.get('https://www2.lib.uchicago.edu/keith/tmp/cai.json')
+    prechildlist = get_mvol_data(r.json(), mvolfolder_name)['children']
     childlist = []
     check = html.unescape("&#10004;")
     ex = html.unescape("&#10006;")
-    for name, child in prechildlist.items():
-        # determines where checks, exes, and nones should go for each directory
-        none = ""
-        ready = ""
-        queue = ""
-        invalid = ""
-        valid = ""
-        prosync = "none"
-        devsync = "none"
-        localizer(child, "hierarch")
-        currtime = child['owncloud'][1]
-        if child['development'][0] == "in-sync":
-            devsync = check
-        elif child['development'][0] == "out-of-sync":
-            devsync = ex
-        if child['production'][0] == "in-sync":
-            prosync = check
-        elif child['production'][0] == "out-of-sync":
-            prosync = ex
-        if child['owncloud'][0] == "none":
-            none = check
-        elif child['owncloud'][0] == "ready":
-            ready = check
-        elif child['owncloud'][0] == "queue":
-            queue = check
-        elif child['owncloud'][0] == "invalid":
-            invalid = check
-        else:
-            valid = check
-        childlist.append((name, child, valid, devsync, prosync, none, ready, queue, invalid))
+    for childout in prechildlist:
+        for key in childout:
+            child = childout[key]
+            # determines where checks, exes, and nones should go for each directory
+            none = ""
+            ready = ""
+            queue = ""
+            invalid = ""
+            valid = ""
+            prosync = "none"
+            devsync = "none"
+            currtime = child['owncloud'][1]
+            if child['development'][0] == "in-sync":
+                devsync = check
+            elif child['development'][0] == "outtasync":
+                devsync = ex
+            if child['production'][0] == "in-sync":
+                prosync = check
+            elif child['production'][0] == "outtasync":
+                prosync = ex
+            if child['owncloud'][0] == "none":
+                none = check
+            elif child['owncloud'][0] == "ready":
+                ready = check
+            elif child['owncloud'][0] == "queue":
+                queue = check
+            elif child['owncloud'][0] == "invalid":
+                invalid = check
+            else:
+                valid = check
+            for s in ('production', 'development'):
+                if child[s][1] == 0:
+                    child[s][1] = "none"
+            localizer(child, "hierarch")
+            childlist.append((mvolfolder_name + "-" + key, child, valid, devsync, prosync, none, ready, queue, invalid))
 
+    def alphabetize(elem):
+        return elem[0]
+    childlist.sort(key = alphabetize) 
     oneupfrombottom = False
     if childlist:
-        if 'children' not in childlist[0][1]:
+        if not childlist[0][1]['children']:
             oneupfrombottom = True
 
     context = {'name': (mvolfolder_name, finalchunk),
