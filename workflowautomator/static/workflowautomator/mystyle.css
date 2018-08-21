@@ -1,40 +1,37 @@
-body {
-    background-color: #D6D6CE
+.tooltip {
+    position: relative;
+    display: inline-block;
+    opacity: 1
 }
-h1 {
-    color: #800000; 
-    font-family:Arial, Helvetica, sans-serif
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 50px;
+    background-color:  #767676;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    position: absolute;
+    z-index: 1;
+    top: 150%;
+    left: 50%;
+    margin-left: -25px;
+    opacity:1
 }
-li, td {
-    font: size 20px; 
-    font-family:Lucida Console
+
+.tooltip .tooltiptext::after {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent black transparent;
+    opacity:1
 }
-ul {
-    list-style-type: none
-}
-#toptd {
-    background-color: #FFFFFF
-}
-h2 {
-		color: #800000; 
-    font-family:Arial, Helvetica, sans-serif
-}
-#mvoltable {
-    border-collapse: collapse;
-    width: 100%;
-}
-#mvoldata {
-    border: 1px solid black;
-    text-align: left;
-    padding: 8px;
-}
-#topdirectory {
-    color: #800000; 
-    background-color: transparent; 
-    text-decoration: none;
-}
-#topdirectory:hover {
-    color: black;
-    background-color: transparent;
-    text-decoration: underline;
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity:1
 }

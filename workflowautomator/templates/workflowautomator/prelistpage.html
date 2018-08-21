@@ -3,6 +3,10 @@
 {% load core_intranet_tags %}
 
 {% block body_class %}template-{{ self.get_verbose_name|slugify }}{% endblock %}
+{% block extra_css %}
+{% load static %}
+<link href="{% static 'workflowautomator/mystyle.css' %}" rel="stylesheet" type="text/css"  />
+{% endblock %}
 
 {% block content %}
 {% for breadcrumb in breadcrumbs %}
@@ -11,30 +15,36 @@
 {% endfor %}
 <h1>Mvol Directory Report</h1>
 <!--
-<ul class = "nav nav-pills" style = "background-color: #dadada; border-radius: 5px">
-  {% if allists %}
-  {% for key, value in allists.items %}
-  <li class = "nav-item">
-    <a class = "nav-link active" href= "#{{ key }}">{{ key }} </a>
-  </li>
-  {% endfor %}
-  {% endif %}
-</ul>
--->
 {% if allists %}
 <div class = "row">
-  <div class = "col-sm-6">
+  <div class = "col-sm-2">
+    <h2>none</h2>
+    <h3>{{allists.none.2}}</h3>
+    {% for sect in allists.none.3 %}
+      <div class="square"></div>
+    {% endfor %}
+  </div>
+-->
+
+
+
+{% endif %}
+
+{% if allists %}
+<div class = "row">
+  <div class = "col-sm-4">
     <table class = "table table-hover table-sm">
       <thead>
         <tr>
           <th>
-            valid
+            none
           </th>
           <th>
+            Count: {{ allists.none.2 }}
           </th>
         </tr>
       </thead>
-      {% for sect in allists.valid.0 %}
+      {% for sect in allists.none.0 %}
       <tr>
         <td>
          {{ sect.0 }} 
@@ -44,10 +54,10 @@
        </td>
      </tr>
      {% endfor %}
-     {% if allists.valid.1 == True %}
+     {% if allists.none.1 == True %}
      <tr>
       <td>
-        <a href = "valid"> more...</a>
+        <a href = "none"> more...</a>
       </td>
       <td>
       </td>
@@ -58,72 +68,10 @@
     <thead>
       <tr>
         <th>
-          ready
-        </th>
-        <th>
-        </th>
-      </tr>
-    </thead>
-    {% for sect in allists.ready.0 %}
-    <tr>
-      <td>
-       {{ sect.0 }} 
-     </td>
-     <td>
-       {{ sect.1 }} 
-     </td>
-   </tr>
-   {% endfor %}
-   {% if allists.ready.1 == True %}
-   <tr>
-    <td>
-      <a href = "ready"> more...</a>
-    </td>
-    <td>
-    </td>
-  </tr>
-  {% endif %}
-</table>
-
-<table class = "table table-hover table-sm">
-  <thead>
-    <tr>
-      <th>
-        none
-      </th>
-      <th>
-      </th>
-    </tr>
-  </thead>
-  {% for sect in allists.none.0 %}
-  <tr>
-    <td>
-     {{ sect.0 }} 
-   </td>
-   <td>
-     {{ sect.1 }} 
-   </td>
- </tr>
- {% endfor %}
- {% if allists.none.1 == True %}
- <tr>
-  <td>
-    <a href = "none"> more...</a>
-  </td>
-  <td>
-  </td>
-</tr>
-{% endif %}
-</table>
-</div>
-<div class = "col-sm-6">
-  <table class = "table table-hover table-sm">
-    <thead>
-      <tr>
-        <th>
           invalid
         </th>
         <th>
+          Count: {{ allists.invalid.2 }}
         </th>
       </tr>
     </thead>
@@ -147,17 +95,51 @@
   </tr>
   {% endif %}
 </table>
+</div>
+<div class = "col-sm-4">
+  <table class = "table table-hover table-sm">
+    <thead>
+      <tr>
+        <th>
+          ready
+        </th>
+        <th>
+          Count: {{ allists.ready.2 }}
+        </th>
+      </tr>
+    </thead>
+    {% for sect in allists.ready.0 %}
+    <tr>
+      <td>
+       {{ sect.0 }} 
+     </td>
+     <td>
+       {{ sect.1 }} 
+     </td>
+   </tr>
+   {% endfor %}
+   {% if allists.ready.1 == True %}
+   <tr>
+    <td>
+      <a href = "ready"> more...</a>
+    </td>
+    <td>
+    </td>
+  </tr>
+  {% endif %}
+</table>
 <table class = "table table-hover table-sm">
   <thead>
     <tr>
       <th>
-        queue
+        valid
       </th>
       <th>
+        Count: {{ allists.valid.2 }}
       </th>
     </tr>
   </thead>
-  {% for sect in allists.queue.0 %}
+  {% for sect in allists.valid.0 %}
   <tr>
     <td>
      {{ sect.0 }} 
@@ -167,10 +149,10 @@
    </td>
  </tr>
  {% endfor %}
- {% if allists.queue.1 == True %}
+ {% if allists.valid.1 == True %}
  <tr>
   <td>
-    <a href = "queue"> more...</a>
+    <a href = "valid"> more...</a>
   </td>
   <td>
   </td>
@@ -178,6 +160,39 @@
 {% endif %}
 </table>
 </div>
+<div class = "col-sm-4">
+  <table class = "table table-hover table-sm">
+    <thead>
+      <tr>
+        <th>
+          queue
+        </th>
+        <th>
+          Count: {{ allists.queue.2 }}
+        </th>
+      </tr>
+    </thead>
+    {% for sect in allists.queue.0 %}
+    <tr>
+      <td>
+       {{ sect.0 }} 
+     </td>
+     <td>
+       {{ sect.1 }} 
+     </td>
+   </tr>
+   {% endfor %}
+   {% if allists.queue.1 == True %}
+   <tr>
+    <td>
+      <a href = "queue"> more...</a>
+    </td>
+    <td>
+    </td>
+  </tr>
+  {% endif %}
+</table>
 </div>
-{% endif %}
+</div>
+{% endif %} 
 {% endblock %}

@@ -61,11 +61,11 @@ def prelistpage(request):
         fjson = json.load(jsonfile)
     n = 5
     fjson = {
-        "none": (fjson["none"][:n], len(fjson["none"]) > n),
-        "ready": (fjson["ready"][:n], len(fjson["ready"]) > n),
-        "queue": (fjson["queue"][:n], len(fjson["queue"]) > n),
-        "valid": (fjson["valid"][:n], len(fjson["valid"]) > n),
-        "invalid": (fjson["invalid"][:n], len(fjson["invalid"]) > n)
+        "none": (fjson["none"][:n], len(fjson["none"]) > n, len(fjson["none"]), list(range(len(fjson["none"])))),
+        "ready": (fjson["ready"][:n], len(fjson["ready"]) > n, len(fjson["ready"])),
+        "queue": (fjson["queue"][:n], len(fjson["queue"]) > n, len(fjson["queue"])),
+        "valid": (fjson["valid"][:n], len(fjson["valid"]) > n, len(fjson["valid"])),
+        "invalid": (fjson["invalid"][:n], len(fjson["invalid"]) > n, len(fjson["invalid"]))
     }
 
     for k, v in fjson.items():
@@ -126,7 +126,11 @@ def hierarch(request, mvolfolder_name):
     ex = html.unescape("&#10006;")
     for name, child in prechildlist.items():
         # determines where checks, exes, and nones should go for each directory
-        valid = ex
+        none = ""
+        ready = ""
+        queue = ""
+        invalid = ""
+        valid = ""
         prosync = "none"
         devsync = "none"
         localizer(child, "hierarch")
@@ -139,9 +143,17 @@ def hierarch(request, mvolfolder_name):
             prosync = check
         elif child['production'][0] == "out-of-sync":
             prosync = ex
-        if child['owncloud'][0] == "valid":
+        if child['owncloud'][0] == "none":
+            none = check
+        elif child['owncloud'][0] == "ready":
+            ready = check
+        elif child['owncloud'][0] == "queue":
+            queue = check
+        elif child['owncloud'][0] == "invalid":
+            invalid = check
+        else:
             valid = check
-        childlist.append((name, child, valid, devsync, prosync))
+        childlist.append((name, child, valid, devsync, prosync, none, ready, queue, invalid))
 
     oneupfrombottom = False
     if childlist:

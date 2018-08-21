@@ -6,10 +6,11 @@
 
 {% block content %}
 {% for breadcrumb in breadcrumbs %}
-    <a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a>
-    {% if not forloop.last %} &gt; {% endif %}
+<a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a>
+{% if not forloop.last %} &gt; {% endif %}
 {% endfor %}
 <h1>Validator Error Report</h1>
+<!--
 <table>
     <tr>
         <td>
@@ -26,5 +27,17 @@
             {% endif %}
         </td>
     </tr>
+</table>
+-->
+<table class = "table table-sm">
+    {% if errarray %}
+    {% for err in errarray %}
+    <tr>
+        <td>
+            {{ err }}
+        </td>
+    </tr>
+    {% endfor %}
+    {% endif %}
 </table>
 {% endblock %}
