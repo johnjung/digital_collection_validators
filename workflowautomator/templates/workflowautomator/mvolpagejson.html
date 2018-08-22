@@ -9,7 +9,31 @@
 <link rel="stylesheet" type="text/css" href="{% static 'workflowautomator/mystyle.css' %}" />
 {% endblock %}
 
+{% block extra_js %}
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.js"></script> 
+<script src="http://malsup.github.com/jquery.form.js"></script>
+<script type = "text/javascript"> 
+ $(document).on('submit', '#Validate', function(e){
+        e.preventDefault();
+        var form = $( this );
+        $.ajax({
+            type:'POST',
+            url:'/workflowautomator/setready/',
+            data:{
+                name: (form.find('input[class="name"]')).val(),
+                csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val()
+            },
+            success:function(){
+                alert("did it");
+            }
+        });
+
+ });
+</script>
+{% endblock %}
+
 {% block content %}
+
 {% for breadcrumb in breadcrumbs %}
 <a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a>
 {% if not forloop.last %} &gt; {% endif %}
@@ -29,8 +53,9 @@
             </th>
             {% if oneupfrombottom == True %}
             <th>
-                <form method = "post">
+                <form id = "Validate" method = "post">
                     {% csrf_token %}
+                    <input type = "text" class = "name" value = {{name.0}} style = "display:none">
                     <input type = "submit" class="btn btn-outline-primary" value = "Validate All" />
                 </form>
             </th>
@@ -86,9 +111,10 @@
         </td>
         {% if oneupfrombottom == True %}
         <td>
-            <form method = "post">
+            <form id = "Validate" method = "post">
                 {% csrf_token %}
-                <input type = "submit" class="btn btn-outline-primary btn-sm" value = "Validate" />
+                <input type = "text" class = "name" value = {{child.0}} style = "display:none">
+                <input type = "submit" class="btn btn-outline-primary btn-sm" value = "Validate"/>
             </form>
         </td>
         {% endif %}

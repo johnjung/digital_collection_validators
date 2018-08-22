@@ -6,9 +6,9 @@ import datetime
 import time
 import pytz
 import requests
+from workflowautomator.utilities import sentinelutility
 
 # Create your views here.
-
 
 def localizer(target, mode):
     '''Convert unix timestamps to localized python datetime.datetime objects.
@@ -89,8 +89,16 @@ def listpage(request, status):
                "name": status, "breadcrumbs": breadcrumbs}
     return render(request, 'workflowautomator/listpage.html', context)
 
+def setready(request):
+    if request.method == 'POST':
+        sentinelutility.plant(request.POST['name'], "addready")
+
+    return HttpResponse('')
 
 def hierarch(request, mvolfolder_name):
+
+    def alphabetize(elem):
+        return elem[0]
 
     def breadcrumbsmaker(mvolfolder_name):
         namesections = mvolfolder_name.split("-")
@@ -165,8 +173,7 @@ def hierarch(request, mvolfolder_name):
             localizer(child, "hierarch")
             childlist.append((mvolfolder_name + "-" + key, child, valid, devsync, prosync, none, ready, queue, invalid))
 
-    def alphabetize(elem):
-        return elem[0]
+
     childlist.sort(key = alphabetize) 
     oneupfrombottom = False
     if childlist:
