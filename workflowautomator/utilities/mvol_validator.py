@@ -6,6 +6,7 @@ import owncloud
 import re
 import sys
 import io
+import requests
 from lxml import etree
 
 
@@ -480,6 +481,21 @@ def _validate_struct_txt_file(oc, identifier, file_object):
 
     return errors
 
+def finalcheck(directory):
+  freshdirectorypieces = directory.split("/")
+  freshdirectorypieces.pop(0)
+  freshdirectory = '-'.join(freshdirectorypieces)
+  url = "https://digcollretriever.lib.uchicago.edu/projects/" + freshdirectory
+    + "/ocr?jpg_width=0&jpg_height=0&min_year=0&max_year=0"
+  r = requests.get(url)
+  if r.status_code != 200:
+    return [directory + ' has an unknown error.']
+  else:
+    try:
+        fdoc = etree.fromstring(r.content).getroot()
+    except etree.XMLSyntaxError:
+        return [directory + ' has an unknown error.']
+
 
 def mainvalidate(oc, directory)
     errors = []
@@ -497,6 +513,8 @@ def mainvalidate(oc, directory)
         errors = errors + validate_mets_xml(oc, identifier, f)
         errors = errors + validate_pdf(oc, identifier, f)
         errors = errors + validate_struct_txt(oc, identifier, f)
+        if not errors:
+          errors = finalcheck(directory)
     except owncloud.HTTPResponseError:
         errors = errors + [directory + ' does not exist.']
 

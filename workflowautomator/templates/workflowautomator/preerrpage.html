@@ -9,32 +9,13 @@
 <a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a>
 {% if not forloop.last %} &gt; {% endif %}
 {% endfor %}
-<h1>{{name}} Error Report</h1>
-<!--
-<table>
-    <tr>
-        <td>
-            {% if errarray %}
-            <ul>
-                {% for err in errarray %}
-                <li>
-                    {{ err }}
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p>Nothing to see here !</p>
-            {% endif %}
-        </td>
-    </tr>
-</table>
--->
+<h1>Validator Error Report</h1>
 <table class = "table table-sm">
-    {% if errarray %}
-    {% for err in errarray %}
+    {% if baddirectoryarray %}
+    {% for baddirectory in baddirectoryarray %}
     <tr>
         <td>
-            {{ err }}
+            <a href = "{{ baddirectory }}">{{ baddirectory }}</a>
         </td>
     </tr>
     {% endfor %}

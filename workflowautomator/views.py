@@ -6,6 +6,9 @@ import datetime
 import time
 import pytz
 import requests
+import owncloud
+import easywebdav
+from workflowautomator.data.password import ocpassword
 from workflowautomator.utilities import sentinelutility
 
 # Create your views here.
@@ -42,17 +45,55 @@ def homepage(request):
     context = {"breadcrumbs": breadcrumbs}
     return render(request, 'workflowautomator/homepage.html', context)
 
-
-def errpage(request):
+def preerrpage(request):
     breadcrumbs = [{
         "href": "/",
         "text": "Home"},
         {"href": "/workflowautomator", "text": "Emil Project Homepage"}]
-    with open('workflowautomator/data/errsnar.json', "r") as jsonfile:
+    with open('workflowautomator/data/baddirectories.json', "r") as jsonfile:
         fjson = json.load(jsonfile)
-    context = {'errarray': fjson['errors'], "breadcrumbs": breadcrumbs}
-    return render(request, 'workflowautomator/errpage.html', context)
+    context = {'baddirectoryarray': fjson['baddirectories'], "breadcrumbs": breadcrumbs}
+    return render(request, 'workflowautomator/preerrpage.html', context)
 
+def errpage(request, mvolfolder_name):
+    breadcrumbs = [{
+        "href": "/",
+        "text": "Home"},
+        {"href": "/workflowautomator", "text": "Emil Project Homepage"},
+        {"href": "/workflowautomator/errorreport", "text": "Error Report"}]
+    username = "ldr_oc_admin"
+    password = ocpassword
+    errors = []
+    webdav = easywebdav.connect('s3.lib.uchicago.edu', 
+        username=username, password=password, protocol='https', port=443, verify_ssl=False)
+    newdirectorytitle = '/owncloud/remote.php/webdav/IIIF_Files/' + '/'.join(mvolfolder_name.split("-")) + "/invalid"
+    try:
+        webdav.download(newdirectorytitle, 'workflowautomator/data/invalid')
+        f = open("workflowautomator/data/invalid")
+        for line in f:
+            errors = errors + [line]
+        f.close()
+    except Exception:
+        errors = ["invalid not found"]
+    '''
+    username = "ldr_oc_admin"
+    password = ocpassword
+    oc = owncloud.Client('https://s3.lib.uchicago.edu/owncloud')
+    oc.login(username, password)
+    newdirectorytitle = 'IIIF_Files/' + '/'.join(mvolfolder_name.split("-"))
+    errors = []
+    for entry in oc.list(oc.file_info(newdirectorytitle).get_path()):
+        if entry.get_name() == 'mvol-0004-1902-1105.tt':
+            errorsfile = oc.get_file(entry.get_path(), 'workflowautomator/data/invalid')
+            print(errorsfile)
+            f = open("workflowautomator/data/invalid")
+            for line in f:
+                errors = errors + [line]
+            f.close()
+            break
+    '''
+    context = {'name': mvolfolder_name, 'errarray': errors, "breadcrumbs": breadcrumbs}
+    return render(request, 'workflowautomator/errpage.html', context)
 
 def prelistpage(request):
 
