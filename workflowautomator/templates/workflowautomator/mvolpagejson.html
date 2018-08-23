@@ -13,7 +13,7 @@
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.js"></script> 
 <script src="http://malsup.github.com/jquery.form.js"></script>
 <script type = "text/javascript"> 
- $(document).on('submit', '#Validate', function(e){
+ $(document).on('submit', '.Validate', function(e){
         e.preventDefault();
         var form = $( this );
         $.ajax({
@@ -30,6 +30,16 @@
 
  });
 </script>
+<!--<script type = "text/javascript">
+$(document).ready(function() { /// Wait till page is loaded
+    setInterval(timingLoad, 3000);
+    function timingLoad() {
+        $('#bigtable').load('#bigtable', function() {
+/// can add another function here
+});
+    }
+}); //// End of Wait till page is loaded
+</script>-->
 {% endblock %}
 
 {% block content %}
@@ -42,7 +52,7 @@
 <h1> 
     {{ name.0 }}
 </h1>
-<table class = "table table-hover table-sm">
+<table class = "table table-hover table-sm" id = "bigtable">
     <thead>
         <tr>
             <th width= "185px">
@@ -53,7 +63,7 @@
             </th>
             {% if oneupfrombottom == True %}
             <th>
-                <form id = "Validate" method = "post">
+                <form class = "Validate" method = "post">
                     {% csrf_token %}
                     <input type = "text" class = "name" value = {{name.0}} style = "display:none">
                     <input type = "submit" class="btn btn-outline-primary" value = "Validate All" />
@@ -111,7 +121,7 @@
         </td>
         {% if oneupfrombottom == True %}
         <td>
-            <form id = "Validate" method = "post">
+            <form class = "Validate" method = "post">
                 {% csrf_token %}
                 <input type = "text" class = "name" value = {{child.0}} style = "display:none">
                 <input type = "submit" class="btn btn-outline-primary btn-sm" value = "Validate"/>
