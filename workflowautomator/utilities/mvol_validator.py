@@ -67,7 +67,7 @@ def validate_mvol_directory(oc, identifier, f):
     else:
         return [
             identifier +
-            ' is contained in a great-grandparent folder that is not called "mvol".']
+            ' is contained in a great-grandparent folder that is not called "mvol".\n']
 
 
 def validate_mvol_number_directory(oc, identifier, f):
@@ -88,7 +88,7 @@ def validate_mvol_number_directory(oc, identifier, f):
     else:
         return [
             identifier +
-            ' is contained in a grandparent folder that is not a valid mvol number.']
+            ' is contained in a grandparent folder that is not a valid mvol number.\n']
 
 
 def validate_year_directory(oc, identifier, f):
@@ -114,7 +114,7 @@ def validate_year_directory(oc, identifier, f):
     else:
         return [
             identifier +
-            ' is contained in a parent folder that is not a valid year.']
+            ' is contained in a parent folder that is not a valid year.\n']
 
 
 def validate_date_directory(oc, identifier, f):
@@ -132,7 +132,7 @@ def validate_date_directory(oc, identifier, f):
     if re.match('^(0\d|1[012])[0123]\d$', f.get_name()):
         return []
     else:
-        return [identifier + ' is not a valid mmdd folder name.']
+        return [identifier + ' is not a valid mmdd folder name.\n']
 
 
 def get_identifier(path):
@@ -173,7 +173,7 @@ def validate_directory(oc, identifier, f, folder_name):
     }
 
     if folder_name not in extensions.keys():
-        raise ValueError('unsupported folder_name.')
+        raise ValueError('unsupported folder_name.\n')
 
     errors = []
 
@@ -194,19 +194,19 @@ def validate_directory(oc, identifier, f, folder_name):
                         identifier +
                         '/' +
                         folder_name +
-                        ' contains incorrectly named files.')
+                        ' contains incorrectly named files.\n')
                 if entry.get_size() == 0:
                     errors.append(
                         identifier +
                         '/' +
                         folder_name +
-                        ' contains a 0 byte file.')
+                        ' contains a 0 byte file.\n')
     except owncloud.HTTPResponseError:
         errors.append(
             identifier +
             ' does not contain a ' +
             folder_name +
-            ' folder.')
+            ' folder.\n')
 
     return errors
 
@@ -283,7 +283,7 @@ def _validate_dc_xml_file(oc, identifier, file_object):
     try:
         metadata = etree.fromstring(file_object.read())
         if not dtd.validate(metadata):
-            errors.append(identifier + '.dc.xml is not valid.')
+            errors.append(identifier + '.dc.xml is not valid.\n')
         else:
             datepull = etree.ElementTree(metadata).findtext("date")
             pattern = re.compile("^\d{4}-\d{2}-\d{2}")
@@ -292,18 +292,18 @@ def _validate_dc_xml_file(oc, identifier, file_object):
                 sections = [int(s) for s in re.findall(r'\b\d+\b', datepull)]
                 if (sections[0] < 1700) | (sections[0] > 2100):
                     errors.append(
-                        identifier + '.dc.xml has an incorrect year field.')
+                        identifier + '.dc.xml has an incorrect year field.\n')
                 if (sections[1] < 1) | (sections[1] > 12):
                     errors.append(identifier +
-                                  '.dc.xml has an incorrect month field.')
+                                  '.dc.xml has an incorrect month field.\n')
                 if (sections[2] < 1) | (sections[2] > 31):
                     errors.append(
-                        identifier + '.dc.xml has an incorrect day field.')
+                        identifier + '.dc.xml has an incorrect day field.\n')
             else:
                 errors.append(identifier +
                               '.dc.xml has a date with a wrong format')
     except etree.XMLSyntaxError as e:
-        errors.append(identifier + '.dc.xml is not well-formed.')
+        errors.append(identifier + '.dc.xml is not well-formed.\n')
         pass
 
     return errors
@@ -321,10 +321,10 @@ def validate_dc_xml(oc, identifier, file_info):
     """
     try:
         file_object = io.BytesIO(oc.get_file_contents('{}/{}.dc.xml'.format(
-            file_info.path, get_identifier_from_fileinfo(oc, f))))
+            file_info.path, get_identifier_from_fileinfo(oc, file_info))))
         return _validate_dc_xml_file(oc, identifier, file_object)
     except owncloud.HTTPResponseError:
-        return [identifier + '.dc.xml does not exist.']
+        return [identifier + '.dc.xml does not exist.\n']
 
 
 def validate_mets_xml(oc, identifier, file_info):
@@ -338,10 +338,10 @@ def validate_mets_xml(oc, identifier, file_info):
     """
     try:
         file_object = io.BytesIO(oc.get_file_contents('{}/{}.mets.xml'.format(
-            file_info.path, get_identifier_from_fileinfo(oc, f))))
+            file_info.path, get_identifier_from_fileinfo(oc, file_info))))
         return _validate_mets_xml_file(oc, identifier, file_object)
     except owncloud.HTTPResponseError:
-        return [identifier + '.mets.xml does not exist.']
+        return [identifier + '.mets.xml does not exist.\n']
 
 
 def _validate_mets_xml_file(oc, identifier, file_object):
@@ -365,9 +365,9 @@ def _validate_mets_xml_file(oc, identifier, file_object):
         if not xmlschema.validate(fdoc):
             errors.append(
                 identifier +
-                '.mets.xml does not validate against schema.')
+                '.mets.xml does not validate against schema.\n')
     except etree.XMLSyntaxError:
-        errors.append(identifier + '.mets.xml is not a well-formed XML file.')
+        errors.append(identifier + '.mets.xml is not a well-formed XML file.\n')
         pass
 
     return errors
@@ -388,7 +388,7 @@ def _validate_file_notempty(oc, identifier, file_object, file_format):
     size = file_object.tell()
 
     if not size:
-        errors.append(identifier + file_format + ' is an empty file.')
+        errors.append(identifier + file_format + ' is an empty file.\n')
     return errors
 
 
@@ -403,10 +403,10 @@ def validate_pdf(oc, identifier, file_info):
     """
     try:
         file_object = io.BytesIO(oc.get_file_contents('{}/{}.pdf'.format(
-            file_info.path, get_identifier_from_fileinfo(oc, f))))
+            file_info.path, get_identifier_from_fileinfo(oc, file_info))))
         return _validate_file_notempty(oc, identifier, file_object, ".pdf")
     except owncloud.HTTPResponseError:
-        return [identifier + '.pdf does not exist.']
+        return [identifier + '.pdf does not exist.\n']
 
 
 def validate_txt(oc, identifier, file_info):
@@ -423,7 +423,7 @@ def validate_txt(oc, identifier, file_info):
             file_info.path, get_identifier_from_fileinfo(oc, f))))
         return _validate_file_notempty(oc, identifier, file_object, ".txt")
     except owncloud.HTTPResponseError:
-        return [identifier + '.txt does not exist.']
+        return [identifier + '.txt does not exist.\n']
 
 
 def validate_struct_txt(oc, identifier, file_info):
@@ -437,11 +437,11 @@ def validate_struct_txt(oc, identifier, file_info):
     """
     try:
         file_object = io.BytesIO(oc.get_file_contents('{}/{}.struct.txt'.format(
-            file_info.path, get_identifier_from_fileinfo(oc, f))))
+            file_info.path, get_identifier_from_fileinfo(oc, file_info))))
         return _validate_struct_txt_file(
-            oc, identifier, file_object, ".struct.txt")
+            oc, identifier, file_object)
     except owncloud.HTTPResponseError:
-        return [identifier + '.struct.txt does not exist.']
+        return [identifier + '.struct.txt does not exist.\n']
 
 
 def _validate_struct_txt_file(oc, identifier, file_object):
@@ -457,16 +457,27 @@ def _validate_struct_txt_file(oc, identifier, file_object):
     errors = []
 
     num_lines = sum(1 for line in file_object)
+    
+    f = open("holdit.txt", "w")
+    file_object.seek(0,0)
+    currline = file_object.readline().decode()
+    while currline:
+      f.write(currline)
+      currline = file_object.readline().decode()
+    f.close()
+
+    file_object = open("holdit.txt", "r")
+    
     file_object.seek(0, 0)
     firstline = file_object.readline()
     firstlinepattern = re.compile("^object\tpage\tmilestone\n")
     if not firstlinepattern.fullmatch(firstline):
         errors.append(
             identifier +
-            '.struct.txt has an error in the first line.')
+            '.struct.txt has an error in the first line.\n')
     currlinenum = 2
-    midlinespattern = re.compile('^\d{8}\t\d\n')
-    finlinepattern = re.compile('^\d{8}\t\d')
+    midlinespattern = re.compile('^\d{8,9}\t\d{1,2}\n')
+    finlinepattern = re.compile('^\d{8,9}\t\d{1,2}')
     currline = file_object.readline()
     while(currline):
         if not midlinespattern.fullmatch(currline):
@@ -474,30 +485,32 @@ def _validate_struct_txt_file(oc, identifier, file_object):
                     and finlinepattern.fullmatch(currline)):
                 errors.append(
                     identifier +
-                    '.struct.txt has an error in line %d.' %
+                    '.struct.txt has an error in line %d.\n' %
                     currlinenum)
         currlinenum += 1
         currline = file_object.readline()
 
     return errors
 
+
 def finalcheck(directory):
-  freshdirectorypieces = directory.split("/")
-  freshdirectorypieces.pop(0)
-  freshdirectory = '-'.join(freshdirectorypieces)
-  url = "https://digcollretriever.lib.uchicago.edu/projects/" + freshdirectory
-    + "/ocr?jpg_width=0&jpg_height=0&min_year=0&max_year=0"
-  r = requests.get(url)
-  if r.status_code != 200:
-    return [directory + ' has an unknown error.']
-  else:
-    try:
-        fdoc = etree.fromstring(r.content).getroot()
-    except etree.XMLSyntaxError:
-        return [directory + ' has an unknown error.']
+    freshdirectorypieces = directory.split("/")
+    freshdirectorypieces.pop(0)
+    freshdirectory = '-'.join(freshdirectorypieces)
+    url = "https://digcollretriever.lib.uchicago.edu/projects/" + \
+        freshdirectory + "/ocr?jpg_width=0&jpg_height=0&min_year=0&max_year=0"
+    r = requests.get(url)
+    if r.status_code != 200:
+        return [directory + ' has an unknown error.\n']
+    else:
+        try:
+            fdoc = etree.fromstring(r.content)
+            return []
+        except Exception:
+            return [directory + ' has an unknown error.\n']
 
 
-def mainvalidate(oc, directory)
+def mainvalidate(oc, directory):
     errors = []
     try:
         f = oc.file_info(directory)
@@ -510,12 +523,12 @@ def mainvalidate(oc, directory)
         errors = errors + validate_jpeg_directory(oc, identifier, f)
         errors = errors + validate_tiff_directory(oc, identifier, f)
         errors = errors + validate_dc_xml(oc, identifier, f)
-        errors = errors + validate_mets_xml(oc, identifier, f)
+        #errors = errors + validate_mets_xml(oc, identifier, f)
         errors = errors + validate_pdf(oc, identifier, f)
         errors = errors + validate_struct_txt(oc, identifier, f)
         if not errors:
-          errors = finalcheck(directory)
+            errors = finalcheck(directory)
     except owncloud.HTTPResponseError:
-        errors = errors + [directory + ' does not exist.']
+        errors = errors + [directory + ' does not exist.\n']
 
     return errors

@@ -46,16 +46,21 @@ def homepage(request):
     return render(request, 'workflowautomator/homepage.html', context)
 
 def preerrpage(request):
+
     breadcrumbs = [{
         "href": "/",
         "text": "Home"},
         {"href": "/workflowautomator", "text": "Emil Project Homepage"}]
-    with open('workflowautomator/data/baddirectories.json', "r") as jsonfile:
-        fjson = json.load(jsonfile)
-    context = {'baddirectoryarray': fjson['baddirectories'], "breadcrumbs": breadcrumbs}
+    r = requests.get('https://www2.lib.uchicago.edu/keith/tmp/cai.json')
+    fjson = r.json()
+    hold = fjson['invalid']
+    alphad = hold
+    alphad.sort() 
+    context = {'baddirectoryarray': alphad, "breadcrumbs": breadcrumbs}
     return render(request, 'workflowautomator/preerrpage.html', context)
 
 def errpage(request, mvolfolder_name):
+
     breadcrumbs = [{
         "href": "/",
         "text": "Home"},
@@ -99,8 +104,9 @@ def prelistpage(request):
 
     breadcrumbs = [{"href": "/", "text": "Home"},
                    {"href": "/workflowautomator", "text": "Emil Project Homepage"}]
-    with open('workflowautomator/data/listsnar.json', "r") as jsonfile:
-        fjson = json.load(jsonfile)
+    
+    r = requests.get('https://www2.lib.uchicago.edu/keith/tmp/cai.json')
+    fjson = r.json()
     n = 5
     fjson = {
         "none": (fjson["none"][:n], len(fjson["none"]) > n, len(fjson["none"]), list(range(len(fjson["none"])))),
@@ -109,9 +115,10 @@ def prelistpage(request):
         "valid": (fjson["valid"][:n], len(fjson["valid"]) > n, len(fjson["valid"])),
         "invalid": (fjson["invalid"][:n], len(fjson["invalid"]) > n, len(fjson["invalid"]))
     }
-
+    '''
     for k, v in fjson.items():
         localizer(v[0], "list")
+    '''
     context = {"allists": fjson, "breadcrumbs": breadcrumbs}
     return render(request, 'workflowautomator/prelistpage.html', context)
 
@@ -122,10 +129,9 @@ def listpage(request, status):
         "text": "Home"},
         {"href": "/workflowautomator", "text": "Emil Project Homepage"},
         {"href": "/workflowautomator/mvolreport", "text": "Mvol Report"}]
-    with open('workflowautomator/data/listsnar.json', "r") as jsonfile:
-        fjson = json.load(jsonfile)
-
-    localizer(fjson[status], "list")
+    r = requests.get('https://www2.lib.uchicago.edu/keith/tmp/cai.json')
+    fjson = r.json()
+    #localizer(fjson[status], "list")
     context = {"allists": fjson[status],
                "name": status, "breadcrumbs": breadcrumbs}
     return render(request, 'workflowautomator/listpage.html', context)
@@ -137,9 +143,6 @@ def setready(request):
     return HttpResponse('')
 
 def hierarch(request, mvolfolder_name):
-
-    def alphabetize(elem):
-        return elem[0]
 
     def breadcrumbsmaker(mvolfolder_name):
         namesections = mvolfolder_name.split("-")
@@ -174,7 +177,7 @@ def hierarch(request, mvolfolder_name):
     #    fjson = json.load(jsonfile)
     #prechildlist = get_mvol_data(fjson, mvolfolder_name)['children']
     r = requests.get('https://www2.lib.uchicago.edu/keith/tmp/cai.json')
-    prechildlist = get_mvol_data(r.json(), mvolfolder_name)['children']
+    prechildlist = get_mvol_data(r.json()["tree"], mvolfolder_name)['children']
     childlist = []
     check = html.unescape("&#10004;")
     ex = html.unescape("&#10006;")
@@ -215,7 +218,7 @@ def hierarch(request, mvolfolder_name):
             childlist.append((mvolfolder_name + "-" + key, child, valid, devsync, prosync, none, ready, queue, invalid))
 
 
-    childlist.sort(key = alphabetize) 
+    childlist.sort()
     oneupfrombottom = False
     if childlist:
         if not childlist[0][1]['children']:

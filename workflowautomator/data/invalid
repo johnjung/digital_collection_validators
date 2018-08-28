@@ -1,14 +1,1 @@
-mvol-0445-0008-0002.pdf does not exist 
-mvol-0445-0008-0002.mets.xml does not validate against schema.
-mvol-0445-0008-0003.dc.xml has an incorrect day field. 
-mvol-0445-0008-0004.mets.xml does not exist 
-mvol-0445-0011-00012 is not a valid mmdd folder name. 
-mvol-0445-0011-0002/TIFF contains a 0 byte file. 
-mvol-0445-0011-0003 does not contain a ALTO folder. 
-mvol-0075-0013-0000.dc.xml is not well-formed.
-mvol-0510-0006-0003.dc.xml has an incorrect day field.
-mvol-0510-0010-0001/JPEG contains incorrectly named files.
-mvol-0510-0017-0001 does not contain a TIFF folder.
-mvol-0510-0017-0002.dc.xml has a date with a wrong format.
-mvol-0004-1925-0204.pdf does not exist.
-mvol-0004-1925-0227.struct.txt does not exist.
+mvol-0004-1902-1219.mets.xml does not validate against schema.
