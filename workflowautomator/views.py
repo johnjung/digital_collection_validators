@@ -7,7 +7,6 @@ import time
 import pytz
 import requests
 import owncloud
-import easywebdav
 from workflowautomator.data.password import ocpassword
 from workflowautomator.utilities import sentinelutility
 
@@ -27,7 +26,8 @@ def localizer(target, mode):
     timezone = pytz.timezone("UTC")
     if mode == "list":
         for t in target:
-            t[1] = timezone.localize(datetime.datetime.fromtimestamp(t[1]))
+            t[0] = timezone.localize(datetime.datetime.fromtimestamp(t[0]))
+            t[1] = '-'.join(t[1].split("/"))
     elif mode == "hierarch":
         for s in ('owncloud', 'development', 'production'):
             try:
@@ -45,42 +45,15 @@ def homepage(request):
     context = {"breadcrumbs": breadcrumbs}
     return render(request, 'workflowautomator/homepage.html', context)
 
-def preerrpage(request):
-
-    breadcrumbs = [{
-        "href": "/",
-        "text": "Home"},
-        {"href": "/workflowautomator", "text": "Emil Project Homepage"}]
-    r = requests.get('https://www2.lib.uchicago.edu/keith/tmp/cai.json')
-    fjson = r.json()
-    hold = fjson['invalid']
-    alphad = hold
-    alphad.sort() 
-    context = {'baddirectoryarray': alphad, "breadcrumbs": breadcrumbs}
-    return render(request, 'workflowautomator/preerrpage.html', context)
-
 def errpage(request, mvolfolder_name):
 
     breadcrumbs = [{
         "href": "/",
         "text": "Home"},
         {"href": "/workflowautomator", "text": "Emil Project Homepage"},
-        {"href": "/workflowautomator/errorreport", "text": "Error Report"}]
-    username = "ldr_oc_admin"
-    password = ocpassword
-    errors = []
-    webdav = easywebdav.connect('s3.lib.uchicago.edu', 
-        username=username, password=password, protocol='https', port=443, verify_ssl=False)
-    newdirectorytitle = '/owncloud/remote.php/webdav/IIIF_Files/' + '/'.join(mvolfolder_name.split("-")) + "/invalid"
-    try:
-        webdav.download(newdirectorytitle, 'workflowautomator/data/invalid')
-        f = open("workflowautomator/data/invalid")
-        for line in f:
-            errors = errors + [line]
-        f.close()
-    except Exception:
-        errors = ["invalid not found"]
-    '''
+        {"href": "/workflowautomator/mvolreport", "text": "Mvol Report"},
+        {"href": "/workflowautomator/mvolreport/invalid", "text": "invalid"}]
+
     username = "ldr_oc_admin"
     password = ocpassword
     oc = owncloud.Client('https://s3.lib.uchicago.edu/owncloud')
@@ -88,20 +61,19 @@ def errpage(request, mvolfolder_name):
     newdirectorytitle = 'IIIF_Files/' + '/'.join(mvolfolder_name.split("-"))
     errors = []
     for entry in oc.list(oc.file_info(newdirectorytitle).get_path()):
-        if entry.get_name() == 'mvol-0004-1902-1105.tt':
-            errorsfile = oc.get_file(entry.get_path(), 'workflowautomator/data/invalid')
+        if entry.get_name() == 'invalid':
+            errorsfile = oc.get_file(entry, 'workflowautomator/data/invalid')
             print(errorsfile)
             f = open("workflowautomator/data/invalid")
             for line in f:
                 errors = errors + [line]
             f.close()
             break
-    '''
+
     context = {'name': mvolfolder_name, 'errarray': errors, "breadcrumbs": breadcrumbs}
     return render(request, 'workflowautomator/errpage.html', context)
 
 def prelistpage(request):
-
     breadcrumbs = [{"href": "/", "text": "Home"},
                    {"href": "/workflowautomator", "text": "Emil Project Homepage"}]
     
@@ -109,16 +81,14 @@ def prelistpage(request):
     fjson = r.json()
     n = 5
     fjson = {
-        "none": (fjson["none"][:n], len(fjson["none"]) > n, len(fjson["none"]), list(range(len(fjson["none"])))),
-        "ready": (fjson["ready"][:n], len(fjson["ready"]) > n, len(fjson["ready"])),
-        "queue": (fjson["queue"][:n], len(fjson["queue"]) > n, len(fjson["queue"])),
-        "valid": (fjson["valid"][:n], len(fjson["valid"]) > n, len(fjson["valid"])),
-        "invalid": (fjson["invalid"][:n], len(fjson["invalid"]) > n, len(fjson["invalid"]))
+        "none": (fjson["none"][:n], len(fjson["none"]) > n, len(fjson["none"]), list(range(n - len(fjson["none"])))),
+        "ready": (fjson["ready"][:n], len(fjson["ready"]) > n, len(fjson["ready"]), list(range(n - len(fjson["ready"])))),
+        "queue": (fjson["queue"][:n], len(fjson["queue"]) > n, len(fjson["queue"]), list(range(n - len(fjson["queue"])))),
+        "valid": (fjson["valid"][:n], len(fjson["valid"]) > n, len(fjson["valid"]), list(range(n - len(fjson["valid"])))),
+        "invalid": (fjson["invalid"][:n], len(fjson["invalid"]) > n, len(fjson["invalid"]), list(range(n - len(fjson["invalid"])))),
     }
-    '''
     for k, v in fjson.items():
         localizer(v[0], "list")
-    '''
     context = {"allists": fjson, "breadcrumbs": breadcrumbs}
     return render(request, 'workflowautomator/prelistpage.html', context)
 
@@ -131,7 +101,7 @@ def listpage(request, status):
         {"href": "/workflowautomator/mvolreport", "text": "Mvol Report"}]
     r = requests.get('https://www2.lib.uchicago.edu/keith/tmp/cai.json')
     fjson = r.json()
-    #localizer(fjson[status], "list")
+    localizer(fjson[status], "list")
     context = {"allists": fjson[status],
                "name": status, "breadcrumbs": breadcrumbs}
     return render(request, 'workflowautomator/listpage.html', context)

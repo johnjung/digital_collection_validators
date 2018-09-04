@@ -16,6 +16,7 @@
  $(document).on('submit', '.Validate', function(e){
         e.preventDefault();
         var form = $( this );
+        alert("All directories are now being validated. This may take a few minutes, but please do not refresh or navigate away from this page.")
         $.ajax({
             type:'POST',
             url:'/workflowautomator/setready/',
@@ -30,16 +31,6 @@
 
  });
 </script>
-<!--<script type = "text/javascript">
-$(document).ready(function() { /// Wait till page is loaded
-    setInterval(timingLoad, 3000);
-    function timingLoad() {
-        $('#bigtable').load('#bigtable', function() {
-/// can add another function here
-});
-    }
-}); //// End of Wait till page is loaded
-</script>-->
 {% endblock %}
 
 {% block content %}
@@ -110,9 +101,13 @@ $(document).ready(function() { /// Wait till page is loaded
     {% for child in children %}
     <tr>
         <td style = "color:#5B8FA8">
+            {% if oneupfrombottom == True and child.8 %}
+            <a href ="{% url 'errpage' child.0 %}"> {{ child.0}}</a>
+            {% endif %}
             {% if oneupfrombottom == False %}
             <a href = "{% url 'hierarch' child.0 %}"> {{ child.0 }}</a>
-            {% else %}
+            {% endif %}
+            {% if oneupfrombottom == True and not child.8 %}
             {{ child.0 }}
             {% endif %}
         </td>

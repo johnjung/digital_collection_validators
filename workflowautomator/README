@@ -5,20 +5,3 @@ Added to INSTALLED_APPS in library_website\library_website\settings\base.py
 Added to urlpatterns in library_website\library_website\templates\urls.py
 
 url(r'^workflowautomator/', include('workflowautomator.urls')),
-
-Added just after the imports in lib\python3.6\site-packages\easywebdav\client.py
-
-try:
-    unicode = unicode
-except NameError:
-    # 'unicode' is undefined, must be Python 3
-    str = str
-    unicode = str
-    bytes = bytes
-    basestring = (str,bytes)
-else:
-    # 'unicode' exists, must be Python 2
-    str = str
-    unicode = unicode
-    bytes = str
-    basestring = basestring

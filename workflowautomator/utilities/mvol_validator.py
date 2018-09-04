@@ -211,8 +211,8 @@ def validate_directory(oc, identifier, f, folder_name):
     return errors
 
 
-def validate_alto_directory(oc, identifier, f):
-    """Validate that an ALTO folder exists. Make sure it contains appropriate
+def validate_alto_or_pos_directory(oc, identifier, f):
+    """Validate that an ALTO or POS folder exists. Make sure it contains appropriate
        files.
 
        Arguments:
@@ -224,8 +224,36 @@ def validate_alto_directory(oc, identifier, f):
        Returns:
        A list of error messages, or an empty list.
     """
-    return validate_directory(oc, identifier, f, 'ALTO')
+    try:
+        folder_f = oc.file_info(f.get_path() + '/' + 'ALTO')
+        return validate_directory(oc, identifier, f, 'ALTO')
+    except owncloud.HTTPResponseError:
+        try:
+          folder_f = oc.file_info(f.get_path() + '/' + 'POS')
+          return spec_validate_pos_directory(oc, identifier + '/POS', folder_f)
+        except owncloud.HTTPResponseError:
+          return [identifier + ' does not contain a ALTO or POS folder.\n']
 
+def spec_validate_pos_directory(oc, identifier, f):
+  filename_re = '^\d*\.pos$'
+  errors = []
+  midlinespattern = re.compile('^((( *)?\d*\t){4}.*\n)?$')
+  for entry in oc.list(f.get_path()):
+      if not re.match(filename_re, entry.get_name()):
+          errors.append(
+              identifier + ' contains incorrectly named files.\n')
+      file_object = io.BytesIO(oc.get_file_contents(entry))
+      currline = file_object.readline().decode(errors = 'ignore')
+      currlinenum = 1
+      while currline:
+          if not midlinespattern.fullmatch(currline):
+                  errors.append(
+                      identifier + '/' + entry.get_name() + 
+                      ' has an error in line %d.\n' %
+                      currlinenum)
+          currline = file_object.readline().decode(errors = 'ignore')
+          currlinenum += 1
+  return errors
 
 def validate_jpeg_directory(oc, identifier, f):
     """Validate that an JPEG folder exists. Make sure it contains appropriate
@@ -268,16 +296,38 @@ def _validate_dc_xml_file(oc, identifier, file_object):
        identifier  -- for error messages.
        file_object -- a file object, the .dc.xml file.
     """
-
-    dtdf = io.StringIO(
-        """<!ELEMENT metadata (title,date,description,identifier)>
-                        <!ELEMENT title (#PCDATA)>
-                        <!ELEMENT date (#PCDATA)>
-                        <!ELEMENT description (#PCDATA)>
-                        <!ELEMENT identifier (#PCDATA)>""")
+    dtdf = io.StringIO(      
+        """<!ELEMENT metadata ((date, description, identifier, title)|
+                    (date, description, title, identifier)|
+                    (date, identifier, description, title)|
+                    (date, identifier, title, description)|
+                    (date, title, description, identifier)|
+                    (date, title, identifier, description)|
+                    (description, date, identifier, title)|
+                    (description, date, title, identifier)|
+                    (description, identifier, date, title)|
+                    (description, identifier, title, date)|
+                    (description, title, date, identifier)|
+                    (description, title, identifier, date)|
+                    (identifier, date, description, title)|
+                    (identifier, date, title, description)|
+                    (identifier, description, date, title)|
+                    (identifier, description, title, date)|
+                    (identifier, title, date, description)|
+                    (identifier, title, description, date)|
+                    (title, date, description, identifier)|
+                    (title, date, identifier, description)|
+                    (title, description, date, identifier)|
+                    (title, description, identifier, date)|
+                    (title, identifier, date, description)|
+                    (title, identifier, description, date))>
+                    <!ELEMENT title (#PCDATA)>
+                    <!ELEMENT date (#PCDATA)>
+                    <!ELEMENT identifier (#PCDATA)>
+                    <!ELEMENT description (#PCDATA)>
+                    """)
     dtd = etree.DTD(dtdf)
     dtdf.close()
-
     errors = []
 
     try:
@@ -286,22 +336,26 @@ def _validate_dc_xml_file(oc, identifier, file_object):
             errors.append(identifier + '.dc.xml is not valid.\n')
         else:
             datepull = etree.ElementTree(metadata).findtext("date")
-            pattern = re.compile("^\d{4}-\d{2}-\d{2}")
+            pattern = re.compile("^\d{4}(-\d{2})?(-\d{2})?")
             attemptmatch = pattern.fullmatch(datepull)
             if attemptmatch:
                 sections = [int(s) for s in re.findall(r'\b\d+\b', datepull)]
+                length = len(sections) 
+                print(length) 
                 if (sections[0] < 1700) | (sections[0] > 2100):
                     errors.append(
                         identifier + '.dc.xml has an incorrect year field.\n')
-                if (sections[1] < 1) | (sections[1] > 12):
-                    errors.append(identifier +
-                                  '.dc.xml has an incorrect month field.\n')
-                if (sections[2] < 1) | (sections[2] > 31):
-                    errors.append(
-                        identifier + '.dc.xml has an incorrect day field.\n')
+                if length > 1:  
+                  if (sections[1] < 1) | (sections[1] > 12):
+                      errors.append(identifier +
+                                    '.dc.xml has an incorrect month field.\n')
+                if length > 2:  
+                  if (sections[2] < 1) | (sections[2] > 31):
+                      errors.append(
+                          identifier + '.dc.xml has an incorrect day field.\n')
             else:
                 errors.append(identifier +
-                              '.dc.xml has a date with a wrong format')
+                              '.dc.xml has a date with a wrong format.\n')
     except etree.XMLSyntaxError as e:
         errors.append(identifier + '.dc.xml is not well-formed.\n')
         pass
@@ -476,8 +530,8 @@ def _validate_struct_txt_file(oc, identifier, file_object):
             identifier +
             '.struct.txt has an error in the first line.\n')
     currlinenum = 2
-    midlinespattern = re.compile('^\d{8,9}\t\d{1,2}\n')
-    finlinepattern = re.compile('^\d{8,9}\t\d{1,2}')
+    midlinespattern = re.compile('^\d{8,9}\t(\d{1,3}|(.*))?\t?(.*)?\n')
+    finlinepattern = re.compile('^\d{8,9}(\t\d{1,3}|(.*))?\t?(.*)?')
     currline = file_object.readline()
     while(currline):
         if not midlinespattern.fullmatch(currline):
@@ -497,6 +551,9 @@ def finalcheck(directory):
     freshdirectorypieces = directory.split("/")
     freshdirectorypieces.pop(0)
     freshdirectory = '-'.join(freshdirectorypieces)
+    if freshdirectory[-1] == "-":
+      freshdirectory = freshdirectory[:-1]
+    print(freshdirectory)
     url = "https://digcollretriever.lib.uchicago.edu/projects/" + \
         freshdirectory + "/ocr?jpg_width=0&jpg_height=0&min_year=0&max_year=0"
     r = requests.get(url)
@@ -517,9 +574,10 @@ def mainvalidate(oc, directory):
         identifier = get_identifier_from_fileinfo(oc, f)
         errors = errors + validate_mvol_directory(oc, identifier, f)
         errors = errors + validate_mvol_number_directory(oc, identifier, f)
-        errors = errors + validate_year_directory(oc, identifier, f)
-        errors = errors + validate_date_directory(oc, identifier, f)
-        errors = errors + validate_alto_directory(oc, identifier, f)
+        if re.match('IIIF_Files/mvol/0004/', directory):
+          errors = errors + validate_year_directory(oc, identifier, f)
+          errors = errors + validate_date_directory(oc, identifier, f)
+        errors = errors + validate_alto_or_pos_directory(oc, identifier, f)
         errors = errors + validate_jpeg_directory(oc, identifier, f)
         errors = errors + validate_tiff_directory(oc, identifier, f)
         errors = errors + validate_dc_xml(oc, identifier, f)
