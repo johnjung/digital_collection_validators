@@ -12,11 +12,12 @@
 {% block extra_js %}
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.js"></script> 
 <script src="http://malsup.github.com/jquery.form.js"></script>
-<script type = "text/javascript"> 
+<script type = "text/javascript" defer> 
  $(document).on('submit', '.Validate', function(e){
         e.preventDefault();
         var form = $( this );
-        alert("All directories are now being validated. This may take a few minutes, but please do not refresh or navigate away from this page.")
+        $('#myloader').css("display", "block")
+        alert("Your selection is being validated. This may take a few minutes, but please do not refresh or navigate away from this page.");
         $.ajax({
             type:'POST',
             url:'/workflowautomator/setready/',
@@ -25,6 +26,7 @@
                 csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val()
             },
             success:function(){
+                $('#myloader').css("display", "none")
                 alert("did it");
             }
         });
@@ -40,9 +42,10 @@
 {% if not forloop.last %} &gt; {% endif %}
 {% endfor %}
 
-<h1> 
-    {{ name.0 }}
-</h1>
+    <h1> 
+        {{ name.0 }} <div class="loader" id = "myloader"></div>
+    </h1>
+
 <table class = "table table-hover table-sm" id = "bigtable">
     <thead>
         <tr>
