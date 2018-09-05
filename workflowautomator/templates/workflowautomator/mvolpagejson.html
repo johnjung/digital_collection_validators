@@ -13,25 +13,35 @@
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.js"></script> 
 <script src="http://malsup.github.com/jquery.form.js"></script>
 <script type = "text/javascript" defer> 
- $(document).on('submit', '.Validate', function(e){
-        e.preventDefault();
-        var form = $( this );
-        $('#myloader').css("display", "block")
-        alert("Your selection is being validated. This may take a few minutes, but please do not refresh or navigate away from this page.");
-        $.ajax({
-            type:'POST',
-            url:'/workflowautomator/setready/',
-            data:{
-                name: (form.find('input[class="name"]')).val(),
-                csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val()
-            },
-            success:function(){
-                $('#myloader').css("display", "none")
-                alert("did it");
+     $(document).on('submit', '.Validate', function(e){
+            e.preventDefault();
+            var form = $( this );
+            form.find(".btn-outline-primary").addClass("btn-disabled").prop("disabled", true);
+            $('#myloader').css("display", "block")
+            if(form.attr('id') == "all"){
+                $('#alert1').css("display", "block")
+                $( "form" ).find(".btn-outline-primary").addClass("btn-disabled").prop("disabled", true);
             }
-        });
-
- });
+            $('#alert2').css("display", "none")
+            $.ajax({
+                type:'POST',
+                url:'/workflowautomator/setready/',
+                data:{
+                    name: (form.find('input[class="name"]')).val(),
+                        csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val()
+                },
+                success:function(){
+                    $('#myloader').css("display", "none")
+                    $('#alert1').css("display", "none")
+                    $('#alert2').css("display", "block")
+                    form.find(".btn-outline-primary").addClass("btn-disabled").prop("disabled", false);
+                    if(form.attr('id') == "all"){
+                        $( "form" ).find(".btn-outline-primary").addClass("btn-disabled").prop("disabled", false);
+                    }
+                }
+            });
+    
+     });
 </script>
 {% endblock %}
 
@@ -41,11 +51,25 @@
 <a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a>
 {% if not forloop.last %} &gt; {% endif %}
 {% endfor %}
-
+<div class = "row">
+  <div class = "col-sm-1" style = "width: 12.5%">
     <h1> 
-        {{ name.0 }} <div class="loader" id = "myloader"></div>
+        {{ name.0 }} 
     </h1>
+</div>
+<div class = "col-sm-1" style = "padding-top:15px; width: 4.165%">
+    <div class="loader" id = "myloader"></div>
+</div>
+<div class = "col-sm-8" style = "padding-top:23px">
+    <div class="loader" id = "myloader"></div>
+    <div id = "alert1" style="display:none">
+        <strong>Alert!</strong> Readying directories could take several minutes, please be patient. Once directories are readied, validation will occur automatically.
+    </div>
 
+    <div id = "alert2" style="display:none">
+        Directories have been readied, validation will now occur.
+    </div>
+</div>
 <table class = "table table-hover table-sm" id = "bigtable">
     <thead>
         <tr>
@@ -57,7 +81,7 @@
             </th>
             {% if oneupfrombottom == True %}
             <th>
-                <form class = "Validate" method = "post">
+                <form class = "Validate" id = "all" method = "post">
                     {% csrf_token %}
                     <input type = "text" class = "name" value = {{name.0}} style = "display:none">
                     <input type = "submit" class="btn btn-outline-primary" value = "Validate All" />

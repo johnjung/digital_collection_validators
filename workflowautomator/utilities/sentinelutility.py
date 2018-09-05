@@ -6,6 +6,7 @@ import re
 import tempfile
 from ..data.password import ocpassword
 import argparse
+import datetime
 
 
 def get_mvol_mmdd_directories(oc, p):
@@ -38,10 +39,20 @@ def get_sentinel_files(oc, file_info):
        a list of owncloud.FileInfo objects in this directory.
     '''
     sentinels = []
+    goodforready = False
     for entry in oc.list(file_info.get_path()):
         if entry.get_name() in ('ready', 'queue', 'valid', 'invalid'):
             sentinels.append(oc.file_info(entry.path))
-    return sentinels
+            if entry.get_name() == 'invalid':
+              goodforready = True
+            if entry.get_name() == 'valid':
+              if entry.get_last_modified() < (file_info.get_last_modified() + datetime.timedelta(0,-20)):
+                # last modified date is naturally a few seconds after valid's, this line avoids false issues
+                # where valid appears out of sync
+                goodforready = True
+    if len(sentinels) == 0:
+      goodforready = True
+    return (sentinels, goodforready)
 
 
 def runutil(oc, file_info, mode):
@@ -56,15 +67,18 @@ def runutil(oc, file_info, mode):
        manages sentinel files.
     '''
     sentinels = get_sentinel_files(oc, file_info)
-    if mode == "addready" and len(sentinels) == 0:
+    if mode == "addready" and sentinels[1] and len(sentinels[0]) <= 1 :
+        for s in sentinels[0]:
+            if s.get_name() in ('ready', 'queue', 'valid', 'invalid'):
+                oc.delete(s)
         os.utime("workflowautomator/utilities/ready")
         oc.put_file(file_info, "workflowautomator/utilities/ready")
-    elif mode == "fix" and len(sentinels) > 1:
-        for s in sentinels:
+    elif mode == "fix" and len(sentinels[0]) > 1:
+        for s in sentinels[0]:
             if s.get_name() in ('ready', 'queue', 'valid', 'invalid'):
                 oc.delete(s)
     elif mode == "deleteall":
-        for s in sentinels:
+        for s in sentinels[0]:
             if s.get_name() in ('ready', 'queue', 'valid', 'invalid'):
                 oc.delete(s)
 

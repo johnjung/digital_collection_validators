@@ -18,10 +18,11 @@ def filterbottom(oc, p):
 
 def runutil(oc, file_info, result):
     for entry in oc.list(file_info.get_path()):
-        if entry.get_name() in ('valid', 'invalid'):
+        if entry.get_name() == 'queue':
             oc.delete(entry)
-    os.utime(result)
-    oc.put_file(file_info, result)
+            os.utime(result)
+            oc.put_file(file_info, result)
+            break
 
 username = "ldr_oc_admin"
 password = ocpassword
@@ -30,10 +31,7 @@ oc.login(username, password)
 
 r = requests.get('https://www2.lib.uchicago.edu/keith/tmp/cai.json')
 r = r.json()
-allqueues = r['none'] + r['valid'] + r['invalid'] + r['ready'] + r['queue']
-#allqueues = [(30, 'mvol/0001/0002/0000')]
-#allqueues = [(30, 'mvol/0002/0010/0004')]
-shuffle(allqueues)
+allqueues = r['queue']
 allqueuesfiltered = []
 for rt in allqueues:
     print(rt)
