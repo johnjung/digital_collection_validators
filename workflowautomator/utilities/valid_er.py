@@ -6,7 +6,6 @@ import os
 import requests
 from mvol_validator import mainvalidate
 from random import shuffle
-#from queue_er import allreadies
 
 
 def filterbottom(oc, p):
@@ -31,7 +30,8 @@ oc.login(username, password)
 
 r = requests.get('https://www2.lib.uchicago.edu/keith/tmp/cai.json')
 r = r.json()
-allqueues = r['queue']
+#allqueues = r['queue']
+allqueues = [(30, "mvol/0001/0001/0000")]
 allqueuesfiltered = []
 for rt in allqueues:
     print(rt)
