@@ -1,0 +1,7 @@
+Added to INSTALLED_APPS in library_website\library_website\settings\base.py
+
+'workflowautomator.apps.WorkflowautomatorConfig',
+
+Added to urlpatterns in library_website\library_website\templates\urls.py
+
+url(r'^workflowautomator/', include('workflowautomator.urls')),
