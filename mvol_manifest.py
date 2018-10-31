@@ -1,4 +1,13 @@
-import argparse
+"""Usage:
+   mvol_manifest.py <identifier>
+"""
+
+# todo
+# get rid of references to directory. 
+# 43
+# 56
+
+from docopt import docopt
 import csv
 import json
 import os
@@ -14,13 +23,13 @@ class IIIFManifest:
 
   """
 
-  def __init__(self, title, identifier, description, attribution, directory):
+  def __init__(self, oc, title, identifier, description, attribution):
 
+    self.oc = oc
     self.title = title
     self.identifier = identifier
     self.description = description
     self.attribution = attribution
-    self.directory = directory
 
     self.mvolidentifier = MvolIdentifier(self.identifier)
     self.year = self.mvolidentifier.get_year()
@@ -34,6 +43,8 @@ class IIIFManifest:
 
   def _load_struct(self):
     self.struct_data = []
+    # get this from owncloud. JEJ
+    # self.oc 
     with open(self.directory + '/' + self.identifier + '.struct.txt', 'r') as f:
       r = csv .reader(f, delimiter='\t')
       for row in r:
@@ -161,24 +172,32 @@ if __name__ == '__main__':
       raise argparse.ArgumentTypeError
     return s
 
-  parser = argparse.ArgumentParser()
-  parser.add_argument("identifier", help="e.g. mvol-0004-1931", type=mvol_year_month_date)
-  parser.add_argument("directory", help="e.g. /Volumes/webdav/...")
-  args = parser.parse_args()
+  arguments = docopt(__doc__)
+  identifier = arguments['<identifier>']
 
-  if args.identifier.startswith('mvol-0004'):
+  if identifier.startswith('mvol-0004'):
     title = 'Daily Maroon'
     description = 'A newspaper produced by students of the University of Chicago published 1900-1942 and continued by the Chicago Maroon.'
   else:
     raise NotImplementedError
 
+  password = getpass.getpass('WebDAV password: ')
+
+  oc = owncloud.Client('https://s3.lib.uchicago.edu/owncloud')
+
+  try:
+    oc.login('ldr_oc_admin', password)
+  except owncloud.HTTPResponseError:
+    sys.stderr.write('incorrect WebDAV password.\n')
+    sys.exit()
+
   print(
     json.dumps(
       IIIFManifest(
+        oc,
         title,
         args.identifier,
         description,
-        'University of Chicago Library',
-        args.directory).data(),
+        'University of Chicago Library').data(),
       indent=4,
       sort_keys=True))
