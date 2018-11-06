@@ -1,4 +1,8 @@
-import argparse
+"""Usage:
+    mvol_validator.py <identifier> ...
+"""
+
+from docopt import docopt
 import csv
 import getpass
 import os
@@ -8,6 +12,9 @@ import sys
 import io
 import requests
 from lxml import etree
+
+def get_directory(identifier):
+    return '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/{}'.format(identifier.replace('-', '/'))
 
 def get_ancestor_fileinfo(ftp, f, n):
     """Get an ancestor owncloud.FileInfo object.
@@ -363,11 +370,13 @@ def validate_mets_xml(ftp, identifier, f):
     """
     try:
         in_memory_file = io.BytesIO()
+        print('{}/{}.mets.xml'.format(f, identifier))
+        sys.exit()
         ftp.getfo('{}/{}.mets.xml'.format(f, identifier), in_memory_file)
         in_memory_file.seek(0)
         return _validate_mets_xml_file(ftp, identifier, in_memory_file)
     except FileNotFoundError:
-        return [identifier + '.dc.xml does not exist.\n']
+        return [identifier + '.mets.xml does not exist.\n']
 
 
 def _validate_mets_xml_file(ftp, identifier, file_object):
@@ -497,8 +506,8 @@ def mainvalidate(oc, directory):
         errors = errors + validate_alto_or_pos_directory(oc, identifier, f)
         errors = errors + validate_jpeg_directory(oc, identifier, f)
         errors = errors + validate_tiff_directory(oc, identifier, f)
-        errors = errors + validate_dc_xml(oc, identifier, f)
-        #errors = errors + validate_mets_xml(oc, identifier, f)
+        #errors = errors + validate_dc_xml(oc, identifier, f)
+        errors = errors + validate_mets_xml(oc, identifier, f)
         errors = errors + validate_pdf(oc, identifier, f)
         errors = errors + validate_struct_txt(oc, identifier, f)
         if not errors:
@@ -514,43 +523,29 @@ if __name__ == '__main__':
       This checks to be sure that files are available via specific URLs, and it
       produces an input file for the OCR building script. 
   """
-  parser = argparse.ArgumentParser()
-  parser.add_argument("username", help="WebDAV username.")
-  parser.add_argument("directory", help="e.g. IIIF_Files/mvol/0004/1930/0105")
-  args = parser.parse_args()
 
-  owncloud_data_directory = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/'
+  args = docopt(__doc__)
 
   password = getpass.getpass('SSH password or passphrase: ')
 
   ssh = paramiko.SSHClient()
   ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-  ssh.connect('s3.lib.uchicago.edu', username=args.username, password=password)
+  ssh.connect('s3.lib.uchicago.edu', username='', password=password)
   ftp = ssh.open_sftp()
 
-  year_directory = re.compile("IIIF_Files/mvol/\d{4}/\d{4}$")
-  if year_directory.search(args.directory):
-    directories = []
-    for entry in ftp.listdir(owncloud_data_directory + args.directory):
-      if re.fullmatch('^\d{4}$', entry):
-        directories.append(owncloud_data_directory + args.directory + '/' + entry)
-  else:
-    directories = [owncloud_data_directory + args.directory]
-
-  for directory in directories: 
-    errors = []
-
-    identifier = get_identifier_from_fileinfo(ftp, directory)
+  errors = []
+  for identifier in args['<identifier>']:
+    directory = get_directory(identifier)
     errors = errors + validate_mvol_directory(ftp, identifier, directory)
     errors = errors + validate_mvol_number_directory(ftp, identifier, directory)
     errors = errors + validate_year_directory(ftp, identifier, directory)
     errors = errors + validate_date_directory(ftp, identifier, directory)
     errors = errors + validate_alto_or_pos_directory(ftp, identifier, directory)
     errors = errors + validate_jpeg_directory(ftp, identifier, directory)
-    errors = errors + validate_tiff_directory(ftp, identifier, directory)
+    #errors = errors + validate_tiff_directory(ftp, identifier, directory)
     errors = errors + validate_dc_xml(ftp, identifier, directory)
-    errors = errors + validate_mets_xml(ftp, identifier, directory)
+    #errors = errors + validate_mets_xml(ftp, identifier, directory)
     errors = errors + validate_struct_txt(ftp, identifier, directory)
 
-    for e in errors:
-      sys.stdout.write(e + '\n')
+  for e in errors:
+    sys.stdout.write(e + '\n')

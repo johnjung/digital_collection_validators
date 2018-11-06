@@ -61,5 +61,5 @@ if __name__ == '__main__':
   identifiers = recursive_ls(ftp, identifier_chunk)
   identifiers.sort()
   for identifier in identifiers:
-    print(identifier)
+    sys.stdout.write(identifier + '\n')
 
