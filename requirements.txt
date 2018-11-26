@@ -1,4 +1,4 @@
 docopt
-pyocclient
-lxml
-Pillow
+#pyocclient
+#lxml
+#Pillow
