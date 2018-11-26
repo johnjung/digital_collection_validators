@@ -1,4 +1,4 @@
-FROM python:3.7.1-alpine3.8
+FROM python:3.7.1
 
 COPY requirements.txt /tmp/requirements.txt
 RUN pip3 install --upgrade pip
