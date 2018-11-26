@@ -87,13 +87,8 @@ if __name__ == '__main__':
 
   args = parser.parse_args()
 
-  try:
-    oc = owncloud.Client(os.environ['OWNCLOUD_SERVER'])
-  except KeyError:
-    sys.stderr.write("OWNCLOUD_SERVER environmental variable not set.\n")
-    sys.exit()
-
-  username = input('WebDAV username: ')
-  password = getpass.getpass('WebDAV password: ')
+  oc = owncloud.Client(os.environ['OWNCLOUD_WEBDAV_SERVER'])
+  username = os.environ['OWNCLOUD_WEBDAV_USERNAME']
+  password = os.environ['OWNCLOUD_WEBDAV_PASSWORD']
 
   print(get_last_mod_date_from_xtf(identifier_to_path(args.identifier, 'development'), 'development'))
