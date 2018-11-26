@@ -9,7 +9,7 @@ This collection of scripts validates, processes, and manages those files.
 ## Quickstart
 ```
 docker build -t mvol_tools https://github.com/johnjung/mvol_tools.git
-docker run --rm -it mvol_tools bash
+docker run --rm -it --env-file env.sh mvol_tools bash
 ```
 
 ## check_sync
