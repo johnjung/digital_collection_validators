@@ -1,5 +1,11 @@
-"""Usage:
-    put_struct_txt <identifier>
+#!/usr/local/bin/python3
+
+"""put_struct_txt
+   It's common for mvol source files to omit a .struct.txt file. This script
+   creates one of those files and uploads it to Owncloud via WebDAV.
+
+   Usage:
+   put_struct_txt <identifier>
 """
 
 from docopt import docopt
@@ -14,7 +20,6 @@ if __name__ == '__main__':
     identifier = arguments['<identifier>']
 
     oc = owncloud.Client(os.environ['OWNCLOUD_WEBDAV_SERVER'])
-
     try:
         oc.login(
             os.environ['OWNCLOUD_WEBDAV_USERNAME'],

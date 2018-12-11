@@ -1,10 +1,18 @@
 #!/usr/local/bin/python3
 
-"""Usage:
+"""mvol_ls
+   List mvols that match certain patterns, e.g.:
+      'mvol' 
+      'mvol-0001'
+      'mvol-0001-0002'
+      'mvol-0001-0002-0003'
+ 
+   Usage:
    mvol_ls <identifier-chunk>
 """
 
 from docopt import docopt
+import os
 import paramiko
 import re
 import sys
@@ -14,7 +22,8 @@ def is_identifier(identifier_chunk):
   """Return true if this identifier chunk is a complete identifier. 
 
      Arguments:
-     identifier -- e.g., mvol, mvol-0001, mvol-0001-0002, mvol-0001-0002-0003
+     identifier chunk -- e.g., 'mvol', 'mvol-0001', 'mvol-0001-0002',
+                         'mvol-0001-0002-0003'
 
      Returns:
      True or False
@@ -24,13 +33,32 @@ def is_identifier(identifier_chunk):
 
 
 def get_path(identifier_chunk):
+  """Return the path to a given identifier chunk on owncloud's disk space.
+     N.B., you should use these paths for read-only access.
+
+     Arguments:
+     identifier chunk -- e.g., 'mvol', 'mvol-0001', 'mvol-0001-0002',
+                         'mvol-0001-0002-0003'
+
+     Returns:
+     A string, the path to an identifier chunk on disk. 
+  """
+
   return '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/{}'.format(identifier_chunk.replace('-', '/'))
 
 
 def recursive_ls(ftp, identifier_chunk):
   """Get a list of identifiers in on disk. 
+
+     Arguments:
+     ftp              -- an sftp connection from Paramiko.
+     identifier chunk -- e.g., 'mvol', 'mvol-0001', 'mvol-0001-0002',
+                         'mvol-0001-0002-0003'
+
+     Returns:
+     A list of identifiers, e.g. 'mvol-0001-0002-0003'
   """
-  # really should check to be sure the identifier actually exists on disk..
+
   if is_identifier(identifier_chunk):
     return [identifier_chunk]
   else:
@@ -41,12 +69,6 @@ def recursive_ls(ftp, identifier_chunk):
     return identifiers
 
 if __name__ == '__main__':
-  """ List mvols that match certain patterns. 
-      mvol 
-      mvol-0001
-      mvol-0001-0001
-      mvol-0001-0001-0001
-  """
   arguments = docopt(__doc__)
   identifier_chunk = arguments['<identifier-chunk>']
 

@@ -1,14 +1,30 @@
-"""Usage:
-    put_dc_xml [--force] <identifier>
+#!/usr/local/bin/python3
+
+"""put_dc_xml
+   It's common for mvol source files to omit a .dc.xml file. This script
+   creates one of those files and uploads it to Owncloud via WebDAV.
+   
+   Usage:
+   put_dc_xml [--force] <identifier>
 """
 
 from docopt import docopt
+import os
 import owncloud
 import re
 import sys
 
 
 def get_title(identifier):
+    """Return the title for a given identifier.
+
+    Arguments:
+    identifier -- e.g. 'mvol-0001-0002-0003'
+
+    Returns:
+    A string, the title for an identifier chunk like 'mvol-0004'.
+    """
+
     identifier_chunk = '-'.join(identifier.split('-')[:2])
     titles = {
         'mvol-0004': 'Daily Maroon',
@@ -17,6 +33,15 @@ def get_title(identifier):
 
 
 def get_description(identifier):
+    """Return the description for a given identifier.
+
+    Arguments:
+    identifier -- e.g. 'mvol-0001-0002-0003'
+
+    Returns:
+    A string, the description for an identifier chunk like 'mvol-0004'.
+    """
+
     identifier_chunk = '-'.join(identifier.split('-')[:2])
     descriptions = {
         'mvol-0004': 'A newspaper produced by students of the University of Chicago. Published 1902-1942 and continued by the Chicago Maroon.'
@@ -25,6 +50,15 @@ def get_description(identifier):
 
 
 def get_date(identifier):
+    """Return the date for a given identifier.
+
+    Arguments:
+    identifier -- e.g. 'mvol-0004-1938-0103'
+
+    Returns:
+    A string, e.g. '1938-01-03'
+    """
+
     if re.search('^mvol-0004-\d{4}-\d{4}$', identifier):
         return '{}-{}-{}'.format(
             identifier.split('-')[-2],
@@ -36,7 +70,15 @@ def get_date(identifier):
 
 
 def get_path(identifier):
-    '''return the path to an mmdd directory, given an identifier.'''
+    """Return the Owncloud path to an mmdd directory, given an identifier.
+
+       Arguments:
+       identifier -- e.g. 'mvol-0004-1938-0103'
+
+       Returns:
+       A string, e.g. 'IIIF_Files/mvol/0004/1938/0103'
+    """
+
     if re.search('^mvol-0004-\d{4}-\d{4}$', identifier):
         return 'IIIF_Files/{}'.format('/'.join(identifier.split('-')))
     else: 
@@ -46,10 +88,8 @@ def get_path(identifier):
 if __name__ == '__main__':
     arguments = docopt(__doc__)
     identifier = arguments['<identifier>']
-    force = arguments['--force']
 
     oc = owncloud.Client(os.environ['OWNCLOUD_WEBDAV_SERVER'])
-
     try:
         oc.login(
           os.environ['OWNCLOUD_WEBDAV_USERNAME'],
@@ -61,7 +101,7 @@ if __name__ == '__main__':
 
     remote_path = 'IIIF_Files/{}/{}.dc.xml'.format(identifier.replace('-', '/'), identifier)
 
-    if force:
+    if arguments['--force']:
         print(oc.file_info(remote_path))
         oc.delete(remote_path)
 

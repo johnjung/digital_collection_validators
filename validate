@@ -1,7 +1,9 @@
 #!/usr/local/bin/python3
 
-"""Usage:
-    validate <identifier> ...
+"""Validate the Owncloud files for a given mvol identifier. 
+
+   Usage:
+   validate <identifier> ...
 """
 
 from docopt import docopt
@@ -15,6 +17,15 @@ import requests
 from lxml import etree
 
 def get_directory(identifier):
+    """Get the path to a given mvol identifier on Owncloud's filesystem.
+
+       Arguments:
+       identifier -- e.g. 'mvol-0001-0002-0003'
+
+       Returns:
+       A string, the path to a given identifier's space in the filesystem.
+    """ 
+
     return '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/{}'.format(identifier.replace('-', '/'))
 
 def get_ancestor_fileinfo(ftp, f, n):
@@ -520,35 +531,28 @@ def mainvalidate(oc, directory):
 
 
 if __name__ == '__main__':
-  """ Produce an input file for a year's worth of mvol data.
-      This checks to be sure that files are available via specific URLs, and it
-      produces an input file for the OCR building script. 
-  """
+    args = docopt(__doc__)
 
-  args = docopt(__doc__)
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(
+        os.environ['OWNCLOUD_SSH_SERVER'],
+        username=os.environ['OWNCLOUD_SSH_USERNAME'],
+        password=os.environ['OWNCLOUD_SSH_PASSWORD']
+    )
+    ftp = ssh.open_sftp()
 
-  ssh = paramiko.SSHClient()
-  ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-  ssh.connect(
-    os.environ['OWNCLOUD_SSH_SERVER'],
-    os.environ['OWNCLOUD_SSH_USERNAME'],
-    os.environ['OWNCLOUD_SSH_PASSWORD']
-  )
-  ftp = ssh.open_sftp()
+    errors = []
+    for identifier in args['<identifier>']:
+        directory = get_directory(identifier)
+        errors = errors + validate_mvol_directory(ftp, identifier, directory)
+        errors = errors + validate_mvol_number_directory(ftp, identifier, directory)
+        errors = errors + validate_year_directory(ftp, identifier, directory)
+        errors = errors + validate_date_directory(ftp, identifier, directory)
+        errors = errors + validate_alto_or_pos_directory(ftp, identifier, directory)
+        errors = errors + validate_jpeg_directory(ftp, identifier, directory)
+        errors = errors + validate_dc_xml(ftp, identifier, directory)
+        errors = errors + validate_struct_txt(ftp, identifier, directory)
 
-  errors = []
-  for identifier in args['<identifier>']:
-    directory = get_directory(identifier)
-    errors = errors + validate_mvol_directory(ftp, identifier, directory)
-    errors = errors + validate_mvol_number_directory(ftp, identifier, directory)
-    errors = errors + validate_year_directory(ftp, identifier, directory)
-    errors = errors + validate_date_directory(ftp, identifier, directory)
-    errors = errors + validate_alto_or_pos_directory(ftp, identifier, directory)
-    errors = errors + validate_jpeg_directory(ftp, identifier, directory)
-    #errors = errors + validate_tiff_directory(ftp, identifier, directory)
-    errors = errors + validate_dc_xml(ftp, identifier, directory)
-    #errors = errors + validate_mets_xml(ftp, identifier, directory)
-    errors = errors + validate_struct_txt(ftp, identifier, directory)
-
-  for e in errors:
-    sys.stdout.write(e + '\n')
+    for e in errors:
+        sys.stdout.write(e + '\n')

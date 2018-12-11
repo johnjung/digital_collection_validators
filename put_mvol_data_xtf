@@ -1,5 +1,8 @@
-"""Usage:
-    put_mvol_data_xtf.py <owncloud-ssh-username> <xtf-ssh-username> <min-year> <max-year> <development_or_production> <identifier> ...
+"""put_mvol_data_xtf
+   Process mvol data on Owncloud and upload it to either the XTF development or production server.
+
+   Usage:
+   put_mvol_data_xtf (--development|--production) --min-year=<min-year> --max-year=<max-year> <identifier> ...
 """
 
 from docopt import docopt
@@ -15,35 +18,36 @@ import sys
 
 if __name__ == '__main__':
     arguments = docopt(__doc__)
-    owncloud_username = arguments['<owncloud-ssh-username>']
-    xtf_username = arguments['<xtf-ssh-username>']
-    min_year = arguments['<min-year>']
-    max_year = arguments['<max-year>']
-    development_or_production = arguments['<development_or_production>']
 
-    owncloud_password = getpass.getpass('Owncloud password: ')
-    xtf_password = getpass.getpass('XTF password: ')
-
+    owncloud_ssh = paramiko.SSHClient()
+    owncloud_ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    owncloud_ssh.connect(
+        os.environ['OWNCLOUD_SSH_SERVER'], 
+        username=os.environ['OWNCLOUD_SSH_USERNAME'],
+        password=os.environ['OWNCLOUD_SSH_PASSWORD']
+    )
+    owncloud_ftp = owncloud_ssh.open_sftp()
     owncloud_path = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files'
 
-    if development_or_production == 'development':
-        xtf_server = 'campub-xtf.lib.uchicago.edu'
+    xtf_ssh = paramiko.SSHClient()
+    xtf_ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    if arguments['--development']:
+        xtf_ssh.connect(
+            os.environ['XTF_DEVELOPMENT_SERVER'],
+            username=os.environ['XTF_DEVELOPMENT_USERNAME'],
+            password=os.environ['XTF_DEVELOPMENT_PASSWORD']
+        )
         xtf_path = '/usr/local/apache-tomcat-6.0/webapps/xtf/data/bookreader'
-    elif development_or_production == 'production':
-        xtf_server = 'xtf.lib.uchicago.edu'
+    elif arguments['--production']:
+        xtf_ssh.connect(
+            os.environ['XTF_PRODUCTION_SERVER'],
+            username=os.environ['XTF_PRODUCTION_USERNAME'],
+            password=os.environ['XTF_PRODUCTION_PASSWORD']
+        )
         xtf_path = '/usr/local/apache-tomcat-6.0/webapps/campub/data/bookreader'
     else:
         sys.stdout.write('unknown server, must be development or production.\n')
         sys.exit()
-
-    owncloud_ssh = paramiko.SSHClient()
-    owncloud_ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    owncloud_ssh.connect('s3.lib.uchicago.edu', username=owncloud_username, password=owncloud_password)
-    owncloud_ftp = owncloud_ssh.open_sftp()
-
-    xtf_ssh = paramiko.SSHClient()
-    xtf_ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    xtf_ssh.connect(xtf_server, username=xtf_username, password=xtf_password)
     xtf_ftp = xtf_ssh.open_sftp()
 
     for identifier in arguments['<identifier>']:
@@ -96,8 +100,8 @@ if __name__ == '__main__':
             identifier,
             width,
             height,
-            min_year,
-            max_year
+            arguments['--min-year'],
+            arguments['--max-year']
         )
         in_memory_ocr = io.StringIO()
         ocr_text = requests.get(url).text
@@ -107,4 +111,3 @@ if __name__ == '__main__':
             xtf_ftp.putfo(in_memory_ocr, '{}/{}/{}.xml'.format(xtf_path, identifier, identifier))
         except OSError:
             pass
-    
