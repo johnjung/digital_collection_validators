@@ -77,3 +77,8 @@ Checks to be sure directories of files on owncloud are valid.
 ```
 validate mvol-0004-1937-0105
 ```
+
+## Notes
+You may need to modify this program to deal with SSH authentication issues.
+Paramiko's connect() method can take an optional key_filename parameter to
+identify an SSH key.
