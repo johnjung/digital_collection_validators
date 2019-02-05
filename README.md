@@ -21,14 +21,14 @@ server, and the XTF production server.
 check_sync --owncloud-to-development mvol-0004-1937-0105
 ```
 
-## mvol_ls
+## mvol ls
 List mvol directories on owncloud that match certain patterns.
 
 ### Example
 ```
-mvol_ls mvol-0004-1937-0105
-mvol_ls mvol-0004-1937
-mvol_ls mvol-0004
+mvol ls mvol-0004-1937-0105
+mvol ls mvol-0004-1937
+mvol ls mvol-0004
 ```
 
 ## mvol_sync
@@ -71,11 +71,11 @@ Create or update a .struct.txt file on owncloud.
 put_struct_txt mvol-0004-1937-0105
 ```
 
-## validate
+## mvol validate
 Checks to be sure directories of files on owncloud are valid.
 
 ```
-validate mvol-0004-1937-0105
+mvol validate mvol-0004-1937-0105
 ```
 
 ## Notes
