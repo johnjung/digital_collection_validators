@@ -84,5 +84,5 @@ Paramiko's connect() method can take an optional key_filename parameter to
 identify an SSH key.
 
 ## See Also
-*[digital_collection_validators](https://github.com/uchicago-library/digital_collection_validators)
-*[mvol_script_dump](https://github.com/uchicago-library/mvol_script_dump)
++ [digital_collection_validators](https://github.com/uchicago-library/digital_collection_validators)
++ [mvol_script_dump](https://github.com/uchicago-library/mvol_script_dump)
