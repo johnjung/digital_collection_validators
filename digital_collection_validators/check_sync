@@ -1,0 +1,71 @@
+#!/usr/local/bin/python3
+
+"""check_sync
+   See if a given mvol identifier is "in sync" between the XTF development or
+   production servers and the owncloud source files. "In sync" means that the
+   files on the XTF server have the same datestamps or newer than those stored
+   in owncloud. 
+ 
+   Usage:
+   check_sync (--owncloud-to-development | --owncloud-to-production) (--list-in-sync | --list-out-of-sync) <identifier> ...
+"""
+
+from docopt import docopt
+import operator
+import os
+import paramiko
+
+
+def main():
+  args = docopt(__doc__)
+
+  owncloud_ssh = paramiko.SSHClient()
+  owncloud_ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+  owncloud_ssh.connect(
+    os.environ['OWNCLOUD_SSH_SERVER'],
+    username=os.environ['OWNCLOUD_SSH_USERNAME'],
+    password=os.environ['OWNCLOUD_SSH_PASSWORD']
+  )
+  owncloud_ftp = owncloud_ssh.open_sftp()
+
+  xtf_ssh = paramiko.SSHClient()
+  xtf_ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+  if args['--owncloud-to-development']:
+    xtf_ssh.connect(
+      os.environ['XTF_DEVELOPMENT_SERVER'],
+      username=os.environ['XTF_DEVELOPMENT_USERNAME'],
+      password=os.environ['XTF_DEVELOPMENT_PASSWORD']
+    )
+    xtf_path_function = get_path_xtf_development
+  elif args['--owncloud-to-production']:
+    xtf_ssh.connect(
+      os.environ['XTF_PRODUCTION_SERVER'],
+      username=os.environ['XTF_PRODUCTION_USERNAME'],
+      password=os.environ['XTF_PRODUCTION_PASSWORD']
+    )
+    xtf_path_function = get_path_xtf_production
+  else:
+    raise NotImplementedError
+  xtf_ftp = xtf_ssh.open_sftp()
+
+  if args['--list-in-sync']:
+    comparison = operator.lt
+  elif args['--list-out-of-sync']:
+    comparison = operator.gt
+  else:
+    raise NotImplementedError
+
+  for identifier in args['<identifier>']:
+    try:
+      if comparison(
+        get_newest_modification_time(owncloud_ftp, get_path_owncloud, identifier),
+        get_newest_modification_time(xtf_ftp, xtf_path_function, identifier)
+      ):
+        print(identifier)
+    except FileNotFoundError:
+      if args['--list-out-of-sync']: 
+        print(identifier)
+
+
+if __name__ == '__main__':
+  main()
