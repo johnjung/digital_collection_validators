@@ -83,6 +83,11 @@ You may need to modify this program to deal with SSH authentication issues.
 Paramiko's connect() method can take an optional key_filename parameter to
 identify an SSH key.
 
+## Handy Shell Commands
+```
+find EWM -name "*.tif" -size 0
+```
+
 ## See Also
 + [digital_collection_validators](https://github.com/uchicago-library/digital_collection_validators)
 + [mvol_script_dump](https://github.com/uchicago-library/mvol_script_dump)
