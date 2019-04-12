@@ -60,7 +60,8 @@ if __name__ == '__main__':
     identifiers = set()
     for identifier_chunk in arguments['<identifier-chunk>']:
         for i in owncloud_ssh.recursive_ls(identifier_chunk):
-            identifiers.add(i)
+            if i.startswith('mvol'):
+                identifiers.add(i)
     identifiers = sorted(list(identifiers))
 
     if arguments['check_sync']:
