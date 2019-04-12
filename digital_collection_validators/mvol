@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 
 """Usage:
-   mvol check_sync (--owncloud-to-development | --owncloud-to-production) (--list-in-sync | --list-out-of-sync) (- | <identifier>)
-   mvol ls <identifier-chunk>
-   mvol put_dc_xml (- | <identifier>)
-   mvol regularize_mets (- | <identifier>)
-   mvol regularize_pdf (- | <identifier>)
-   mvol regularize_struct (- | <identifier>)
-   mvol regularize_txt (- | <identifier>)
-   mvol rename_altos (- | <identifier>)
-   mvol rename_jpegs (- | <identifier>)
-   mvol rename_tiffs (- | <identifier>)
-   mvol validate (--list-valid | --show-errors) (- | <identifier>)
+   mvol check_sync (--owncloud-to-development | --owncloud-to-production) (--list-in-sync | --list-out-of-sync) <identifier-chunk> ...
+   mvol ls <identifier-chunk> ...
+   mvol put_dc_xml <identifier-chunk> ...
+   mvol regularize_mets <identifier-chunk> ...
+   mvol regularize_pdf <identifier-chunk> ...
+   mvol regularize_struct <identifier-chunk> ...
+   mvol regularize_txt <identifier-chunk> ...
+   mvol rename_altos <identifier-chunk> ...
+   mvol rename_jpegs <identifier-chunk> ...
+   mvol rename_tiffs <identifier-chunk> ...
+   mvol validate (--list-valid | --show-errors) <identifier-chunk> ...
 """
 
 import os
@@ -21,119 +21,117 @@ from docopt import docopt
 
 
 if __name__ == '__main__':
-  arguments = docopt(__doc__)
+    arguments = docopt(__doc__)
 
-  if any((arguments['check_sync'],
-          arguments['ls'],
-          arguments['validate'])):
     kwargs = {
-      'username': os.environ['OWNCLOUD_SSH_USERNAME'],
-      'password': os.environ['OWNCLOUD_SSH_PASSWORD']
+        'username': os.environ['OWNCLOUD_SSH_USERNAME'],
+        'password': os.environ['OWNCLOUD_SSH_PASSWORD']
     }
     if 'SSH_PRIVATE_KEY_PATH' in os.environ:
-      kwargs['key_filename'] = os.environ['SSH_PRIVATE_KEY_PATH']
+        kwargs['key_filename'] = os.environ['SSH_PRIVATE_KEY_PATH']
     owncloud_ssh = OwnCloudSSH(os.environ['OWNCLOUD_SSH_SERVER'], kwargs)
 
-  if any((arguments['check_sync'],)):
-    if args['--owncloud-to-development']:
-      xtf_ssh = XTFSSH(os.environ['XTF_DEVELOPMENT_SERVER'], {
-        'username': os.environ['XTF_DEVELOPMENT_USERNAME'],
-        'password': os.environ['XTF_DEVELOPMENT_PASSWORD']
-      }, production=False)
-    elif args['--owncloud-to-production']:
-      xtf_ssh = XTFSSH(os.environ['XTF_PRODUCTION_SERVER'], {
-        'username': os.environ['XTF_PRODUCTION_USERNAME'],
-        'password': os.environ['XTF_PRODUCTION_PASSWORD']
-      }, production=True)
+    if any((arguments['check_sync'],)):
+        if args['--owncloud-to-development']:
+            xtf_ssh = XTFSSH(os.environ['XTF_DEVELOPMENT_SERVER'], {
+                'username': os.environ['XTF_DEVELOPMENT_USERNAME'],
+                'password': os.environ['XTF_DEVELOPMENT_PASSWORD']
+            }, production=False)
+        elif args['--owncloud-to-production']:
+            xtf_ssh = XTFSSH(os.environ['XTF_PRODUCTION_SERVER'], {
+                'username': os.environ['XTF_PRODUCTION_USERNAME'],
+                'password': os.environ['XTF_PRODUCTION_PASSWORD']
+            }, production=True)
 
-  if any((arguments['put_dc_xml'],
-          arguments['regularize_mets'],
-          arguments['regularize_pdf'],
-          arguments['regularize_struct'],
-          arguments['regularize_txt'],
-          arguments['rename_altos'],
-          arguments['rename_jpegs'],
-          arguments['rename_tiffs'])):
-    owncloud_webdav = OwnCloudWebDAV(
-      os.environ['OWNCLOUD_WEBDAV_SERVER'],
-      os.environ['OWNCLOUD_WEBDAV_USERNAME'],
-      os.environ['OWNCLOUD_WEBDAV_PASSWORD'],
-    )
+    if any((arguments['put_dc_xml'],
+            arguments['regularize_mets'],
+            arguments['regularize_pdf'],
+            arguments['regularize_struct'],
+            arguments['regularize_txt'],
+            arguments['rename_altos'],
+            arguments['rename_jpegs'],
+            arguments['rename_tiffs'])):
+        owncloud_webdav = OwnCloudWebDAV(
+            os.environ['OWNCLOUD_WEBDAV_SERVER'],
+            os.environ['OWNCLOUD_WEBDAV_USERNAME'],
+            os.environ['OWNCLOUD_WEBDAV_PASSWORD'],
+        )
 
-  if arguments['-']:
-    identifiers = [i.strip() for i in sys.stdin]
-  elif arguments['<identifier>']:
-    identifiers = [arguments['<identifier>']]
-  else:
-    identifiers = []
+    identifiers = set()
+    for identifier_chunk in arguments['<identifier-chunk>']:
+        for i in owncloud_ssh.recursive_ls(identifier_chunk):
+            identifiers.add(i)
+    identifiers = sorted(list(identifiers))
 
-  if arguments['check_sync']:
-    raise NotImplementedError
-  elif arguments['ls']:
-    for identifier in sorted(
-      owncloud_ssh.recursive_ls(arguments['<identifier-chunk>'])
-    ):
-      sys.stdout.write(identifier + '\n')
-  elif arguments['put_dc_xml']:
-    for identifier in identifiers:
-      owncloud_webdav.put_dc_xml(identifier)
-  elif arguments['regularize_mets']:
-    for identifier in identifiers:
-      try:
-        owncloud_webdav.regularize_mvol_file(identifier, '.mets.xml')
-      except RuntimeError:
-        sys.stdout.write('COULD NOT REGULARIZE {}.mets.xml'.format(identifier))
-  elif arguments['regularize_pdf']:
-    for identifier in identifiers:
-      try:
-        owncloud_webdav.regularize_mvol_file(identifier, '.pdf')
-      except RuntimeError:
-        sys.stdout.write('COULD NOT REGULARIZE {}.pdf'.format(identifier))
-  elif arguments['regularize_struct']:
-    for identifier in identifiers:
-      try:
-        owncloud_webdav.regularize_mvol_file(identifier, '.struct.txt')
-      except RuntimeError:
-        sys.stdout.write('COULD NOT REGULARIZE {}.struct.txt'.format(identifier))
-  elif arguments['regularize_txt']:
-    for identifier in identifiers:
-      try:
-        owncloud_webdav.regularize_mvol_file(identifier, '.txt')
-      except RuntimeError:
-        sys.stdout.write('COULD NOT REGULARIZE {}.txt'.format(identifier))
-  elif arguments['rename_altos']:
-    for identifier in identifiers:
-      try:
-        owncloud_webdav.batch_rename(
-          '{}/ALTO'.format(OwnCloudWebDAV.get_path(identifier)),
-          OwnCloudWebDAV.get_mvol_numbered_filename
-        )
-      except RuntimeError:
-        sys.stdout.write('COULD NOT RENAME {}/ALTO'.format(identifier))
-  elif arguments['rename_jpegs']:
-    for identifier in identifiers:
-      try:
-        owncloud_webdav.batch_rename(
-          '{}/JPEG'.format(OwnCloudWebDAV.get_path(identifier)),
-          OwnCloudWebDAV.get_mvol_numbered_filename
-        )
-      except RuntimeError:
-        sys.stdout.write('COULD NOT RENAME {}/JPEG'.format(identifier))
-  elif arguments['rename_tiffs']:
-    for identifier in identifiers:
-      try:
-        owncloud_webdav.batch_rename(
-          '{}/TIFF'.format(OwnCloudWebDAV.get_path(identifier)),
-          OwnCloudWebDAV.get_mvol_numbered_filename
-        )
-      except RuntimeError:
-        sys.stdout.write('COULD NOT RENAME {}/TIFF'.format(identifier))
-  elif arguments['validate']:
-    for identifier in identifiers:
-      errors = owncloud_ssh.validate(identifier)
-      if arguments['--show-errors']:
-        for error in errors:
-          sys.stdout.write(error)
-      elif arguments['--list-valid']:
-        if not errors:
-          sys.stdout.write('{}\n'.format(identifier))
+    if arguments['check_sync']:
+        raise NotImplementedError
+    elif arguments['ls']:
+        for identifier in identifiers:
+            sys.stdout.write(identifier + '\n')
+    elif arguments['put_dc_xml']:
+        for identifier in identifiers:
+            owncloud_webdav.put_dc_xml(identifier)
+    elif arguments['regularize_mets']:
+        for identifier in identifiers:
+            try:
+                owncloud_webdav.regularize_mvol_file(identifier, '.mets.xml')
+            except RuntimeError:
+                sys.stdout.write(
+                    'COULD NOT REGULARIZE {}.mets.xml'.format(identifier))
+    elif arguments['regularize_pdf']:
+        for identifier in identifiers:
+            try:
+                owncloud_webdav.regularize_mvol_file(identifier, '.pdf')
+            except RuntimeError:
+                sys.stdout.write(
+                    'COULD NOT REGULARIZE {}.pdf'.format(identifier))
+    elif arguments['regularize_struct']:
+        for identifier in identifiers:
+            try:
+                owncloud_webdav.regularize_mvol_file(identifier, '.struct.txt')
+            except RuntimeError:
+                sys.stdout.write(
+                    'COULD NOT REGULARIZE {}.struct.txt'.format(identifier))
+    elif arguments['regularize_txt']:
+        for identifier in identifiers:
+            try:
+                owncloud_webdav.regularize_mvol_file(identifier, '.txt')
+            except RuntimeError:
+                sys.stdout.write(
+                    'COULD NOT REGULARIZE {}.txt'.format(identifier))
+    elif arguments['rename_altos']:
+        for identifier in identifiers:
+            try:
+                owncloud_webdav.batch_rename(
+                    '{}/ALTO'.format(OwnCloudWebDAV.get_path(identifier)),
+                    OwnCloudWebDAV.get_mvol_numbered_filename
+                )
+            except RuntimeError:
+                sys.stdout.write('COULD NOT RENAME {}/ALTO'.format(identifier))
+    elif arguments['rename_jpegs']:
+        for identifier in identifiers:
+            try:
+                owncloud_webdav.batch_rename(
+                    '{}/JPEG'.format(OwnCloudWebDAV.get_path(identifier)),
+                    OwnCloudWebDAV.get_mvol_numbered_filename
+                )
+            except RuntimeError:
+                sys.stdout.write('COULD NOT RENAME {}/JPEG'.format(identifier))
+    elif arguments['rename_tiffs']:
+        for identifier in identifiers:
+            try:
+                owncloud_webdav.batch_rename(
+                    '{}/TIFF'.format(OwnCloudWebDAV.get_path(identifier)),
+                    OwnCloudWebDAV.get_mvol_numbered_filename
+                )
+            except RuntimeError:
+                sys.stdout.write('COULD NOT RENAME {}/TIFF'.format(identifier))
+    elif arguments['validate']:
+        for identifier in identifiers:
+            errors = owncloud_ssh.validate(identifier)
+            if arguments['--show-errors']:
+                for error in errors:
+                    sys.stdout.write(error)
+            elif arguments['--list-valid']:
+                if not errors:
+                    sys.stdout.write('{}\n'.format(identifier))
