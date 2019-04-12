@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+
+"""Usage:
+    check_csv (<identifier-chunk> | -h)
+"""
+
+import csv
+import io
+import os
+import owncloud
+import re
+import sys
+from docopt import docopt
+
+if __name__=='__main__':
+    arguments = docopt(__doc__)
+
+    print(arguments)
+
+    if arguments['-h']:
+        print(('This is a program to check .csv files for a year\'s worth of '
+	       'issues of the Maroon. It tests to be sure the title, date, '
+	       'and identifier match certain patterns, and that the date can '
+               'be inferred from the identifier.'))
+        sys.exit()
+
+    if not re.match('^mvol-0004-\d{4}$', arguments['<identifier-chunk>']):
+        sys.stderr.write('Identifier chunks should be in the format mvol-0004-yyyy\n')
+        sys.exit()
+
+    oc = owncloud.Client(os.environ['OWNCLOUD_WEBDAV_SERVER'])
+    oc.login(
+        os.environ['OWNCLOUD_WEBDAV_USERNAME'], 
+        os.environ['OWNCLOUD_WEBDAV_PASSWORD']
+    )
+
+    yyyy_path = 'IIIF_Files/{}'.format(
+        arguments['<identifier-chunk>'].replace('-', '/')
+    )
+    csv_entries = []
+
+    for entry in oc.list(yyyy_path):
+        if entry.get_name().endswith('.csv'):
+            csv_entries.append('{}/{}'.format(yyyy_path, entry.get_name()))
+
+    if len(csv_entries) == 0:
+        sys.stderr.write('That directory doesn\'t appear to include a .csv file.\n')
+        sys.exit()
+    elif len(csv_entries) > 1:
+        sys.stderr.write('That directory includes more than one .csv file.\n')
+        sys.exit()
+
+    f = io.StringIO(oc.get_file_contents(csv_entries[0]).decode('utf-8'))
+    reader = csv.reader(f)
+    # skip headers. 
+    next(reader, None)
+
+    i = 1
+    for row in reader:
+        if row[0] != 'Daily Maroon':
+            print(row[2] + ' bad title on line ' + str(i))
+           
+        if not re.match('^\d{4}-\d{2}-\d{2}$', row[1]):
+            print(row[2] + ' bad date on line ' + str(i))
+       
+        if not re.match('^mvol-\d{4}-\d{4}-\d{4}$', row[2]):
+            print(row[2] + ' bad identifier on line ' + str(i))
+
+        chunks = row[2].split('-')
+        if not row[1] == '{}-{}-{}'.format(chunks[2], chunks[3][:2], chunks[3][2:]):
+            print(row[2] + ' date and identifier do not match on line ' + str(i))
+        i = i + 1

@@ -174,7 +174,7 @@ class SSH:
             return 0
 
     @staticmethod
-    def _validate_file_notempty(self, f):
+    def _validate_file_notempty(f):
         """Make sure that a given file is not empty.
 
         :param f: a file-like object.
