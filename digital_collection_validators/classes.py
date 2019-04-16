@@ -1,3 +1,4 @@
+import csv
 import io
 import os
 import owncloud
@@ -10,7 +11,7 @@ from lxml import etree
 
 
 class SSH:
-    def __init__(self, ssh_server, paramiko_kwargs):
+    def connect(self, ssh_server, paramiko_kwargs):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(ssh_server, **paramiko_kwargs)
@@ -136,13 +137,16 @@ class SSH:
         else:
             identifiers = []
             path = self.get_path(identifier_chunk)
-            for entry in self.ftp.listdir(path):
-                entry_identifier_chunk = self.get_identifier_chunk(
-                    '{}/{}'.format(path, entry)
-                )
-                if self.is_identifier_chunk(entry_identifier_chunk):
-                    identifiers = identifiers + \
-                        self.recursive_ls(entry_identifier_chunk)
+            try:
+                for entry in self.ftp.listdir(path):
+                    entry_identifier_chunk = self.get_identifier_chunk(
+                        '{}/{}'.format(path, entry)
+                    )
+                    if self.is_identifier_chunk(entry_identifier_chunk):
+                        identifiers = identifiers + \
+                            self.recursive_ls(entry_identifier_chunk)
+            except FileNotFoundError:
+                return []
             return identifiers
 
     def get_newest_modification_time_from_directory(self, directory):
@@ -190,87 +194,30 @@ class SSH:
 
 
 class OwnCloudSSH(SSH):
-    def __init__(self, owncloud_ssh_server, paramiko_kwargs):
-        super().__init__(owncloud_ssh_server, paramiko_kwargs)
+    def get_csv_data(self, identifier_chunk):
+        """Get CSV data for a specific identifier chunk.
 
-    def validate_mvol_directory(self, identifier):
-        """Make sure that the great-grandparent of this directory is a folder called
-        'mvol'.
+        :param str identifier_year: e.g. 'mvol-0004-1951'
 
-        :param str identifier: e.g. 'mvol-0001-0002-0003'
-
-        :returns a list of error messages, or an empty list.
+        :returns a dict of data about these identifiers.
         """
-
-        assert self.get_project(identifier) == 'mvol'
-
-        if re.search('mvol/\d{4}/\d{4}/\d{4}$', self.get_path(identifier)):
-            return []
-        else:
-            return [
-                identifier +
-                ' is contained in a great-grandparent folder that is not called "mvol".\n']
-
-    def validate_mvol_number_directory(self, identifier):
-        """Make sure that the grandparent of this directory is a four-digit mvol
-        number, in the format /d{4}.
-
-        :param str identifier: e.g. 'mvol-0001-0002-0003'
-
-        :returns a list of error messages, or an empty list.
-        """
-
-        assert self.get_project(identifier) == 'mvol'
-
-        mvol_number_dir_str = self.get_path(identifier).split('/')[-3]
-        if re.match('^\d{4}$', mvol_number_dir_str):
-            return []
-        else:
-            return [
-                identifier +
-                ' is contained in a grandparent folder that is not a valid mvol number.\n']
-
-    def validate_year_directory(self, identifier):
-        """Make sure that the parent of this directory is a year folder, in the
-        format (18|19|20)\d{2}, for mvol-0004.
-
-        :param str identifier: e.g. 'mvol-0001-0002-0003'
-
-        :returns a list of error messages, or an empty list.
-        """
-
-        assert self.get_project(identifier) == 'mvol'
-
-        if not identifier.startswith('mvol-0004'):
-            return []
-
-        mvol_year_dir_str = self.get_path(identifier).split('/')[-2]
-        if re.match('^(18|19|20)\d{2}$', mvol_year_dir_str):
-            return []
-        else:
-            return [
-                identifier +
-                ' is contained in a parent folder that is not a valid year.\n']
-
-    def validate_date_directory(self, identifier):
-        """Make sure that this folder is in the format (0\d|1[012])[0123]\d,
-        for mvol-0004.
-
-        :param str identifier: e.g. 'mvol-0001-0002-0003'
-
-        :returns a list of error messages, or an empty list.
-        """
-
-        assert self.get_project(identifier) == 'mvol'
-
-        if not identifier.startswith('mvol-0004'):
-            return []
-
-        date_dir_str = self.get_path(identifier).split('/')[-1]
-        if re.match('^(0\d|1[012])[0123]\d$', date_dir_str):
-            return []
-        else:
-            return [identifier + ' is not a valid mmdd folder name.\n']
+        path = self.get_path(identifier_chunk)
+        csv_data = {}
+        for entry in self.ftp.listdir(path):
+            if re.search('\.csv$', entry):
+                f = self.ftp.file('{}/{}'.format(path, entry))
+                reader = csv.reader(f)
+                next(reader, None)
+                try:
+                    for row in reader:
+                        csv_data[row[2]] = {
+                            'title': row[0],
+                            'date': row[1],
+                            'description': row[3]
+                        }
+                except IndexError:
+                    break
+        return csv_data
 
     def validate_directory(self, identifier, folder_name):
         """A helper function to validate ALTO, JPEG, and TIFF folders inside mmdd
@@ -294,8 +241,6 @@ class OwnCloudSSH(SSH):
         if folder_name not in extensions.keys():
             raise ValueError('unsupported folder_name.\n')
 
-        errors = []
-
         mmdd_path = self.get_path(identifier)
 
         # raise an IOError if the ALTO, JPEG, or TIFF directory does not exist.
@@ -309,14 +254,47 @@ class OwnCloudSSH(SSH):
             extensions[folder_name]
         )
 
+        entries = []
         for entry in self.ftp.listdir('{}/{}'.format(mmdd_path, folder_name)):
-            if not re.match(filename_re, entry):
-                errors.append(
-                    '{}/{} contains incorrectly named files.\n'.format(
-                        identifier,
-                        folder_name
+            if entry.endswith(extensions[folder_name]):
+                entries.append(entry)
+        entries.sort()
+
+        entries_pass = []
+        entries_fail = []
+        for entry in entries:
+            if re.match(filename_re, entry):
+                entries_pass.append(entry)
+            else:
+                entries_fail.append(entry)
+
+        errors = []
+        if entries_fail:
+            if entries_pass:
+		# if failed entries and passing entries both exist, don't
+		# recommend filename changes to avoid collisions.
+                for entry in entries_fail:
+                    errors.append(
+                        '{}/{}/{} should match {}\n'.format(
+                            identifier,
+                            folder_name,
+                            entry,
+                            filename_re
+                        )
                     )
-                )
+            else:
+                for i in range(len(entries_fail)): 
+                    errors.append(
+                        '{}/{}/{}/{} rename to {}_{:04}.{}\n'.format(
+                            self.get_path(identifier),
+                            identifier,
+                            folder_name,
+                            entries_fail[i],
+                            identifier,
+                            i + 1,
+                            extensions[folder_name]
+                        )
+                    )
         return errors
 
     def validate_alto_or_pos_directory(self, identifier):
@@ -336,7 +314,7 @@ class OwnCloudSSH(SSH):
             try:
                 return self.validate_directory(identifier, 'POS')
             except IOError:
-                return ['{} does not contain a ALTO or POS folder.\n'.format(identifier)]
+                return ['{}/ALTO or POS missing\n'.format(self.get_path(identifier))]
 
     def validate_jpeg_directory(self, identifier):
         """Validate that an JPEG folder exists. Make sure it contains appropriate
@@ -352,7 +330,7 @@ class OwnCloudSSH(SSH):
         try:
             return self.validate_directory(identifier, 'JPEG')
         except IOError:
-            return ['{} does not contain a JPEG folder.\n'.format(identifier)]
+            return ['{}/JPEG missing\n'.format(self.get_path(identifier))]
 
     def validate_tiff_directory(self, identifier):
         """Validate that an TIFF folder exists. Make sure it contains appropriate
@@ -367,7 +345,7 @@ class OwnCloudSSH(SSH):
         try:
             return self.validate_directory(identifier, 'TIFF')
         except IOError:
-            return ['{} does not contain a TIFF folder.\n'.format(identifier)]
+            return ['{}/TIFF missing\n'.format(self.get_path(identifier))]
 
     def validate_dc_xml(self, identifier):
         """Make sure that a given dc.xml file is well-formed and valid, and that the
@@ -419,7 +397,7 @@ class OwnCloudSSH(SSH):
             )
             metadata = etree.parse(f)
             if not dtd.validate(metadata):
-                errors.append(identifier + '.dc.xml is not valid.\n')
+                errors.append('{}/{}.dc.xml not valid\n'.format(self.get_path(identifier), identifier))
             else:
                 datepull = metadata.findtext("date")
                 pattern = re.compile("^\d{4}(-\d{2})?(-\d{2})?")
@@ -430,23 +408,23 @@ class OwnCloudSSH(SSH):
                     length = len(sections)
                     if (sections[0] < 1700) | (sections[0] > 2100):
                         errors.append(
-                            identifier + '.dc.xml has an incorrect year field.\n')
+                            '{}/{}.dc.xml has an incorrect year field\n'.format(self.get_path(identifier), identifier))
                     if length > 1:
                         if (sections[1] < 1) | (sections[1] > 12):
                             errors.append(
-                                identifier + '.dc.xml has an incorrect month field.\n')
+                                '{}/{}.dc.xml has an incorrect month field\n'.format(self.get_path(identifier), identifier))
                     if length > 2:
                         if (sections[2] < 1) | (sections[2] > 31):
                             errors.append(
-                                identifier + '.dc.xml has an incorrect day field.\n')
+                                '{}/{}.dc.xml has an incorrect day field\n'.format(self.get_path(identifier), identifier))
                     else:
                         errors.append(
-                            identifier + '.dc.xml has a date with a wrong format.\n')
+                            '{}/{}.dc.xml has an incorrect date\n'.format(self.get_path(identifier), identifier))
         except (FileNotFoundError, IOError):
-            errors.append('{}.dc.xml does not exist.\n'.format(identifier))
+            errors.append('{}/{}.dc.xml missing\n'.format(self.get_path(identifier), identifier))
             pass
         except etree.XMLSyntaxError as e:
-            errors.append(identifier + '.dc.xml is not well-formed.\n')
+            errors.append('{}/{}.dc.xml not well-formed\n'.format(self.get_path(identifier), identifier))
             pass
 
         return errors
@@ -474,13 +452,13 @@ class OwnCloudSSH(SSH):
             fdoc = etree.parse(f)
             if not xmlschema.validate(fdoc):
                 errors.append(
-                    '{}.mets.xml does not validate against schema.\n'.format(identifier))
+                    '{}/{}.mets.xml invalid\n'.format(self.get_path(identifier), identifier))
         except (FileNotFoundError, IOError):
-            errors.append('{}.mets.xml does not exist.\n'.format(identifier))
+            errors.append('{}/{}.mets.xml missing\n'.format(self.get_path(identifier), identifier))
             pass
         except etree.XMLSyntaxError:
             errors.append(
-                '{}.mets.xml is not a well-formed XML file.\n'.format(identifier))
+                '{}/{}.mets.xml not well-formed\n'.format(self.get_path(identifier), identifier))
             pass
         return errors
 
@@ -500,14 +478,14 @@ class OwnCloudSSH(SSH):
             f = self.ftp.open(
                 '{}/{}.struct.txt'.format(self.get_path(identifier), identifier))
         except (FileNotFoundError, IOError):
-            return ['{}.struct.txt not found.\n'.format(identifier)]
+            return ['{}/{}.struct.txt missing\n'.format(self.get_path(identifier), identifier)]
 
         num_lines = sum(1 for line in f)
         firstlinepattern = re.compile("^object\tpage\tmilestone\n")
         midlinespattern = re.compile('^\d{8}\t\d\n?')
         for line in f:
             if not firstlinepattern.fullmatch(line) and not midlinepattern.fullmatch(line):
-                errors.append('{}.struct.txt has an error.'.format(identifier))
+                errors.append('{}/{}.struct.txt has one or more errors'.format(self.get_path(identifier), identifier))
         return errors
 
     def validate_txt(self, identifier):
@@ -524,7 +502,7 @@ class OwnCloudSSH(SSH):
                 identifier))
             return SSH._validate_file_notempty(f)
         except (FileNotFoundError, IOError):
-            return ['{} does not include a .txt file.\n'.format(identifier)]
+            return ['{}/{}.txt missing\n'.format(self.get_path(identifier), identifier)]
 
     def validate_pdf(self, identifier):
         """Make sure that a PDF exists for an identifier.
@@ -540,7 +518,7 @@ class OwnCloudSSH(SSH):
                 identifier))
             return SSH._validate_file_notempty(f)
         except (FileNotFoundError, IOError):
-            return ['{} does not include a PDF file.\n'.format(identifier)]
+            return ['{}/{}.pdf missing\n'.format(self.get_path(identifier), identifier)]
 
     def finalcheck(self, identifier):
         """Make sure that a passing directory does not ultimately fail validation
@@ -555,13 +533,13 @@ class OwnCloudSSH(SSH):
             identifier + "/ocr?jpg_width=0&jpg_height=0&min_year=0&max_year=0"
         r = requests.get(url)
         if r.status_code != 200:
-            return [identifier + ' has an unknown error.\n']
+            return ['{} contains an unknown error\n'.format(self.get_path(identifier))]
         else:
             try:
                 fdoc = etree.fromstring(r.content)
                 return []
             except Exception:
-                return [identifier + ' has an unknown error.\n']
+                return ['{} contains an unknown error.\n'.format(self.get_path(identifier))]
 
     def validate(self, identifier):
         """Wrapper to call all validation functions. 
@@ -572,11 +550,6 @@ class OwnCloudSSH(SSH):
         assert self.get_project(identifier) == 'mvol'
 
         errors = []
-        errors = errors + self.validate_mvol_directory(identifier)
-        errors = errors + self.validate_mvol_number_directory(identifier)
-        if re.match('IIIF_Files/mvol/0004/', self.get_path(identifier)):
-            errors = errors + self.validate_year_directory(identifier)
-            errors = errors + self.validate_date_directory(identifier)
         errors = errors + self.validate_alto_or_pos_directory(identifier)
         errors = errors + self.validate_jpeg_directory(identifier)
         errors = errors + self.validate_tiff_directory(identifier)
@@ -592,8 +565,8 @@ class OwnCloudSSH(SSH):
 
 
 class XTFSSH(SSH):
-    def __init__(self, xtf_ssh_server, paramiko_kwargs, production):
-        super().__init__(xtf_ssh_server, paramiko_kwargs)
+    def __init__(self, production):
+        super().__init__()
         self.production = production
 
     @staticmethod

@@ -2,6 +2,7 @@
 
 """Usage:
    mvol check_sync (--owncloud-to-development | --owncloud-to-production) (--list-in-sync | --list-out-of-sync) <identifier-chunk> ...
+   mvol csvreport <identifier-chunk> ...
    mvol ls <identifier-chunk> ...
    mvol put_dc_xml <identifier-chunk> ...
    mvol regularize_mets <identifier-chunk> ...
@@ -29,7 +30,8 @@ if __name__ == '__main__':
     }
     if 'SSH_PRIVATE_KEY_PATH' in os.environ:
         kwargs['key_filename'] = os.environ['SSH_PRIVATE_KEY_PATH']
-    owncloud_ssh = OwnCloudSSH(os.environ['OWNCLOUD_SSH_SERVER'], kwargs)
+    owncloud_ssh = OwnCloudSSH()
+    owncloud_ssh.connect(os.environ['OWNCLOUD_SSH_SERVER'], kwargs)
 
     if any((arguments['check_sync'],)):
         if args['--owncloud-to-development']:
@@ -66,6 +68,29 @@ if __name__ == '__main__':
 
     if arguments['check_sync']:
         raise NotImplementedError
+    elif arguments['csvreport']:
+        # get a set of identifier_years, e.g. mvol-0004-1951.
+        identifier_years = set()
+        for i in identifiers:
+            if not i.startswith('mvol'):
+                raise NotImplementedError
+            identifier_years.add('-'.join(i.split('-')[:3]))
+
+        csv_data = {}
+        for i in identifier_years:
+            csv_data = {**csv_data, **owncloud_ssh.get_csv_data(i)}
+
+        csv_mvols = set(csv_data.keys())
+        owncloud_mvols = set(identifiers)
+
+        csv_only = csv_mvols - owncloud_mvols
+        if csv_only:
+            sys.stdout.write('The following mvols are present in CSV data but not in Owncloud:\n')
+            sys.stdout.write('\n'.join(sorted(csv_only)) + '\n')
+        owncloud_only = owncloud_mvols - csv_mvols
+        if owncloud_only:
+            sys.stdout.write('The following mvols are present in Owncloud but not in CSV data:\n')
+            sys.stdout.write('\n'.join(sorted(owncloud_only)) + '\n')
     elif arguments['ls']:
         for identifier in identifiers:
             sys.stdout.write(identifier + '\n')
