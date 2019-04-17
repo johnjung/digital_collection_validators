@@ -189,7 +189,10 @@ class SSH:
         size = f.tell()
 
         if not size:
-            errors.append('{} is an empty file.\n'.format(f.name))
+            try:
+                errors.append('{} is an empty file.\n'.format(f.name))
+            except AttributeError:
+                errors.append('empty file.\n')
         return errors
 
 
@@ -347,7 +350,7 @@ class OwnCloudSSH(SSH):
         except IOError:
             return ['{}/TIFF missing\n'.format(self.get_path(identifier))]
 
-    def validate_dc_xml(self, identifier):
+    def validate_dc_xml(self, identifier, f=None):
         """Make sure that a given dc.xml file is well-formed and valid, and that the
         date element is arranged as yyyy-mm-dd.
 
@@ -391,10 +394,11 @@ class OwnCloudSSH(SSH):
         errors = []
 
         try:
-            f = self.ftp.file('{}/{}.dc.xml'.format(
-                self.get_path(identifier),
-                identifier)
-            )
+            if not f:
+                f = self.ftp.file('{}/{}.dc.xml'.format(
+                    self.get_path(identifier),
+                    identifier)
+                )
             metadata = etree.parse(f)
             if not dtd.validate(metadata):
                 errors.append('{}/{}.dc.xml not valid\n'.format(self.get_path(identifier), identifier))
@@ -429,7 +433,7 @@ class OwnCloudSSH(SSH):
 
         return errors
 
-    def validate_mets_xml(self, identifier):
+    def validate_mets_xml(self, identifier, f=None):
         """Make sure that a given mets file is well-formed and valid.
 
         :param str identifier: e.g. 'mvol-0001-0002-0003'
@@ -439,54 +443,61 @@ class OwnCloudSSH(SSH):
 
         errors = []
 
-        schemfd = open('mets.xsd', 'r', encoding='utf8')
+        schemfd = open('{}/mets.xsd'.format(os.path.dirname(__file__)), 'r', encoding='utf8')
         schemdoc = etree.parse(schemfd)
         schemfd.close()
         xmlschema = etree.XMLSchema(schemdoc)
 
+        if not f:
+            try:
+                f = self.ftp.file('{}/{}.mets.xml'.format(
+                    self.get_path(identifier),
+                    identifier)
+                )
+            except (FileNotFoundError, IOError):
+                errors.append('{}/{}.mets.xml missing\n'.format(self.get_path(identifier), identifier))
+                pass
+
         try:
-            f = self.ftp.file('{}/{}.mets.xml'.format(
-                self.get_path(identifier),
-                identifier)
-            )
             fdoc = etree.parse(f)
             if not xmlschema.validate(fdoc):
                 errors.append(
-                    '{}/{}.mets.xml invalid\n'.format(self.get_path(identifier), identifier))
-        except (FileNotFoundError, IOError):
-            errors.append('{}/{}.mets.xml missing\n'.format(self.get_path(identifier), identifier))
-            pass
+                    '{}/{}.mets.xml invalid\n'.format(self.get_path(identifier), identifier)
+                )
         except etree.XMLSyntaxError:
             errors.append(
-                '{}/{}.mets.xml not well-formed\n'.format(self.get_path(identifier), identifier))
+                '{}/{}.mets.xml not well-formed\n'.format(self.get_path(identifier), identifier)
+            )
             pass
         return errors
 
-    def validate_struct_txt(self, identifier):
+    def validate_struct_txt(self, identifier, f=None):
         """Make sure that a given struct.txt is valid. It should be tab-delimited
         data, with a header row. Each record should contains a field for object,
         page and milestone.
 
         :param str identifier: e.g. 'mvol-0001-0002-0003'
+        :param f: a file-like object, for testing. 
         """
 
         assert self.get_project(identifier) == 'mvol'
 
-        errors = []
+        if not f:
+            try:
+                f = self.ftp.open(
+                    '{}/{}.struct.txt'.format(self.get_path(identifier), identifier))
+            except (FileNotFoundError, IOError):
+                return ['{}/{}.struct.txt missing\n'.format(self.get_path(identifier), identifier)]
 
-        try:
-            f = self.ftp.open(
-                '{}/{}.struct.txt'.format(self.get_path(identifier), identifier))
-        except (FileNotFoundError, IOError):
-            return ['{}/{}.struct.txt missing\n'.format(self.get_path(identifier), identifier)]
-
-        num_lines = sum(1 for line in f)
-        firstlinepattern = re.compile("^object\tpage\tmilestone\n")
-        midlinespattern = re.compile('^\d{8}\t\d\n?')
-        for line in f:
-            if not firstlinepattern.fullmatch(line) and not midlinepattern.fullmatch(line):
-                errors.append('{}/{}.struct.txt has one or more errors'.format(self.get_path(identifier), identifier))
-        return errors
+        line = f.readline()
+        if not re.match('^object\tpage\tmilestone', line):
+            return ['{}/{}.struct.txt has one or more errors'.format(self.get_path(identifier), identifier)]
+        line = f.readline()
+        while line:
+            if not re.match('^\d{8}\t\d+', line):
+                return ['{}/{}.struct.txt has one or more errors'.format(self.get_path(identifier), identifier)]
+            line = f.readline()
+        return []
 
     def validate_txt(self, identifier):
         """Make sure that a .txt file exists for an identifier.
