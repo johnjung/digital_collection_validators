@@ -1,4 +1,4 @@
-# digital_collection_validators
+# Digital Collection Validators
 
 The University of Chicago Library assembles directories of image files,
 metadata, OCR data, and more for digital project websites like [The Goodspeed
