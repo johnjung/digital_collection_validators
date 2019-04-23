@@ -15,9 +15,10 @@
    mvol validate (--list-valid | --show-errors) <identifier-chunk> ...
 """
 
+import operator
 import os
 import sys
-from classes import OwnCloudSSH, OwnCloudWebDAV
+from classes import OwnCloudSSH, OwnCloudWebDAV, XTFSSH
 from docopt import docopt
 
 
@@ -34,16 +35,18 @@ if __name__ == '__main__':
     owncloud_ssh.connect(os.environ['OWNCLOUD_SSH_SERVER'], kwargs)
 
     if any((arguments['check_sync'],)):
-        if args['--owncloud-to-development']:
-            xtf_ssh = XTFSSH(os.environ['XTF_DEVELOPMENT_SERVER'], {
+        if arguments['--owncloud-to-development']:
+            xtf_ssh = XTFSSH(False)
+            xtf_ssh.connect(os.environ['XTF_DEVELOPMENT_SERVER'], {
                 'username': os.environ['XTF_DEVELOPMENT_USERNAME'],
                 'password': os.environ['XTF_DEVELOPMENT_PASSWORD']
-            }, production=False)
-        elif args['--owncloud-to-production']:
-            xtf_ssh = XTFSSH(os.environ['XTF_PRODUCTION_SERVER'], {
+            })
+        elif arguments['--owncloud-to-production']:
+            xtf_ssh = XTFSSH(True)
+            xtf_ssh.connect(os.environ['XTF_PRODUCTION_SERVER'], {
                 'username': os.environ['XTF_PRODUCTION_USERNAME'],
                 'password': os.environ['XTF_PRODUCTION_PASSWORD']
-            }, production=True)
+            })
 
     if any((arguments['put_dc_xml'],
             arguments['regularize_mets'],
@@ -67,7 +70,21 @@ if __name__ == '__main__':
     identifiers = sorted(list(identifiers))
 
     if arguments['check_sync']:
-        raise NotImplementedError
+        if arguments['--list-in-sync']:
+            comparison = operator.le
+        elif arguments['--list-out-of-sync']:
+            comparison = operator.gt
+        for identifier in identifiers:
+            try:
+                if comparison(
+                    owncloud_ssh.get_newest_modification_time(identifier),
+                    xtf_ssh.get_newest_modification_time(identifier)
+                ):
+                    sys.stdout.write(identifier + '\n')
+            except FileNotFoundError:
+                if arguments['--list-out-of-sync']: 
+                    sys.stdout.write(identifier + '\n')
+      
     elif arguments['csvreport']:
         # get a set of identifier_years, e.g. mvol-0004-1951.
         identifier_years = set()

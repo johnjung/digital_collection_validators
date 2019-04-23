@@ -5,6 +5,7 @@ import owncloud
 import paramiko
 import re
 import requests
+import stat
 import sys
 
 from lxml import etree
@@ -161,10 +162,11 @@ class SSH:
         """
 
         mtimes = []
-        for entry in ftp.listdir_attr(directory):
+        for entry in self.ftp.listdir_attr(directory):
             if stat.S_ISDIR(entry.st_mode):
-                mtime = get_newest_modification_time_from_directory(
-                    ftp, '{}/{}'.format(directory, entry.filename))
+                mtime = self.get_newest_modification_time_from_directory(
+                    '{}/{}'.format(directory, entry.filename)
+                )
             else:
                 try:
                     mtimes.append(entry.st_mtime)
@@ -176,6 +178,9 @@ class SSH:
             return max(mtimes)
         else:
             return 0
+
+    def get_newest_modification_time(self, identifier):
+        return self.get_newest_modification_time_from_directory(self.get_path(identifier))
 
     @staticmethod
     def _validate_file_notempty(f):
@@ -580,9 +585,7 @@ class XTFSSH(SSH):
         super().__init__()
         self.production = production
 
-    @staticmethod
     def get_path(self, identifier):
-
         assert self.get_project(identifier) == 'mvol'
 
         if self.production:
