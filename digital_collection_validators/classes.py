@@ -21,9 +21,11 @@ class SSH:
     def get_identifier_chunk(self, path):
         """Get an identifier chunk from a path to an mmdd directory.
 
-        :param str path: to a directory on the remote server. 
+        Args:
+            path (str): to a directory on the remote server. 
 
-        :returns an identifier string, e.g. 'mvol-0004-1930-0103'.
+        Returns:
+            str: an identifier, e.g. 'mvol-0004-1930-0103'.
         """
 
         # get everything after 'IIIF_Files' in the path.
@@ -47,9 +49,11 @@ class SSH:
         """Return the path to a given identifier chunk on owncloud's disk space.
         N.B., you should use these paths for read-only access.
 
-        :param str identifier chunk: e.g., 'mvol-0001', 'mvol-0001-0002-0003'
+        Args:
+            identifier_chunk (str): e.g., 'mvol-0001', 'mvol-0001-0002-0003'
 
-        :returns a string, the path to an identifier chunk on disk. 
+        Returns:
+            str: the path to an identifier chunk on disk. 
         """
 
 	# for ewm, gms, and speculum, sections of the identifier are repeated
@@ -72,10 +76,11 @@ class SSH:
     def get_project(self, identifier_chunk):
         """Return the first part of an identifier chunk, e.g. 'mvol'.
 
-        :param str identifier_chunk: e.g. 'mvol-0001'
+        Args:
+            identifier_chunk (str): e.g. 'mvol-0001'
 
-        :rtype str
-        :returns the first part of the identifier chunk.
+        Returns:
+            str: the first part of the identifier chunk.
         """
 
         project = re.sub('-.*', '', identifier_chunk)
@@ -87,9 +92,11 @@ class SSH:
     def is_identifier(self, identifier_chunk):
         """Return true if this identifier chunk is a complete identifier. 
 
-        :param str identifier_chunk: e.g., 'mvol-0001', 'mvol-0001-0002-0003'
+        Args:
+            identifier_chunk (str): e.g., 'mvol-0001', 'mvol-0001-0002-0003'
 
-        :returns True or False
+        Returns:
+            bool
         """
 
         if self.get_project(identifier_chunk) == 'ewm':
@@ -106,10 +113,12 @@ class SSH:
     def is_identifier_chunk(self, identifier_chunk):
         """Return true if this is a valid identifier chunk.
 
-	:param str identifier_chunk: check to see if this identifier chunk is
-        valid.
+        Args:
+            identifier_chunk (str): check to see if this identifier chunk is
+            valid.
 
-        :returns True or False
+        Returns:
+            bool
         """
 
         if self.get_project(identifier_chunk) == 'ewm':
@@ -128,9 +137,11 @@ class SSH:
     def recursive_ls(self, identifier_chunk):
         """Get a list of identifiers in on disk. 
 
-        :param str identifier chunk: e.g., 'mvol-0001', 'mvol-0001-0002-0003'
+        Args:
+            identifier chunk (str): e.g., 'mvol-0001', 'mvol-0001-0002-0003'
 
-        :returns a list of identifiers, e.g. 'mvol-0001-0002-0003'
+        Returns:
+            list: a list of identifiers, e.g. 'mvol-0001-0002-0003'
         """
 
         if self.is_identifier(identifier_chunk):
@@ -154,11 +165,13 @@ class SSH:
         """ Helper function for get_newest_modification_time. Recursively searches
         subdirectories for the newest modification time. 
 
-        :param ftp: paramiko ftp instance
-        :param str directory: path to an identifier's files on disk, on either
-        owncloud or one of the XTF servers.
+        Args:
+            ftp: paramiko ftp instance
+            directory (str): path to an identifier's files on disk, on either
+            owncloud or one of the XTF servers.
 
-        :returns the newest unix timestamp present in that directory.
+        Returns:
+            the newest unix timestamp present in that directory.
         """
 
         mtimes = []
@@ -186,7 +199,8 @@ class SSH:
     def _validate_file_notempty(f):
         """Make sure that a given file is not empty.
 
-        :param f: a file-like object.
+        Args:
+            f: a file-like object.
         """
         errors = []
 
@@ -204,10 +218,12 @@ class SSH:
 class OwnCloudSSH(SSH):
     def get_csv_data(self, identifier_chunk):
         """Get CSV data for a specific identifier chunk.
+ 
+        Args:
+            identifier_year (str): e.g. 'mvol-0004-1951'
 
-        :param str identifier_year: e.g. 'mvol-0004-1951'
-
-        :returns a dict of data about these identifiers.
+        Returns:
+            dict: data about these identifiers.
         """
         path = self.get_path(identifier_chunk)
         csv_data = {}
@@ -231,10 +247,12 @@ class OwnCloudSSH(SSH):
         """A helper function to validate ALTO, JPEG, and TIFF folders inside mmdd
         folders.
 
-        :param str identifier: e.g. 'mvol-0001-0002-0003'
-        :param str folder_name: the name of the folder: ALTO|JPEG|TIFF
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
+            folder_name (str): the name of the folder: ALTO|JPEG|TIFF
 
-        :returns a list of error messages, or an empty list.
+        Returns:
+            list: error messages, or an empty list.
         """
 
         assert self.get_project(identifier) == 'mvol'
@@ -309,9 +327,11 @@ class OwnCloudSSH(SSH):
         """Validate that an ALTO or POS folder exists. Make sure it contains appropriate
         files.
 
-        :param str identifier: 'mvol-0001-0002-0003'
+        Args:
+            identifier (str): 'mvol-0001-0002-0003'
 
-        :returns a list of error messages, or an empty list.
+        Returns:
+            list: error messages, or an empty list.
         """
 
         assert self.get_project(identifier) == 'mvol'
@@ -328,9 +348,11 @@ class OwnCloudSSH(SSH):
         """Validate that an JPEG folder exists. Make sure it contains appropriate
         files.
 
-        :param str identifier: e.g. 'mvol-0001-0002-0003'
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
 
-        :returns a list of error messages, or an empty list.
+        Returns:
+            list: error messages, or an empty list.
         """
 
         assert self.get_project(identifier) == 'mvol'
@@ -344,9 +366,11 @@ class OwnCloudSSH(SSH):
         """Validate that an TIFF folder exists. Make sure it contains appropriate
         files.
 
-        :param str identifier: e.g. 'mvol-0001-0002-0003'
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
 
-        :returns a list of error messages, or an empty list.
+        Returns:
+            list: error messages, or an empty list.
         """
 
         assert self.get_project(identifier) == 'mvol'
@@ -359,7 +383,8 @@ class OwnCloudSSH(SSH):
         """Make sure that a given dc.xml file is well-formed and valid, and that the
         date element is arranged as yyyy-mm-dd.
 
-        :param str identifier: e.g. 'mvol-0001-0002-0003'
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
         """
 
         assert self.get_project(identifier) == 'mvol'
@@ -441,7 +466,8 @@ class OwnCloudSSH(SSH):
     def validate_mets_xml(self, identifier, f=None):
         """Make sure that a given mets file is well-formed and valid.
 
-        :param str identifier: e.g. 'mvol-0001-0002-0003'
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
         """
 
         assert self.get_project(identifier) == 'mvol'
@@ -481,8 +507,9 @@ class OwnCloudSSH(SSH):
         data, with a header row. Each record should contains a field for object,
         page and milestone.
 
-        :param str identifier: e.g. 'mvol-0001-0002-0003'
-        :param f: a file-like object, for testing. 
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
+            f: a file-like object, for testing. 
         """
 
         assert self.get_project(identifier) == 'mvol'
@@ -507,7 +534,8 @@ class OwnCloudSSH(SSH):
     def validate_txt(self, identifier):
         """Make sure that a .txt file exists for an identifier.
 
-        :param str identifier: e.g. 'mvol-0001-0002-0003'
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
         """
 
         assert self.get_project(identifier) == 'mvol'
@@ -523,7 +551,8 @@ class OwnCloudSSH(SSH):
     def validate_pdf(self, identifier):
         """Make sure that a PDF exists for an identifier.
 
-        :param str identifier: e.g. 'mvol-0001-0002-0003'
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
         """
 
         assert self.get_project(identifier) == 'mvol'
@@ -540,7 +569,8 @@ class OwnCloudSSH(SSH):
         """Make sure that a passing directory does not ultimately fail validation
         for an unknown reason
 
-        :param str identifier: e.g. 'mvol-0001-0002-0003'
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
         """
 
         assert self.get_project(identifier) == 'mvol'
@@ -560,20 +590,21 @@ class OwnCloudSSH(SSH):
     def validate(self, identifier):
         """Wrapper to call all validation functions. 
 
-        :param str identifier: e.g. 'mvol-0001-0002-0003'
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
         """
 
         assert self.get_project(identifier) == 'mvol'
 
         errors = []
-        errors = errors + self.validate_alto_or_pos_directory(identifier)
-        errors = errors + self.validate_jpeg_directory(identifier)
-        errors = errors + self.validate_tiff_directory(identifier)
-        errors = errors + self.validate_mets_xml(identifier)
-        errors = errors + self.validate_pdf(identifier)
-        errors = errors + self.validate_struct_txt(identifier)
-        errors = errors + self.validate_txt(identifier)
-        errors = errors + self.validate_dc_xml(identifier)
+        errors += self.validate_alto_or_pos_directory(identifier)
+        errors += self.validate_jpeg_directory(identifier)
+        errors += self.validate_tiff_directory(identifier)
+        errors += self.validate_mets_xml(identifier)
+        errors += self.validate_pdf(identifier)
+        errors += self.validate_struct_txt(identifier)
+        errors += self.validate_txt(identifier)
+        errors += self.validate_dc_xml(identifier)
         if not errors:
             errors = self.finalcheck(identifier)
 
@@ -603,10 +634,11 @@ class OwnCloudWebDAV:
     def get_path(identifier):
         """Return a path for a given identifier on owncloud.
 
-        :param str identifier: e.g. 'mvol-0001-0002-0003'
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
 
-        :rtype str
-        :returns the path to this file on owncloud.
+        Returns:
+            str: the path to this file on owncloud.
         """
 
         return '/IIIF_Files/{}'.format(identifier.replace('-', '/'))
@@ -615,10 +647,11 @@ class OwnCloudWebDAV:
     def get_identifier(self, path):
         """Return an identifier for a given owncloud path. 
 
-        :param str identifier: e.g. 'IIIF_Files/mvol/0001/0002/0003/ALTO/0001.xml'
+        Args:
+            identifier (str): e.g. 'IIIF_Files/mvol/0001/0002/0003/ALTO/0001.xml'
 
-        :rtype str
-        :returns an identifier, e.g. 'mvol-0001-0002-0003'
+        Returns:
+            str: an identifier, e.g. 'mvol-0001-0002-0003'
         """
 
         m = re.search(path, 'IIIF_Files/(mvol)/(\d{4})/(\d{4})/(\d{4})/')
@@ -627,8 +660,9 @@ class OwnCloudWebDAV:
     def regularize_mvol_file(self, identifier, extension):
         """Regularize METS, PDF, .txt or .struct.txt filenames. 
 
-        :param str identifier: e.g. 'mvol-0001-0002-0003'
-        :param str extension: e.g. '.mets.xml'
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
+            extension (str): e.g. '.mets.xml'
         """
 
         assert identifier.split('-')[0] == 'mvol'
@@ -655,8 +689,9 @@ class OwnCloudWebDAV:
         """Rename files in a directory (e.g. ALTO, JPEG, TIFF, etc.)
         according to a pattern. 
 
-        :param str directory: e.g. 'IIIF_Files/mvol/0001/0002/0003/ALTO/'
-        :param pattern_fun: a pattern function. 
+        Args:
+        directory (str): e.g. 'IIIF_Files/mvol/0001/0002/0003/ALTO/'
+        pattern_fun: a pattern function. 
         """
 
         assert identifier.split('-')[0] == 'mvol'
@@ -677,7 +712,8 @@ class OwnCloudWebDAV:
         """Add a dc.xml file to the given mvol directory.
         according to a pattern. 
 
-        :param str identifier: e.g., 'mvol-0001-0002-0003'
+        Args:
+            identifier (str): e.g., 'mvol-0001-0002-0003'
         """
 
         assert identifier.split('-')[0] == 'mvol'
@@ -704,9 +740,11 @@ class OwnCloudWebDAV:
     def get_dc_title(identifier):
         """Return the title for a given identifier.
 
-        :param str identifier: e.g. 'mvol-0001-0002-0003'
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
 
-        :returns a string, the title for an identifier chunk like 'mvol-0004'.
+        Returns:
+            str: the title for an identifier chunk like 'mvol-0004'.
         """
 
         identifier_chunk = '-'.join(identifier.split('-')[:2])
@@ -719,9 +757,11 @@ class OwnCloudWebDAV:
     def get_dc_description(identifier):
         """Return the description for a given identifier.
 
-        :param str identifier: e.g. 'mvol-0001-0002-0003'
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
 
-        :returns a string, the description for an identifier chunk like 'mvol-0004'.
+        Returns:
+            str: the description for an identifier chunk like 'mvol-0004'.
         """
 
         identifier_chunk = '-'.join(identifier.split('-')[:2])
@@ -734,9 +774,11 @@ class OwnCloudWebDAV:
     def get_dc_date(identifier):
         """Return the date for a given identifier.
 
-        :param str identifier: e.g. 'mvol-0004-1938-0103'
+        Args:
+            identifier (str): e.g. 'mvol-0004-1938-0103'
 
-        :returns a string, e.g. '1938-01-03'
+        Returns:
+            str: a string, e.g. '1938-01-03'
         """
 
         if re.search('^mvol-0004-\d{4}-\d{4}$', identifier):
@@ -753,10 +795,12 @@ class OwnCloudWebDAV:
         """Pattern function for rename_files_owncloud, for mvol ALTO, JPEG, or TIFF
         directories. 
 
-        :param int index: the index of this file, e.g. 1, 2, etc. 
-        :param str path: e.g., 'IIIF_Files/mvol/0001/0002/0003/ALTO/'
+        Args:
+            index (int): the index of this file, e.g. 1, 2, etc. 
+            path str): e.g., 'IIIF_Files/mvol/0001/0002/0003/ALTO/'
 
-        :returns a correctly named file, e.g. 'mvol-0001-0002-0003_0001.xml'
+        Returns:
+            a correctly named file, e.g. 'mvol-0001-0002-0003_0001.xml'
         """
         extensions = {
             'ALTO': 'xml',
