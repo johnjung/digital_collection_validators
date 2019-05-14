@@ -16,8 +16,9 @@ to modify these scripts to use them in other contexts.
 
 ## Quickstart
 ```
-docker build -t mvol_tools https://github.com/johnjung/mvol_tools.git
-docker run --rm -it --env-file env.sh mvol_tools bash
+python3 -m venv digital_collection_validators_env
+source digital_collections_validators_env/bin/activate
+pip install git+https://github.com/johnjung/digital_collection_validators.git#egg=digital_collection_validators
 ```
 
 ## General Utility
