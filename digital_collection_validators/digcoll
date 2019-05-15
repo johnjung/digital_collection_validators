@@ -12,14 +12,7 @@ from docopt import docopt
 
 if __name__ == '__main__':
     arguments = docopt(__doc__)
-
-    kwargs = {
-        'username': os.environ['OWNCLOUD_SSH_USERNAME'],
-        'password': os.environ['OWNCLOUD_SSH_PASSWORD']
-    }
-    if 'SSH_PRIVATE_KEY_PATH' in os.environ:
-        kwargs['key_filename'] = os.environ['SSH_PRIVATE_KEY_PATH']
-    owncloud_ssh = OwnCloudSSH(os.environ['OWNCLOUD_SSH_SERVER'], kwargs)
+    owncloud_ssh = OwnCloudSSH(os.environ['OWNCLOUD_SSH_SERVER'], {})
 
     identifiers = set()
     for identifier_chunk in arguments['<identifier-chunk>']:
