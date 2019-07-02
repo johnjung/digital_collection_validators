@@ -618,7 +618,7 @@ class OwnCloudSSH(SSH):
 
 class ApfOwnCloudSSH(OwnCloudSSH):
     def validate_tiff_files(self, identifier):
-	"""For a given apf identifier, make sure a TIFF file exists. Confirm
+        """For a given apf identifier, make sure a TIFF file exists. Confirm
         that the file is non-empty.
 
         Args:
