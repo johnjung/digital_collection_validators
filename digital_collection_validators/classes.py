@@ -616,6 +616,29 @@ class OwnCloudSSH(SSH):
         return errors
 
 
+class ApfOwnCloudSSH(OwnCloudSSH):
+    def validate_tiff_files(self, identifier):
+	"""For a given apf identifier, make sure a TIFF file exists. Confirm
+        that the file is non-empty.
+
+        Args:
+            identifier (str): e.g. 'apf1-00001'
+        """
+        raise NotImplementedError
+
+    def validate(self, identifier):
+        """Wrapper to call all validation functions. 
+
+        Args:
+            identifier (str): e.g. 'apf1-00001'
+        """
+        assert self.get_project(identifier) == 'apf'
+
+        errors = []
+        errors += self.validate_tiff_files(identifier)
+        return errors
+
+
 class XTFSSH(SSH):
     def __init__(self, production):
         super().__init__()

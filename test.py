@@ -135,5 +135,19 @@ class TestMvolValidator(unittest.TestCase):
                 len(self.owncloud.validate_dc_xml('mvol-0001-0002-0003', f))
             )
 
+
+class TestApfValidator(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.owncloud = OwnCloudSSH()
+
+    def test_recursive_ls(self):
+        """mock a dummy system to test this."""
+        raise NotImplementedError
+
+    def test_validate(self):
+        """mock a dummy system to test this."""
+        raise NotImplementedError
+
 if __name__ == '__main__':
     unittest.main()
