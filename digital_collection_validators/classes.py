@@ -500,6 +500,11 @@ class OwnCloudSSH(SSH):
                 '{}/{}.mets.xml not well-formed\n'.format(self.get_path(identifier), identifier)
             )
             pass
+        except TypeError:
+            errors.append(
+                '{}/{}.mets.xml problem\n'.format(self.get_path(identifier), identifier)
+            )
+            pass
         return errors
 
     def validate_struct_txt(self, identifier, f=None):
@@ -694,8 +699,6 @@ class OwnCloudWebDAV:
         pattern_fun: a pattern function. 
         """
 
-        assert identifier.split('-')[0] == 'mvol'
-
         source_paths = [f.path for f in self.oc.list(directory)]
         target_paths = []
         for i, s in enumerate(source_paths, 1):
@@ -720,6 +723,10 @@ class OwnCloudWebDAV:
 
         remote_path = '{}/{}.dc.xml'.format(
             OwnCloudWebDAV.get_path(identifier), identifier)
+
+        # JEJ
+        # self.oc.delete(remote_path)
+        '''
         try:
             self.oc.file_info(remote_path)
             sys.stdout.write(
@@ -727,6 +734,7 @@ class OwnCloudWebDAV:
             sys.exit()
         except owncloud.HTTPResponseError:
             pass
+        '''
 
         xml_data = "<?xml version='1.0' encoding='utf8'?><metadata><title>{}</title><date>{}</date><description>{}</description><identifier>{}</identifier></metadata>".format(
             OwnCloudWebDAV.get_dc_title(identifier),
