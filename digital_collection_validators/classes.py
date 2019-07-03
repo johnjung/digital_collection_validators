@@ -14,8 +14,9 @@ from lxml import etree
 class SSH:
     def connect(self, ssh_server, paramiko_kwargs):
         ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        #ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(ssh_server, **paramiko_kwargs)
+        #ssh.connect('s3.lib.uchicago.edu', username='ksong814')
         self.ftp = ssh.open_sftp()
 
     def get_identifier_chunk(self, path):
