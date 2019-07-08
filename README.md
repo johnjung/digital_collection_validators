@@ -21,6 +21,9 @@ source digital_collections_validators_env/bin/activate
 pip install git+https://github.com/johnjung/digital_collection_validators.git#egg=digital_collection_validators
 ```
 
+## Getting Set Up On Windows
+Go to Settings > Updates and Security > For Developers. Search for "Windows Features". Choose "Turn windows features on or off" and enable the Windows subsystem for Linux. To get bash installed, open a command prompt and type "bash". Follow the instructions to install your favorite Linux like Ubuntu.  
+
 ## General Utility
 digcoll is a general utility for working with digital collections data. You can
 use it to report on files in the system.
