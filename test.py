@@ -143,6 +143,10 @@ class TestApfValidator(unittest.TestCase):
 
     def test_recursive_ls(self):
         """mock a dummy system to test this."""
+        '''
+        file = path(<identifier-chunk-in-apf>)
+        self.assertItemsEqual(file,<apf-directory>) // self.assertCountEqual("")
+        '''
         raise NotImplementedError
 
     def test_validate(self):
