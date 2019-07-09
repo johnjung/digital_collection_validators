@@ -29,13 +29,12 @@ if __name__ == '__main__':
     # this. Look at the recursive_ls function in OwnCloudSSH, in classes.py. 
     # This should work with mvol files. Does this "just work" with apf, or does
     # it need to be extended?)
-    identifiers = set()
+    identifiers = set() #set --> ensures no repeating elements
     for identifier_chunk in arguments['<identifier-chunk>']:
-        for i in apf_owncloud_ssh.recursive_ls(identifier_chunk):
+        for i in apf_owncloud_ssh.recursive_ls(identifer_chunk):
             if i.startswith('apf'):
                 identifiers.add(i)
     identifiers = sorted(list(identifiers))
-        
 
     if arguments['ls']:
         for identifier in identifiers:

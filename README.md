@@ -21,6 +21,17 @@ source digital_collections_validators_env/bin/activate
 pip install git+https://github.com/johnjung/digital_collection_validators.git#egg=digital_collection_validators
 ```
 
+## Authenticating
+We currently use public key authentication to provide access to many of our servers. To test that public key authentication works, run the following commands:
+
+```
+ssh-agent
+ssh-add
+ssh server_name_here
+```
+
+You'll have to use an SSH agent to run any of the commands below. 
+
 ## General Utility
 digcoll is a general utility for working with digital collections data. You can
 use it to report on files in the system.
