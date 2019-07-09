@@ -21,8 +21,16 @@ source digital_collections_validators_env/bin/activate
 pip install git+https://github.com/johnjung/digital_collection_validators.git#egg=digital_collection_validators
 ```
 
-## Getting Set Up On Windows
-Go to Settings > Updates and Security > For Developers. Search for "Windows Features". Choose "Turn windows features on or off" and enable the Windows subsystem for Linux. To get bash installed, open a command prompt and type "bash". Follow the instructions to install your favorite Linux like Ubuntu.  
+## Authenticating
+We currently use public key authentication to provide access to many of our servers. To test that public key authentication works, run the following commands:
+
+```
+ssh-agent
+ssh-add
+ssh server_name_here
+```
+
+You'll have to use an SSH agent to run any of the commands below. 
 
 ## General Utility
 digcoll is a general utility for working with digital collections data. You can
