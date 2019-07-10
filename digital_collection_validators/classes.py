@@ -14,9 +14,8 @@ from lxml import etree
 class SSH:
     def connect(self, ssh_server, paramiko_kwargs):
         ssh = paramiko.SSHClient()
-        #ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(ssh_server, **paramiko_kwargs)
-        #ssh.connect('s3.lib.uchicago.edu', username='ksong814')
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect('s3.lib.uchicago.edu', username='ksong814')
         self.ftp = ssh.open_sftp()
 
     def get_identifier_chunk(self, path):
@@ -28,7 +27,6 @@ class SSH:
         Returns:
             str: an identifier, e.g. 'mvol-0004-1930-0103'.
         """
-
         # get everything after 'IIIF_Files' in the path.
         shortened_path_chunks = re.sub('^.*IIIF_Files/', '', path).split('/')
 
@@ -36,6 +34,8 @@ class SSH:
             return shortened_path_chunks.pop()
         if shortened_path_chunks[0] in ('mvol',):
             return '-'.join(shortened_path_chunks[:4])
+        if shortened_path_chunks[0] in ('apf'):
+            return shortened_path_chunks[0] + shortened_path_chunks[1]
         else:
             raise NotImplementedError
 
@@ -69,7 +69,7 @@ class SSH:
             )
 	# for mvol, sections of the identifier are not repeated in subfolders,
 	# e.g. mvol/0001/0002/0003.
-        if self.get_project(identifier_chunk) in ('mvol',):
+        if self.get_project(identifier_chunk) in ('mvol','apf'):
             return '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/{}'.format(identifier_chunk.replace('-', '/'))
         else:
             raise NotImplementedError
@@ -87,6 +87,8 @@ class SSH:
         project = re.sub('-.*', '', identifier_chunk)
         if project in ('ewm', 'gms', 'mvol', 'speculum'):
             return project
+        elif 'apf' in identifier_chunk:
+            return identifier_chunk[:3]
         else:
             raise NotImplementedError
 
@@ -108,6 +110,8 @@ class SSH:
             return re.match('^mvol-\d{4}-\d{4}-\d{4}$', identifier_chunk)
         elif self.get_project(identifier_chunk) == 'speculum':
             return re.match('^speculum-\d{4}', identifier_chunk)
+        elif self.get_project(identifier_chunk) == 'apf':
+            return re.match('^apf\d{1}',identifier_chunk)
         else:
             raise NotImplementedError
 
@@ -130,6 +134,9 @@ class SSH:
             r = '^mvol(-\d{4}(-\d{4}(-\d{4})?)?)?$'
         elif self.get_project(identifier_chunk) == 'speculum':
             r = '^speculum(-\d{4})?'
+        elif self.get_project(identifier_chunk) == 'apf':
+            r = '^apf(\d{1})?'
+            
         else:
             raise NotImplementedError
 
@@ -625,7 +632,15 @@ class ApfOwnCloudSSH(OwnCloudSSH):
         Args:
             identifier (str): e.g. 'apf1-00001'
         """
-        raise NotImplementedError
+        assert self.get_project(identifier) == 'apf'
+
+        try:
+            f = self.ftp.open('{}/{}.tiff'.format(
+                self.get_path(identifier),
+                identifier))
+            return SSH._validate_file_notempty(f)
+        except:
+            return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
 
     def validate(self, identifier):
         """Wrapper to call all validation functions. 

@@ -5,9 +5,9 @@
    apf validate (--list-valid | --show-errors) <identifier-chunk> ...
 """
 
-import os
+import os, glob
 import sys
-from classes import ApfOwnCloudSSH
+from classes import ApfOwnCloudSSH, OwnCloudWebDAV
 from docopt import docopt
 
 if __name__ == '__main__':
@@ -29,15 +29,24 @@ if __name__ == '__main__':
     # This should work with mvol files. Does this "just work" with apf, or does
     # it need to be extended?)
     identifiers = set() #set --> ensures no repeating elements
+    #print(arguments['<identifier-chunk>'])
+    
     for identifier_chunk in arguments['<identifier-chunk>']:
-        for i in apf_owncloud_ssh.recursive_ls(identifer_chunk):
+        for i in apf_owncloud_ssh.recursive_ls(identifier_chunk):
             if i.startswith('apf'):
                 identifiers.add(i)
     identifiers = sorted(list(identifiers))
+    
+    #print(arguments['<identifier-chunk>'][0])
+    path = apf_owncloud_ssh.get_path(arguments['<identifier-chunk>'][0])
+    #print(path)
 
     if arguments['ls']:
         for identifier in identifiers:
             sys.stdout.write(identifier + '\n')
+        os.chdir(path)
+        for f in glob.glob("*.*"):
+            print(f)
     elif arguments['validate']:
         for identifier in identifiers:
             errors = apf_owncloud_ssh.validate(identifier)
@@ -48,32 +57,4 @@ if __name__ == '__main__':
                 if not errors:
                     sys.stdout.write('{}\n'.format(identifier))
 
-    '''
-    def recursive_ls(self, identifier_chunk):
-    """Get a list of identifiers in on disk. 
-
-    Args:
-        identifier chunk (str): e.g., 'mvol-0001', 'mvol-0001-0002-0003'
-
-    Returns:
-        list: a list of identifiers, e.g. 'mvol-0001-0002-0003'
-    """
-
-    if self.is_identifier(identifier_chunk):
-        return [identifier_chunk]
-    else:
-        identifiers = []
-        path = self.get_path(identifier_chunk)
-        try:
-            for entry in self.ftp.listdir(path):
-                entry_identifier_chunk = self.get_identifier_chunk(
-                    '{}/{}'.format(path, entry)
-                )
-                if self.is_identifier_chunk(entry_identifier_chunk):
-                    identifiers = identifiers + \ #directory
-                        self.recursive_ls(entry_identifier_chunk)
-        except FileNotFoundError:
-            return []
-        return identifiers
-        '''
-    
+ 
