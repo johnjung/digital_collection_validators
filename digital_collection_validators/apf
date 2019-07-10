@@ -44,9 +44,6 @@ if __name__ == '__main__':
     if arguments['ls']:
         for identifier in identifiers:
             sys.stdout.write(identifier + '\n')
-        os.chdir(path)
-        for f in glob.glob("*.*"):
-            print(f)
     elif arguments['validate']:
         for identifier in identifiers:
             errors = apf_owncloud_ssh.validate(identifier)

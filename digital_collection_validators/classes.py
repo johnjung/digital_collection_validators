@@ -87,8 +87,8 @@ class SSH:
         project = re.sub('-.*', '', identifier_chunk)
         if project in ('ewm', 'gms', 'mvol', 'speculum'):
             return project
-        elif 'apf' in identifier_chunk:
-            return identifier_chunk[:3]
+        elif 'apf' in identifier_chunk[:3]:
+            return 'apf'
         else:
             raise NotImplementedError
 
@@ -109,9 +109,9 @@ class SSH:
         elif self.get_project(identifier_chunk) == 'mvol':
             return re.match('^mvol-\d{4}-\d{4}-\d{4}$', identifier_chunk)
         elif self.get_project(identifier_chunk) == 'speculum':
-            return re.match('^speculum-\d{4}', identifier_chunk)
+            return re.match('^speculum-\d{4}$', identifier_chunk)
         elif self.get_project(identifier_chunk) == 'apf':
-            return re.match('^apf\d{1}',identifier_chunk)
+            return re.match('^apf\d{1}$',identifier_chunk) # orig : ^apf\d{1}-\d{5}$
         else:
             raise NotImplementedError
 
@@ -133,9 +133,9 @@ class SSH:
         elif self.get_project(identifier_chunk) == 'mvol':
             r = '^mvol(-\d{4}(-\d{4}(-\d{4})?)?)?$'
         elif self.get_project(identifier_chunk) == 'speculum':
-            r = '^speculum(-\d{4})?'
+            r = '^speculum(-\d{4})?$'
         elif self.get_project(identifier_chunk) == 'apf':
-            r = '^apf(\d{1})?'
+            r = '^apf(\d{1}(-\d{5})?)?$'
             
         else:
             raise NotImplementedError
@@ -151,7 +151,6 @@ class SSH:
         Returns:
             list: a list of identifiers, e.g. 'mvol-0001-0002-0003'
         """
-
         if self.is_identifier(identifier_chunk):
             return [identifier_chunk]
         else:
@@ -653,6 +652,14 @@ class ApfOwnCloudSSH(OwnCloudSSH):
         errors = []
         errors += self.validate_tiff_files(identifier)
         return errors
+
+    def list_dir(self, identifier):
+        '''
+        Lists all files within given identifier 
+
+        Args:
+            identifier (str): e.g. 'apf1'
+        '''
 
 
 class XTFSSH(SSH):
