@@ -57,8 +57,8 @@ class SSH:
             str: the path to an identifier chunk on disk. 
         """
 
-	# for ewm, gms, and speculum, sections of the identifier are repeated
-	# in subfolders, e.g. ewm/ewm-0001
+        # for ewm, gms, and speculum, sections of the identifier are repeated
+        # in subfolders, e.g. ewm/ewm-0001
         if self.get_project(identifier_chunk) in ('ewm', 'gms', 'speculum'):
             subfolders = []
             identifier_sections = identifier_chunk.split('-')
@@ -67,8 +67,8 @@ class SSH:
             return '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/{}'.format(
                 '/'.join(subfolders)
             )
-	# for mvol, sections of the identifier are not repeated in subfolders,
-	# e.g. mvol/0001/0002/0003.
+        # for mvol, sections of the identifier are not repeated in subfolders,
+        # e.g. mvol/0001/0002/0003.
         if self.get_project(identifier_chunk) in ('mvol','apf'):
             return '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/{}'.format(identifier_chunk.replace('-', '/'))
         else:
@@ -83,7 +83,6 @@ class SSH:
         Returns:
             str: the first part of the identifier chunk.
         """
-
         project = re.sub('-.*', '', identifier_chunk)
         if project in ('ewm', 'gms', 'mvol', 'speculum'):
             return project
@@ -103,7 +102,6 @@ class SSH:
         Returns:
             bool
         """
-
         if self.get_project(identifier_chunk) == 'ewm':
             return bool(re.match('^ewm-\d{4}$', identifier_chunk))
         elif self.get_project(identifier_chunk) == 'gms':
@@ -129,7 +127,6 @@ class SSH:
         Returns:
             bool
         """
-
         if self.get_project(identifier_chunk) == 'ewm':
             r = '^ewm(-\d{4})?$'
         elif self.get_project(identifier_chunk) == 'gms':
@@ -142,10 +139,8 @@ class SSH:
             r = '^apf(\d{1}(-\d{5})?)?$'
         elif self.get_project(identifier_chunk) == 'chopin':
             r = '^chopin(-\d{3})?$'
-            
         else:
             raise NotImplementedError
-
         return bool(re.match(r, identifier_chunk))
 
     def recursive_ls(self, identifier_chunk):
@@ -256,11 +251,8 @@ class OwnCloudSSH(SSH):
                     break
         return csv_data
 
-#class ChopinOwnCloudSSH(OwnCloudSSH)
-
 
 class MvolOwnCloudSSH(OwnCloudSSH):
-
     def validate_directory(self, identifier, folder_name):
         """A helper function to validate ALTO, JPEG, and TIFF folders inside mmdd
         folders.
@@ -315,8 +307,8 @@ class MvolOwnCloudSSH(OwnCloudSSH):
         errors = []
         if entries_fail:
             if entries_pass:
-		# if failed entries and passing entries both exist, don't
-		# recommend filename changes to avoid collisions.
+                # if failed entries and passing entries both exist, don't
+                # recommend filename changes to avoid collisions.
                 for entry in entries_fail:
                     errors.append(
                         '{}/{}/{} should match {}\n'.format(
@@ -634,8 +626,6 @@ class MvolOwnCloudSSH(OwnCloudSSH):
         return errors
 
 
-
-
 class ApfOwnCloudSSH(OwnCloudSSH):
     def validate_tiff_files(self, identifier):
         """For a given apf identifier, make sure a TIFF file exists. Confirm
@@ -698,10 +688,6 @@ class ApfOwnCloudSSH(OwnCloudSSH):
                     return [i]
 
         return identifiers  
-            
-
-        
-
 
 
 class XTFSSH(SSH):
@@ -811,18 +797,6 @@ class OwnCloudWebDAV:
 
         remote_path = '{}/{}.dc.xml'.format(
             OwnCloudWebDAV.get_path(identifier), identifier)
-
-        # JEJ
-        # self.oc.delete(remote_path)
-        '''
-        try:
-            self.oc.file_info(remote_path)
-            sys.stdout.write(
-                'A .dc.xml file already exists in that location.\n')
-            sys.exit()
-        except owncloud.HTTPResponseError:
-            pass
-        '''
 
         xml_data = "<?xml version='1.0' encoding='utf8'?><metadata><title>{}</title><date>{}</date><description>{}</description><identifier>{}</identifier></metadata>".format(
             OwnCloudWebDAV.get_dc_title(identifier),
