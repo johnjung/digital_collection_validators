@@ -23,27 +23,15 @@ if __name__ == '__main__':
     # examples:
     # apf ls apf1
     # apf ls apf1 apf2 apf3
-    #
-    # (look at the mvol command in this directory for an example of how to do
-    # this. Look at the recursive_ls function in OwnCloudSSH, in classes.py. 
-    # This should work with mvol files. Does this "just work" with apf, or does
-    # it need to be extended?)
-    identifiers = set() #set --> ensures no repeating elements
-    #print(arguments['<identifier-chunk>'])
-    
-    for identifier_chunk in arguments['<identifier-chunk>']:
-        for i in apf_owncloud_ssh.recursive_ls(identifier_chunk):
-            if i.startswith('apf'):
-                identifiers.add(i)
-    identifiers = sorted(list(identifiers))
-    
-    #print(arguments['<identifier-chunk>'][0])
-    path = apf_owncloud_ssh.get_path(arguments['<identifier-chunk>'][0])
-    #print(path)
+
+    identifiers = []
+    for i in range(0,len(arguments['<identifier-chunk>'])):
+        identifiers.insert(i,(apf_owncloud_ssh.list_dir(arguments['<identifier-chunk>'][i])))
 
     if arguments['ls']:
         for identifier in identifiers:
-            sys.stdout.write(identifier + '\n')
+            for i in identifier:
+                sys.stdout.write(i + '\n')
     elif arguments['validate']:
         for identifier in identifiers:
             errors = apf_owncloud_ssh.validate(identifier)

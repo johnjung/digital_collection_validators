@@ -111,7 +111,7 @@ class SSH:
         elif self.get_project(identifier_chunk) == 'speculum':
             return re.match('^speculum-\d{4}$', identifier_chunk)
         elif self.get_project(identifier_chunk) == 'apf':
-            return re.match('^apf\d{1}$',identifier_chunk) # orig : ^apf\d{1}-\d{5}$
+            return re.match('^apf\d{1}$',identifier_chunk) 
         else:
             raise NotImplementedError
 
@@ -660,6 +660,29 @@ class ApfOwnCloudSSH(OwnCloudSSH):
         Args:
             identifier (str): e.g. 'apf1'
         '''
+        if identifier[:3] != 'apf':
+            print("Invalid cmd")
+            exit  
+        path = "/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/" + identifier[:3]
+
+        length = len(identifier)
+        if length == 4 or length == 10:
+            path += '/' + identifier[3]
+        elif length != 3:
+            print("Invalid cmd")
+
+        identifiers = self.ftp.listdir(path)
+
+        if length == 10:
+            for i in identifiers:
+                if identifier in i:
+                    return [i]
+
+        return identifiers  
+            
+
+        
+
 
 
 class XTFSSH(SSH):
