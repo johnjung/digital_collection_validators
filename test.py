@@ -16,41 +16,6 @@ class TestSSH(unittest.TestCase):
         that name currently exists- it only needs to confirm that an identifier
             with that name would be legal.
         """
-        # "apf"        is not an identifier. 
-        # "apf1"       is not an identifier.
-        # "apfx"       is not an identifier.
-        # "apf1-"      is not an identifier.
-        # "apf1-00001" is an identifier.
-        # "apf1-0001"  is not an identifier.
-        # "apf1-a"     is not an identifier.
-
-        # "chopin"     is not an identifier. 
-        # "chopin-"    is not an identifier. 
-        # "chopin-001" is an identifier. 
-        # "chopin-abc" is not an identifier. 
-
-        # "ewm"        is not an identifier.
-        # "ewm-"       is not an identifier.
-        # "ewm-0001"   is an identifier. 
-        # "ewm-abcd"   is not an identifier. 
-
-        # "gms"        is not an identifier. 
-        # "gms-"       is not an identifier. 
-        # "gms-0001"   is an identifier. 
-        # "gms-abcd"   is not an identifier. 
-
-        # "mvol"                 is not an identifier.
-        # "mvol-"                is not an identifier
-        # "mvol-0001"            is not an identifier
-        # "mvol-0001-"           is not an identifier
-        # "mvol-0001-0002"       is not an identifier
-        # "mvol-0001-0002-"      is not an identifier
-        # "mvol-0001-0002-0003"  is an identifier
-
-        # "speculum"             is not an identifier.
-        # "speculum-0001"        is an identifier.
-
-        
         self.assertEqual(False,self.owncloud.is_identifier('apf'))
         self.assertEqual(False,self.owncloud.is_identifier('apf1'))
         self.assertEqual(False,self.owncloud.is_identifier('apfx'))
@@ -86,52 +51,13 @@ class TestSSH(unittest.TestCase):
         self.assertEqual(False,self.owncloud.is_identifier('speculum-abcd'))
         self.assertEqual(True,self.owncloud.is_identifier('speculum-0001'))
 
-
-
-
-
     def test_is_identifier_chunk(self):
-        
         """ 
         Be sure that identifier chunks conform to their filenaming spec. Note
         that this function does not need to confirm that an identifier chunk with
         that name currently exists- it only needs to confirm that one with that
         name would be legal.
         """
-        # "apf"        is an identifier chunk. 
-        # "apf1"       is an identifier chunk.
-        # "apfx"       is not an identifier chunk.
-        # "apf1-"      is not an identifier chunk.
-        # "apf1-00001" is an identifier chunk.
-        # "apf1-0001"  is not an identifier chunk.
-        # "apf1-a"     is not an identifier chunk.
-
-        # "chopin"     is an identifier chunk. 
-        # "chopin-"    is not an identifier chunk. 
-        # "chopin-001" is an identifier chunk. 
-        # "chopin-abc" is not an identifier chunk. 
-
-        # "ewm"        is an identifier chunk.
-        # "ewm-"       is not an identifier chunk.
-        # "ewm-0001"   is an identifier chunk. 
-        # "ewm-abcd"   is not an identifier chunk. 
-
-        # "gms"        is an identifier chunk. 
-        # "gms-"       is not an identifier chunk. 
-        # "gms-0001"   is an identifier chunk. 
-        # "gms-abcd"   is not an identifier chunk. 
-
-        # "mvol"                 is an identifier chunk.
-        # "mvol-"                is not an identifier chunk
-        # "mvol-0001"            is an identifier chunk
-        # "mvol-0001-"           is not an identifier chunk
-        # "mvol-0001-0002"       is an identifier chunk
-        # "mvol-0001-0002-"      is not an identifier chunk
-        # "mvol-0001-0002-0003"  is an identifier chunk
-
-        # "speculum"             is an identifier chunk.
-        # "speculum-0001"        is an identifier chunk.
-        
         self.assertEqual(True,self.owncloud.is_identifier_chunk('apf'))
         self.assertEqual(True,self.owncloud.is_identifier_chunk('apf1'))
         self.assertEqual(False,self.owncloud.is_identifier_chunk('apfx'))
@@ -163,7 +89,6 @@ class TestSSH(unittest.TestCase):
         self.assertEqual(False,self.owncloud.is_identifier_chunk('speculum-'))
         self.assertEqual(False,self.owncloud.is_identifier_chunk('speculum-00001'))
         
-
 
 class TestMvolValidator(unittest.TestCase):
     def __init__(self, *args, **kwargs):
