@@ -83,7 +83,6 @@ class SSH:
         Returns:
             str: the first part of the identifier chunk.
         """
-
         project = re.sub('-.*', '', identifier_chunk)
         if project in ('ewm', 'gms', 'mvol', 'speculum'):
             return project
@@ -103,7 +102,6 @@ class SSH:
         Returns:
             bool
         """
-
         if self.get_project(identifier_chunk) == 'ewm':
             return bool(re.match('^ewm-\d{4}$', identifier_chunk))
         elif self.get_project(identifier_chunk) == 'gms':
@@ -129,7 +127,6 @@ class SSH:
         Returns:
             bool
         """
-
         if self.get_project(identifier_chunk) == 'ewm':
             r = '^ewm(-\d{4})?$'
         elif self.get_project(identifier_chunk) == 'gms':
@@ -142,10 +139,8 @@ class SSH:
             r = '^apf(\d{1}(-\d{5})?)?$'
         elif self.get_project(identifier_chunk) == 'chopin':
             r = '^chopin(-\d{3})?$'
-            
         else:
             raise NotImplementedError
-
         return bool(re.match(r, identifier_chunk))
 
     def recursive_ls(self, identifier_chunk):
@@ -256,11 +251,8 @@ class OwnCloudSSH(SSH):
                     break
         return csv_data
 
-#class ChopinOwnCloudSSH(OwnCloudSSH)
-
 
 class MvolOwnCloudSSH(OwnCloudSSH):
-
     def validate_directory(self, identifier, folder_name):
         """A helper function to validate ALTO, JPEG, and TIFF folders inside mmdd
         folders.
