@@ -87,8 +87,10 @@ class SSH:
         project = re.sub('-.*', '', identifier_chunk)
         if project in ('ewm', 'gms', 'mvol', 'speculum'):
             return project
-        elif 'apf' in identifier_chunk[:3]:
+        elif 'apf' in identifier_chunk:
             return 'apf'
+        elif 'chopin' in identifier_chunk:
+            return 'chopin'
         else:
             raise NotImplementedError
 
@@ -103,15 +105,17 @@ class SSH:
         """
 
         if self.get_project(identifier_chunk) == 'ewm':
-            return re.match('^ewm-\d{4}$', identifier_chunk)
+            return bool(re.match('^ewm-\d{4}$', identifier_chunk))
         elif self.get_project(identifier_chunk) == 'gms':
-            return re.match('^gms-\d{4}$', identifier_chunk)
+            return bool(re.match('^gms-\d{4}$', identifier_chunk))
         elif self.get_project(identifier_chunk) == 'mvol':
-            return re.match('^mvol-\d{4}-\d{4}-\d{4}$', identifier_chunk)
+            return bool(re.match('^mvol-\d{4}-\d{4}-\d{4}$', identifier_chunk))
         elif self.get_project(identifier_chunk) == 'speculum':
-            return re.match('^speculum-\d{4}$', identifier_chunk)
+            return bool(re.match('^speculum-\d{4}$', identifier_chunk))
         elif self.get_project(identifier_chunk) == 'apf':
-            return re.match('^apf\d{1}$',identifier_chunk) 
+            return bool(re.match('^apf\d{1}-\d{5}$',identifier_chunk))
+        elif self.get_project(identifier_chunk) == 'chopin':
+            return bool(re.match('^chopin-\d{3}$',identifier_chunk)) 
         else:
             raise NotImplementedError
 
@@ -136,6 +140,8 @@ class SSH:
             r = '^speculum(-\d{4})?$'
         elif self.get_project(identifier_chunk) == 'apf':
             r = '^apf(\d{1}(-\d{5})?)?$'
+        elif self.get_project(identifier_chunk) == 'chopin':
+            r = '^chopin(-\d{3})?$'
             
         else:
             raise NotImplementedError
@@ -249,6 +255,8 @@ class OwnCloudSSH(SSH):
                 except IndexError:
                     break
         return csv_data
+
+#class ChopinOwnCloudSSH(OwnCloudSSH)
 
 
 class MvolOwnCloudSSH(OwnCloudSSH):
@@ -672,7 +680,7 @@ class ApfOwnCloudSSH(OwnCloudSSH):
 
         length = len(identifier)
         if length == 4 or length >= 10:
-            path += '/' + identifier[3]
+            path += identifier[3]
         elif length != 3:
             print("File doesn't exist")
         
