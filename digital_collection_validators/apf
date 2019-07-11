@@ -31,7 +31,10 @@ if __name__ == '__main__':
     if arguments['ls']:
         for identifier in identifiers:
             for i in identifier:
-                sys.stdout.write(i + '\n')
+                if i.endswith('.tif'):
+                    i = i[:-4]
+                    sys.stdout.write(i + '\n')
+
     elif arguments['validate']:
         for identifier in identifiers:
             errors = apf_owncloud_ssh.validate(identifier)

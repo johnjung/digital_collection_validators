@@ -250,6 +250,9 @@ class OwnCloudSSH(SSH):
                     break
         return csv_data
 
+
+class MvolOwnCloudSSH(OwnCloudSSH):
+
     def validate_directory(self, identifier, folder_name):
         """A helper function to validate ALTO, JPEG, and TIFF folders inside mmdd
         folders.
@@ -623,6 +626,8 @@ class OwnCloudSSH(SSH):
         return errors
 
 
+
+
 class ApfOwnCloudSSH(OwnCloudSSH):
     def validate_tiff_files(self, identifier):
         """For a given apf identifier, make sure a TIFF file exists. Confirm
@@ -661,19 +666,25 @@ class ApfOwnCloudSSH(OwnCloudSSH):
             identifier (str): e.g. 'apf1'
         '''
         if identifier[:3] != 'apf':
-            print("Invalid cmd")
+            print("File doesn't exist")
             exit  
-        path = "/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/" + identifier[:3]
+        path = "/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/apf/"
 
         length = len(identifier)
-        if length == 4 or length == 10:
+        if length == 4 or length >= 10:
             path += '/' + identifier[3]
         elif length != 3:
-            print("Invalid cmd")
-
+            print("File doesn't exist")
+        
+        if identifier == 'apf':
+            identifiers = []
+            for dir in range(1,9):
+                identifiers += self.ftp.listdir(path + str(dir))
+            return identifiers 
+    
         identifiers = self.ftp.listdir(path)
 
-        if length == 10:
+        if length >= 10:
             for i in identifiers:
                 if identifier in i:
                     return [i]
