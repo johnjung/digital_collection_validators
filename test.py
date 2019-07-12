@@ -98,9 +98,9 @@ class TestMvolValidator(unittest.TestCase):
     def test_struct_txt_has_headers(self):
         """struct.txt validator requires headers."""
         with io.StringIO('00000001\t1\n'
-                         '00000002\t2\n'
-                         '00000003\t3\n'
-                         '00000004\t4') as f:
+                            '00000002\t2\n'
+                            '00000003\t3\n'
+                            '00000004\t4') as f:
             self.assertTrue(
                 len(self.mvolowncloud.validate_struct_txt('mvol-0001-0002-0003', f)) > 0
             )
@@ -108,9 +108,9 @@ class TestMvolValidator(unittest.TestCase):
     def test_struct_txt_has_commas(self):
         """struct.txt validator requires headers."""
         with io.StringIO('object,page,milestone\n'
-                         '00000002,2,\n'
-                         '00000003,3,\n'
-                         '00000004,4,') as f:
+                            '00000002,2,\n'
+                            '00000003,3,\n'
+                            '00000004,4,') as f:
             self.assertTrue(
                 len(self.mvolowncloud.validate_struct_txt('mvol-0001-0002-0003', f)) > 0
             )
@@ -118,9 +118,9 @@ class TestMvolValidator(unittest.TestCase):
     def test_struct_txt_has_tabs(self):
         """struct.txt validator requires headers."""
         with io.StringIO('object\tpage\tmilestone\n'
-                         '00000002\t2\n'
-                         '00000003\t3\n'
-                         '00000004\t4') as f:
+                            '00000002\t2\n'
+                            '00000003\t3\n'
+                            '00000004\t4') as f:
             self.assertEqual(
                 0,
                 len(self.mvolowncloud.validate_struct_txt('mvol-0001-0002-0003', f))
@@ -129,10 +129,10 @@ class TestMvolValidator(unittest.TestCase):
     def test_struct_bad(self):
         """catches illformed struct"""
         with io.StringIO('object\tpage\tmilestone\n'
-                         '00000001\t1\n'
-                         '00000002\t2\n'
-                         'abc\tabc\n'
-                         '00000004\t4') as f:
+                            '00000001\t1\n'
+                            '00000002\t2\n'
+                            'abc\tabc\n'
+                            '00000004\t4') as f:
             self.assertTrue(
                 len(self.mvolowncloud.validate_struct_txt('mvol-0001-0002-0003', f)) > 0
             )
@@ -140,9 +140,9 @@ class TestMvolValidator(unittest.TestCase):
     def test_struct_correct(self):
         """confirms struct is wellformed, without the extra empty line"""
         with io.StringIO('object\tpage\tmilestone\n'
-                         '00000002\t2\n'
-                         '00000003\t3\n'
-                         '00000004\t4') as f:
+                            '00000002\t2\n'
+                            '00000003\t3\n'
+                            '00000004\t4') as f:
             self.assertEqual(
                 0,
                 len(self.mvolowncloud.validate_struct_txt('mvol-0001-0002-0003', f))
@@ -151,10 +151,10 @@ class TestMvolValidator(unittest.TestCase):
     def test_struct_correct_extra_line(self):
         """confirms struct is wellformed, including ones with an extra empty line at end"""
         with io.StringIO('object\tpage\tmilestone\n'
-                         '00000001\t1\n'
-                         '00000002\t2\n'
-                         '00000003\t3\n'
-                         '00000004\t4') as f:
+                            '00000001\t1\n'
+                            '00000002\t2\n'
+                            '00000003\t3\n'
+                            '00000004\t4') as f:
             self.assertEqual(
                 0,
                 len(self.mvolowncloud.validate_struct_txt('mvol-0001-0002-0003', f))
@@ -222,20 +222,40 @@ class TestMvolValidator(unittest.TestCase):
             )
 
 
-#class TestApfValidator(unittest.TestCase):
-    '''
+class TestApfValidator(unittest.TestCase):
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.owncloud = ApfOwnCloudSSH()
+        self.owncloud.connect('s3.lib.uchicago.edu', {})
 
-    def test_recursive_ls(self):
+    def test_list_dir(self):
+        ''' confirms that all json files are listed in apf directory'''
 
-        raise NotImplementedError
+        path = "/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/"
 
-    def test_validate(self):
-        """mock a dummy system to test this."""
-        raise NotImplementedError
-    '''
+        #ssh = paramiko.SSHClient()
+        #ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        #ssh.connect('s3.lib.uchicago.edu', username='ksong814')
+        #ftp = ssh.open_sftp()
+        test1 = path + 'apf/1'
+        list1 = self.owncloud.ftp.listdir(test1)
+
+        for identifier in list1:
+            if identifier.endswith('.json'):
+                print(identifier)
+                list1.remove(identifier)
+        #self.assertCountEqual(list1,self.owncloud.list_dir('apf1'))
+        list2 = self.owncloud.list_dir('apf1')
+        #print(list1)
+        #print(list2)
+        #self.assertTrue(set(list1)==set(list2))
+        
+
+    #def test_validate(self):
+    #    """mock a dummy system to test this."""
+    #    raise NotImplementedError
+    
 
 if __name__ == '__main__':
     unittest.main()

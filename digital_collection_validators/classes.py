@@ -17,6 +17,7 @@ class SSH:
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect('s3.lib.uchicago.edu', username='ksong814')
         self.ftp = ssh.open_sftp()
+ 
 
     def get_identifier_chunk(self, path):
         """Get an identifier chunk from a path to an mmdd directory.
@@ -30,7 +31,7 @@ class SSH:
         # get everything after 'IIIF_Files' in the path.
         shortened_path_chunks = re.sub('^.*IIIF_Files/', '', path).split('/')
 
-        if shortened_path_chunks[0] in ('ewm', 'gms', 'speculum'):
+        if shortened_path_chunks[0] in ('ewm', 'gms', 'speculum','chopin'):
             return shortened_path_chunks.pop()
         if shortened_path_chunks[0] in ('mvol',):
             return '-'.join(shortened_path_chunks[:4])
@@ -59,7 +60,7 @@ class SSH:
 
         # for ewm, gms, and speculum, sections of the identifier are repeated
         # in subfolders, e.g. ewm/ewm-0001
-        if self.get_project(identifier_chunk) in ('ewm', 'gms', 'speculum'):
+        if self.get_project(identifier_chunk) in ('ewm', 'gms', 'speculum', 'chopin'):
             subfolders = []
             identifier_sections = identifier_chunk.split('-')
             for i in range(0, len(identifier_sections)):
@@ -169,6 +170,33 @@ class SSH:
                 return []
             return identifiers
 
+    def list_directory(self, identifier):
+
+        check_format = self.is_identifier_chunk(identifier)
+
+        if check_format != True:
+            print("File doesn't exist")
+            exit
+
+        general = ['chopin','ewm','gms','speculum']
+
+        if identifier in general:
+            identifiers = []
+            dir_files = self.ftp.listdir(self.get_path(identifier))
+            for chunk in dir_files:
+                for folder in self.ftp.listdir(self.get_path(chunk)):
+                    if '.' not in folder:
+                        identifiers += self.ftp.listdir(self.get_path(chunk) +'/' + str(folder))
+            return identifiers
+
+        identifiers = []
+        dir_files = self.ftp.listdir(self.get_path(identifier))
+        for chunk in dir_files:
+            if '.' not in chunk:
+                identifiers += self.ftp.listdir(self.get_path(identifier) + '/' + str(chunk))
+            
+        return identifiers
+
     def get_newest_modification_time_from_directory(self, directory):
         """ Helper function for get_newest_modification_time. Recursively searches
         subdirectories for the newest modification time. 
@@ -250,6 +278,129 @@ class OwnCloudSSH(SSH):
                 except IndexError:
                     break
         return csv_data
+
+
+class EwmOwnCloudSSH(OwnCloudSSH):
+
+    def list_dir(self, identifier):
+
+        check_format = self.is_identifier_chunk(identifier)
+
+        if check_format != True:
+            print("File doesn't exist")
+            exit
+
+        if identifier == 'ewm':
+            identifiers = []
+            dir_files = self.ftp.listdir(self.get_path(identifier))
+            for chunk in dir_files:
+                for folder in self.ftp.listdir(self.get_path(chunk)):
+                    if '.' not in folder:
+                        identifiers += self.ftp.listdir(self.get_path(chunk) +'/' + str(folder))
+            return identifiers
+
+        identifiers = []
+        dir_files = self.ftp.listdir(self.get_path(identifier))
+        for chunk in dir_files:
+            if '.' not in chunk:
+                identifiers += self.ftp.listdir(self.get_path(identifier) + '/' + str(chunk))
+            
+        return identifiers
+
+class ChopinOwnCloudSSH(OwnCloudSSH):
+    def validate_tiff_directory(self, identifier, folder_name):
+        """A helper function to validate TIFF folders inside chopin
+        folders.
+
+        Args:
+            identifier (str): e.g. 'chopin-001'
+            folder_name (str): the name of the folder: TIFF/tif
+
+        Returns:
+            list: error messages, or an empty list.
+        """
+        assert self.get_project(identifier) == 'chopin'
+
+        extensions = {'TIFF': 'tif'}
+
+        if folder_name != 'TIFF':
+            raise ValueError('unsupported folder_name.\n')
+
+        chopin_path = self.get_path(identifier)
+
+        # raise an IOError if the TIFF directory does not exist.
+        self.ftp.stat(chopin_path + '/' + folder_name)
+
+        filename_re = '^%s-%s-%s-%s_\d{4}\.%s$' % (
+            mmdd_path.split('/')[-4],
+            mmdd_path.split('/')[-3],
+            mmdd_path.split('/')[-2],
+            mmdd_path.split('/')[-1],
+            extensions[folder_name]
+        )
+
+        entries = []
+        for entry in self.ftp.listdir('{}/{}'.format(chopin_path, folder_name)):
+            if entry.endswith(extensions[folder_name]):
+                entries.append(entry)
+        entries.sort()
+
+        entries_pass = []
+        entries_fail = []
+        for entry in entries:
+            if re.match(filename_re, entry):
+                entries_pass.append(entry)
+            else:
+                entries_fail.append(entry)
+
+        errors = []
+        if entries_fail:
+            if entries_pass:
+                # if failed entries and passing entries both exist, don't
+                # recommend filename changes to avoid collisions.
+                for entry in entries_fail:
+                    errors.append(
+                        '{}/{}/{} should match {}\n'.format(
+                            identifier,
+                            folder_name,
+                            entry,
+                            filename_re
+                        )
+                    )
+            else:
+                for i in range(len(entries_fail)): 
+                    errors.append(
+                        '{}/{}/{}/{} rename to {}_{:04}.{}\n'.format(
+                            self.get_path(identifier),
+                            identifier,
+                            folder_name,
+                            entries_fail[i],
+                            identifier,
+                            i + 1,
+                            extensions[folder_name]
+                        )
+                    )
+        return errors
+
+
+    def list_dir(self, identifier):
+
+        check_format = self.is_identifier_chunk(identifier)
+
+        if check_format != True:
+            print("File doesn't exist")
+            exit
+
+        if identifier == 'chopin':
+            identifiers = []
+            dir_files = self.ftp.listdir(self.get_path(identifier))
+            for chunk in dir_files:
+                identifiers += self.ftp.listdir(self.get_path(chunk) + '/tifs')
+            return identifiers
+
+        identifiers = self.ftp.listdir(self.get_path(identifier) + '/tifs')
+
+        return identifiers
 
 
 class MvolOwnCloudSSH(OwnCloudSSH):
@@ -686,6 +837,12 @@ class ApfOwnCloudSSH(OwnCloudSSH):
             for i in identifiers:
                 if identifier in i:
                     return [i]
+        
+        for i in identifiers:
+            if i.endswith('.tif'):
+                i = i[:-4]
+            else:
+                identifiers.remove(i)
 
         return identifiers  
 
