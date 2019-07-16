@@ -138,11 +138,11 @@ class SSH:
         if self.get_project(identifier_chunk) == 'ewm':
             r = '^ewm(-\d{4}(-\d{4}([A-Za-z]{2})?)?)?$'
         elif self.get_project(identifier_chunk) == 'gms':
-            r = '^gms(-\d{4})?$'
+            r = '^gms(-\d{4}(-\d{3})?)?$'
         elif self.get_project(identifier_chunk) == 'mvol':
             r = '^mvol(-\d{4}(-\d{4}(-\d{4})?)?)?$'
         elif self.get_project(identifier_chunk) == 'speculum':
-            r = '^speculum(-\d{4})?$'
+            r = '^speculum(-\d{4}(-\d{3})?)?$'
         elif self.get_project(identifier_chunk) == 'apf':
             r = '^apf(\d{1}(-\d{5})?)?$'
         elif self.get_project(identifier_chunk) == 'chopin':
@@ -314,6 +314,37 @@ class OwnCloudSSH(SSH):
         return csv_data
 
 class RacOwnCloudSSH(OwnCloudSSH):
+    def validate_tiff_files(self, identifier):
+        """For a given apf identifier, make sure a TIFF file exists. Confirm
+        that the file is non-empty.
+
+        Args:
+            identifier (str): e.g. 'chess-0392-001'
+                                   'rose-1380-001'
+        """
+        assert self.get_project(identifier) == 'rac'
+
+        try:
+            f = self.ftp.open('{}/{}.tiff'.format(
+                self.get_path(identifier),
+                identifier))
+            return SSH._validate_file_notempty(f)
+        except:
+            return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
+
+    def validate(self, identifier):
+        """Wrapper to call all validation functions. 
+
+        Args:
+            identifier (str): e.g. 'chess-0392-001'
+                                   'rose-1380-001'
+        """
+        assert self.get_project(identifier) == 'rac'
+
+        errors = []
+        errors += self.validate_tiff_files(identifier)
+        return errors
+
     def list_dir(self, identifier):
         #rac has unique file names that must be parsed through
         check_format = self.is_identifier_chunk(identifier)
@@ -361,7 +392,8 @@ class EwmOwnCloudSSH(OwnCloudSSH):
         that the file is non-empty.
 
         Args:
-            identifier (str): e.g. 'apf1-00001'
+            identifier (str): e.g. 'ewm-0001-0001'
+                                   'ewm-0001-0001cr
         """
         assert self.get_project(identifier) == 'ewm'
 
@@ -373,6 +405,19 @@ class EwmOwnCloudSSH(OwnCloudSSH):
         except:
             return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
 
+    def validate(self, identifier):
+        """Wrapper to call all validation functions. 
+
+        Args:
+            identifier (str): e.g. 'ewm-0001-0001'
+                                   'ewm-0001-0001cr'
+        """
+        assert self.get_project(identifier) == 'ewm'
+
+        errors = []
+        errors += self.validate_tiff_files(identifier)
+        return errors
+        
 
 class ChopinOwnCloudSSH(OwnCloudSSH):
     def validate_tiff_directory(self, identifier, folder_name):
@@ -822,6 +867,8 @@ class MvolOwnCloudSSH(OwnCloudSSH):
             errors = self.finalcheck(identifier)
 
         return errors
+
+#class MvolLocal() --> for local drives // without SSH connection
 
 
 class ApfOwnCloudSSH(OwnCloudSSH):
