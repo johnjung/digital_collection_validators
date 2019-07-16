@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 """Usage:
-   chopin ls <identifier-chunk> ...
-   chopin validate (--list-valid | --show-errors) <identifier-chunk> ...
+   speculum ls <identifier-chunk> ...
+   speculum validate (--list-valid | --show-errors) <identifier-chunk> ...
 """
 
 import os
@@ -13,12 +13,12 @@ from docopt import docopt
 if __name__ == '__main__':
     arguments = docopt(__doc__)
 
-    ewm_owncloud_ssh = EwmOwnCloudSSH()
-    ewm_owncloud_ssh.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
+    spec_owncloud_ssh = OwnCloudSSH()
+    spec_owncloud_ssh.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
 
     identifiers = []
     for i in range(0,len(arguments['<identifier-chunk>'])):
-        identifiers.insert(i,(ewm_owncloud_ssh.list_directory(arguments['<identifier-chunk>'][i])))
+        identifiers.insert(i,(spec_owncloud_ssh.list_directory(arguments['<identifier-chunk>'][i])))
 
     if arguments['ls']:
         for identifier in identifiers:

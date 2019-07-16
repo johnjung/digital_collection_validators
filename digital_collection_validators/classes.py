@@ -1,12 +1,13 @@
 import csv
 import io
-import os
+from os import *
 import owncloud
 import paramiko
 import re
 import requests
 import stat
 import sys
+from pathlib import Path 
 
 from lxml import etree
 
@@ -70,7 +71,7 @@ class SSH:
             )
         # for mvol, sections of the identifier are not repeated in subfolders,
         # e.g. mvol/0001/0002/0003.
-        if self.get_project(identifier_chunk) in ('mvol','apf'):
+        if self.get_project(identifier_chunk) in ('mvol','apf','rac'):
             return '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/{}'.format(identifier_chunk.replace('-', '/'))
         else:
             raise NotImplementedError
@@ -91,6 +92,8 @@ class SSH:
             return 'apf'
         elif 'chopin' in identifier_chunk:
             return 'chopin'
+        elif 'rac' in identifier_chunk or 'chess' in identifier_chunk or 'rose' in identifier_chunk:
+            return 'rac'
         else:
             raise NotImplementedError
 
@@ -115,6 +118,10 @@ class SSH:
             return bool(re.match('^apf\d{1}-\d{5}$',identifier_chunk))
         elif self.get_project(identifier_chunk) == 'chopin':
             return bool(re.match('^chopin-\d{3}$',identifier_chunk)) 
+        elif self.get_project(identifier_chunk) == 'rac':
+            return (bool(re.match('^rac-\d{4}$',identifier_chunk))
+                    or bool(re.match('^chess-d\{4}-\d{3}'))
+                    or bool(re.match('^rose-d\{4}-\d{3}')))
         else:
             raise NotImplementedError
 
@@ -129,7 +136,7 @@ class SSH:
             bool
         """
         if self.get_project(identifier_chunk) == 'ewm':
-            r = '^ewm(-\d{4})?$'
+            r = '^ewm(-\d{4}(-\d{4}([A-Za-z]{2})?)?)?$'
         elif self.get_project(identifier_chunk) == 'gms':
             r = '^gms(-\d{4})?$'
         elif self.get_project(identifier_chunk) == 'mvol':
@@ -139,7 +146,14 @@ class SSH:
         elif self.get_project(identifier_chunk) == 'apf':
             r = '^apf(\d{1}(-\d{5})?)?$'
         elif self.get_project(identifier_chunk) == 'chopin':
-            r = '^chopin(-\d{3})?$'
+            r = '^chopin(-\d{3}(-\d{3})?)?$'
+        elif self.get_project(identifier_chunk) == 'rac':
+            q = '^rac(-\d{4})?$'
+            r = '^chess-\d{4}-\d{3}?$'
+            s = '^rose-\d{4}-\d{3}?$'
+            return (bool(re.match(q, identifier_chunk)) 
+                    or bool(re.match(r, identifier_chunk)) 
+                    or bool(re.match(s, identifier_chunk)))
         else:
             raise NotImplementedError
         return bool(re.match(r, identifier_chunk))
@@ -175,26 +189,46 @@ class SSH:
         check_format = self.is_identifier_chunk(identifier)
 
         if check_format != True:
-            print("File doesn't exist")
-            exit
+            print("File or directory doesn't exist")
+            sys.exit()
 
-        general = ['chopin','ewm','gms','speculum']
+        general = {
+            'ewm' : 13,
+            'chopin' : 14,
+            'gms' : 12,
+            'speculum' : 17
+        }
 
+        identifiers = []
+        length = len(identifier)
+
+        #prints all the files in all existing directories
         if identifier in general:
-            identifiers = []
             dir_files = self.ftp.listdir(self.get_path(identifier))
             for chunk in dir_files:
                 for folder in self.ftp.listdir(self.get_path(chunk)):
                     if '.' not in folder:
-                        identifiers += self.ftp.listdir(self.get_path(chunk) +'/' + str(folder))
+                        identifiers += self.ftp.listdir(self.get_path(chunk) + '/' + str(folder))
             return identifiers
 
-        identifiers = []
-        dir_files = self.ftp.listdir(self.get_path(identifier))
+        #prints all files in specified directory
+        if 'ewm' in identifier or 'gms' in identifier:
+            path = self.get_path(identifier[:8])
+        elif 'chopin' in identifier:
+            path = self.get_path(identifier[:10])
+        elif 'speculum' in identifier:
+            path = self.get_path(identifier[:13])
+
+        dir_files = self.ftp.listdir(path)
         for chunk in dir_files:
             if '.' not in chunk:
-                identifiers += self.ftp.listdir(self.get_path(identifier) + '/' + str(chunk))
-            
+                identifiers += self.ftp.listdir(path + '/' + str(chunk))
+
+        #searching for single, unique file
+        if length >= general[self.get_project(identifier)]:
+            for i in identifiers:
+                if i[:-4] == identifier:
+                    return [i]
         return identifiers
 
     def get_newest_modification_time_from_directory(self, directory):
@@ -279,33 +313,66 @@ class OwnCloudSSH(SSH):
                     break
         return csv_data
 
-
-class EwmOwnCloudSSH(OwnCloudSSH):
-
+class RacOwnCloudSSH(OwnCloudSSH):
     def list_dir(self, identifier):
-
+        #rac has unique file names that must be parsed through
         check_format = self.is_identifier_chunk(identifier)
 
-        if check_format != True:
-            print("File doesn't exist")
-            exit
-
-        if identifier == 'ewm':
-            identifiers = []
-            dir_files = self.ftp.listdir(self.get_path(identifier))
-            for chunk in dir_files:
-                for folder in self.ftp.listdir(self.get_path(chunk)):
-                    if '.' not in folder:
-                        identifiers += self.ftp.listdir(self.get_path(chunk) +'/' + str(folder))
-            return identifiers
+        if check_format == False:
+            print("File or directory does not exist")
+            sys.exit()
 
         identifiers = []
-        dir_files = self.ftp.listdir(self.get_path(identifier))
-        for chunk in dir_files:
-            if '.' not in chunk:
-                identifiers += self.ftp.listdir(self.get_path(identifier) + '/' + str(chunk))
-            
-        return identifiers
+
+        #prints all the files in all existing directories
+        if identifier == 'rac':
+            path = self.get_path('rac')
+            dir_files = self.ftp.listdir(path)
+            for chunk in dir_files:
+                path_new = path
+                path_new += '/' + str(chunk)
+                for folder in self.ftp.listdir(path_new):
+                    identifiers += self.ftp.listdir(path_new + '/' + str(folder))
+            return identifiers
+
+        #prints all files in specified directory
+        elif 'rac' in identifier:
+            path = self.get_path(identifier)
+            dir_files = self.ftp.listdir(path)
+            for chunk in dir_files:
+                identifiers += self.ftp.listdir(path + '/' + str(chunk))
+            return identifiers
+
+        #searching for single, unique file
+        else:
+            folder = identifier[-8:]
+            folder = folder[:4]
+            path = self.get_path('rac') + '/' + str(folder)
+            for folder in self.ftp.listdir(path):
+                identifiers += self.ftp.listdir(path + '/' + str(folder))
+            for i in identifiers:
+                if identifier in i:
+                    return [i]
+
+
+class EwmOwnCloudSSH(OwnCloudSSH):
+    def validate_tiff_files(self, identifier):
+        """For a given apf identifier, make sure a TIFF file exists. Confirm
+        that the file is non-empty.
+
+        Args:
+            identifier (str): e.g. 'apf1-00001'
+        """
+        assert self.get_project(identifier) == 'ewm'
+
+        try:
+            f = self.ftp.open('{}/{}.tiff'.format(
+                self.get_path(identifier),
+                identifier))
+            return SSH._validate_file_notempty(f)
+        except:
+            return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
+
 
 class ChopinOwnCloudSSH(OwnCloudSSH):
     def validate_tiff_directory(self, identifier, folder_name):
@@ -381,26 +448,6 @@ class ChopinOwnCloudSSH(OwnCloudSSH):
                         )
                     )
         return errors
-
-
-    def list_dir(self, identifier):
-
-        check_format = self.is_identifier_chunk(identifier)
-
-        if check_format != True:
-            print("File doesn't exist")
-            exit
-
-        if identifier == 'chopin':
-            identifiers = []
-            dir_files = self.ftp.listdir(self.get_path(identifier))
-            for chunk in dir_files:
-                identifiers += self.ftp.listdir(self.get_path(chunk) + '/tifs')
-            return identifiers
-
-        identifiers = self.ftp.listdir(self.get_path(identifier) + '/tifs')
-
-        return identifiers
 
 
 class MvolOwnCloudSSH(OwnCloudSSH):
@@ -835,7 +882,7 @@ class ApfOwnCloudSSH(OwnCloudSSH):
 
         if length >= 10:
             for i in identifiers:
-                if identifier in i:
+                if i[:-4] == identifier:
                     return [i]
         
         for i in identifiers:

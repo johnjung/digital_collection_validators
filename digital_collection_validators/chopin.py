@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     elif arguments['validate']:
         for identifier in identifiers:
-            errors = apf_owncloud_ssh.validate(identifier)
+            errors = spec_owncloud_ssh.validate(identifier)
             if arguments['--show-errors']:
                 for error in errors:
                     sys.stdout.write(error)
