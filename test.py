@@ -1,5 +1,6 @@
 import io
 import unittest
+import os
 from digital_collection_validators.classes import *
 from pathlib import Path
 
@@ -234,22 +235,17 @@ class TestApfValidator(unittest.TestCase):
 
         path = "/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/"
 
-        #ssh = paramiko.SSHClient()
-        #ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        #ssh.connect('s3.lib.uchicago.edu', username='ksong814')
-        #ftp = ssh.open_sftp()
         test1 = path + 'apf/1'
         list1 = self.owncloud.ftp.listdir(test1)
 
+        fin = []
         for identifier in list1:
-            if identifier.endswith('.json'):
-                print(identifier)
-                list1.remove(identifier)
-        #self.assertCountEqual(list1,self.owncloud.list_dir('apf1'))
+            if identifier.endswith('.tif'):
+                fin.append(identifier)
+
         list2 = self.owncloud.list_dir('apf1')
-        #print(list1)
-        #print(list2)
-        #self.assertTrue(set(list1)==set(list2))
+
+        self.assertTrue(set(fin)==set(list2))
         
 
     #def test_validate(self):

@@ -1,6 +1,6 @@
 import csv
 import io
-from os import *
+import os
 import owncloud
 import paramiko
 import re
@@ -865,10 +865,7 @@ class MvolOwnCloudSSH(OwnCloudSSH):
         errors += self.validate_dc_xml(identifier)
         if not errors:
             errors = self.finalcheck(identifier)
-
         return errors
-
-#class MvolLocal() --> for local drives // without SSH connection
 
 
 class ApfOwnCloudSSH(OwnCloudSSH):
@@ -932,13 +929,12 @@ class ApfOwnCloudSSH(OwnCloudSSH):
                 if i[:-4] == identifier:
                     return [i]
         
+        fin = []
         for i in identifiers:
             if i.endswith('.tif'):
-                i = i[:-4]
-            else:
-                identifiers.remove(i)
+                fin.append(i)
 
-        return identifiers  
+        return fin  
 
 
 class XTFSSH(SSH):
@@ -1142,5 +1138,433 @@ class OwnCloudWebDAV:
             matches.group(3),
             matches.group(4),
             index,
-            extensions[matches.group(5)]
+            extensions[matches.group(5)])
+
+        
+class MvolLocal(SSH):
+    def validate_directory(self, identifier, folder_name):
+        """A helper function to validate ALTO, JPEG, and TIFF folders inside mmdd
+        folders.
+
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
+            folder_name (str): the name of the folder: ALTO|JPEG|TIFF
+
+        Returns:
+            list: error messages, or an empty list.
+        """
+
+        assert self.get_project(identifier) == 'mvol'
+
+        extensions = {
+            'ALTO': 'xml',
+            'JPEG': 'jpg',
+            'POS': 'pos',
+            'TIFF': 'tif'
+        }
+
+        if folder_name not in extensions.keys():
+            raise ValueError('unsupported folder_name.\n')
+
+        mmdd_path = self.get_path(identifier)
+
+        # raise an IOError if the ALTO, JPEG, or TIFF directory does not exist.
+        os.stat(mmdd_path + '/' + folder_name) # ================= #
+
+        filename_re = '^%s-%s-%s-%s_\d{4}\.%s$' % (
+            mmdd_path.split('/')[-4],
+            mmdd_path.split('/')[-3],
+            mmdd_path.split('/')[-2],
+            mmdd_path.split('/')[-1],
+            extensions[folder_name]
         )
+
+        entries = []
+        for entry in os.listdir('{}/{}'.format(mmdd_path, folder_name)): # ================= #
+            if entry.endswith(extensions[folder_name]):
+                entries.append(entry)
+        entries.sort()
+
+        entries_pass = []
+        entries_fail = []
+        for entry in entries:
+            if re.match(filename_re, entry):
+                entries_pass.append(entry)
+            else:
+                entries_fail.append(entry)
+
+        errors = []
+        if entries_fail:
+            if entries_pass:
+                # if failed entries and passing entries both exist, don't
+                # recommend filename changes to avoid collisions.
+                for entry in entries_fail:
+                    errors.append(
+                        '{}/{}/{} should match {}\n'.format(
+                            identifier,
+                            folder_name,
+                            entry,
+                            filename_re
+                        )
+                    )
+            else:
+                for i in range(len(entries_fail)): 
+                    errors.append(
+                        '{}/{}/{}/{} rename to {}_{:04}.{}\n'.format(
+                            self.get_path(identifier),
+                            identifier,
+                            folder_name,
+                            entries_fail[i],
+                            identifier,
+                            i + 1,
+                            extensions[folder_name]
+                        )
+                    )
+        return errors
+
+    def validate_alto_or_pos_directory(self, identifier):
+        """Validate that an ALTO or POS folder exists. Make sure it contains appropriate
+        files.
+
+        Args:
+            identifier (str): 'mvol-0001-0002-0003'
+
+        Returns:
+            list: error messages, or an empty list.
+        """
+
+        assert self.get_project(identifier) == 'mvol'
+
+        try:
+            return self.validate_directory(identifier, 'ALTO')
+        except IOError:
+            try:
+                return self.validate_directory(identifier, 'POS')
+            except IOError:
+                return ['{}/ALTO or POS missing\n'.format(self.get_path(identifier))]
+
+    def validate_jpeg_directory(self, identifier):
+        """Validate that an JPEG folder exists. Make sure it contains appropriate
+        files.
+
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
+
+        Returns:
+            list: error messages, or an empty list.
+        """
+
+        assert self.get_project(identifier) == 'mvol'
+
+        try:
+            return self.validate_directory(identifier, 'JPEG')
+        except IOError:
+            return ['{}/JPEG missing\n'.format(self.get_path(identifier))]
+
+    def validate_tiff_directory(self, identifier):
+        """Validate that an TIFF folder exists. Make sure it contains appropriate
+        files.
+
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
+
+        Returns:
+            list: error messages, or an empty list.
+        """
+
+        assert self.get_project(identifier) == 'mvol'
+        try:
+            return self.validate_directory(identifier, 'TIFF')
+        except IOError:
+            return ['{}/TIFF missing\n'.format(self.get_path(identifier))]
+
+    def validate_dc_xml(self, identifier, f=None):
+        """Make sure that a given dc.xml file is well-formed and valid, and that the
+        date element is arranged as yyyy-mm-dd.
+
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
+        """
+
+        assert self.get_project(identifier) == 'mvol'
+
+        dtdf = io.StringIO(
+            """<!ELEMENT metadata ((date, description, identifier, title)|
+                             (date, description, title, identifier)|
+                             (date, identifier, description, title)|
+                             (date, identifier, title, description)|
+                             (date, title, description, identifier)|
+                             (date, title, identifier, description)|
+                             (description, date, identifier, title)|
+                             (description, date, title, identifier)|
+                             (description, identifier, date, title)|
+                             (description, identifier, title, date)|
+                             (description, title, date, identifier)|
+                             (description, title, identifier, date)|
+                             (identifier, date, description, title)|
+                             (identifier, date, title, description)|
+                             (identifier, description, date, title)|
+                             (identifier, description, title, date)|
+                             (identifier, title, date, description)|
+                             (identifier, title, description, date)|
+                             (title, date, description, identifier)|
+                             (title, date, identifier, description)|
+                             (title, description, date, identifier)|
+                             (title, description, identifier, date)|
+                             (title, identifier, date, description)|
+                             (title, identifier, description, date))>
+         <!ELEMENT title (#PCDATA)>
+         <!ELEMENT date (#PCDATA)>
+         <!ELEMENT identifier (#PCDATA)>
+         <!ELEMENT description (#PCDATA)>
+         """)
+        dtd = etree.DTD(dtdf)
+        dtdf.close()
+        errors = []
+
+        try:
+            if not f:
+                f = self.ftp.file('{}/{}.dc.xml'.format( # =========== replace with open()?
+                    self.get_path(identifier),
+                    identifier)
+                )
+            metadata = etree.parse(f)
+            if not dtd.validate(metadata):
+                errors.append('{}/{}.dc.xml not valid\n'.format(self.get_path(identifier), identifier))
+            else:
+                datepull = metadata.findtext("date")
+                pattern = re.compile("^\d{4}(-\d{2})?(-\d{2})?")
+                attemptmatch = pattern.fullmatch(datepull)
+                if attemptmatch:
+                    sections = [int(s)
+                                for s in re.findall(r'\b\d+\b', datepull)]
+                    length = len(sections)
+                    if (sections[0] < 1700) | (sections[0] > 2100):
+                        errors.append(
+                            '{}/{}.dc.xml has an incorrect year field\n'.format(self.get_path(identifier), identifier))
+                    if length > 1:
+                        if (sections[1] < 1) | (sections[1] > 12):
+                            errors.append(
+                                '{}/{}.dc.xml has an incorrect month field\n'.format(self.get_path(identifier), identifier))
+                    if length > 2:
+                        if (sections[2] < 1) | (sections[2] > 31):
+                            errors.append(
+                                '{}/{}.dc.xml has an incorrect day field\n'.format(self.get_path(identifier), identifier))
+                    else:
+                        errors.append(
+                            '{}/{}.dc.xml has an incorrect date\n'.format(self.get_path(identifier), identifier))
+        except (FileNotFoundError, IOError):
+            errors.append('{}/{}.dc.xml missing\n'.format(self.get_path(identifier), identifier))
+            pass
+        except etree.XMLSyntaxError as e:
+            errors.append('{}/{}.dc.xml not well-formed\n'.format(self.get_path(identifier), identifier))
+            pass
+
+        return errors
+
+    def validate_mets_xml(self, identifier, f=None):
+        """Make sure that a given mets file is well-formed and valid.
+
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
+        """
+
+        assert self.get_project(identifier) == 'mvol'
+
+        errors = []
+
+        schemfd = open('{}/mets.xsd'.format(os.path.dirname(__file__)), 'r', encoding='utf8')
+        schemdoc = etree.parse(schemfd)
+        schemfd.close()
+        xmlschema = etree.XMLSchema(schemdoc)
+
+        if not f:
+            try:
+                f = self.ftp.file('{}/{}.mets.xml'.format( # ============ ^
+                    self.get_path(identifier),
+                    identifier)
+                )
+            except (FileNotFoundError, IOError):
+                errors.append('{}/{}.mets.xml missing\n'.format(self.get_path(identifier), identifier))
+                pass
+
+        try:
+            fdoc = etree.parse(f)
+            if not xmlschema.validate(fdoc):
+                errors.append(
+                    '{}/{}.mets.xml invalid\n'.format(self.get_path(identifier), identifier)
+                )
+        except etree.XMLSyntaxError:
+            errors.append(
+                '{}/{}.mets.xml not well-formed\n'.format(self.get_path(identifier), identifier)
+            )
+            pass
+        except TypeError:
+            errors.append(
+                '{}/{}.mets.xml problem\n'.format(self.get_path(identifier), identifier)
+            )
+            pass
+        return errors
+
+    def validate_struct_txt(self, identifier, f=None):
+        """Make sure that a given struct.txt is valid. It should be tab-delimited
+        data, with a header row. Each record should contains a field for object,
+        page and milestone.
+
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
+            f: a file-like object, for testing. 
+        """
+
+        assert self.get_project(identifier) == 'mvol'
+
+        if not f:
+            try:
+                f = self.ftp.open( # =========== ^
+                    '{}/{}.struct.txt'.format(self.get_path(identifier), identifier))
+            except (FileNotFoundError, IOError):
+                return ['{}/{}.struct.txt missing\n'.format(self.get_path(identifier), identifier)]
+
+        line = f.readline()
+        if not re.match('^object\tpage\tmilestone', line):
+            return ['{}/{}.struct.txt has one or more errors'.format(self.get_path(identifier), identifier)]
+        line = f.readline()
+        while line:
+            if not re.match('^\d{8}\t\d+', line):
+                return ['{}/{}.struct.txt has one or more errors'.format(self.get_path(identifier), identifier)]
+            line = f.readline()
+        return []
+
+    def validate_txt(self, identifier):
+        """Make sure that a .txt file exists for an identifier.
+
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
+        """
+
+        assert self.get_project(identifier) == 'mvol'
+
+        try:
+            f = self.ftp.open('{}/{}.txt'.format( # ============ ^
+                self.get_path(identifier),
+                identifier))
+            return SSH._validate_file_notempty(f)
+        except (FileNotFoundError, IOError):
+            return ['{}/{}.txt missing\n'.format(self.get_path(identifier), identifier)]
+
+    def validate_pdf(self, identifier):
+        """Make sure that a PDF exists for an identifier.
+
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
+        """
+
+        assert self.get_project(identifier) == 'mvol'
+
+        try:
+            f = self.ftp.open('{}/{}.pdf'.format( # =========== ^
+                self.get_path(identifier),
+                identifier))
+            return SSH._validate_file_notempty(f)
+        except (FileNotFoundError, IOError):
+            return ['{}/{}.pdf missing\n'.format(self.get_path(identifier), identifier)]
+
+    def finalcheck(self, identifier):
+        """Make sure that a passing directory does not ultimately fail validation
+        for an unknown reason
+
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
+        """
+
+        assert self.get_project(identifier) == 'mvol'
+
+        url = "https://digcollretriever.lib.uchicago.edu/projects/" + \
+            identifier + "/ocr?jpg_width=0&jpg_height=0&min_year=0&max_year=0"
+        r = requests.get(url)
+        if r.status_code != 200:
+            return ['{} contains an unknown error\n'.format(self.get_path(identifier))]
+        else:
+            try:
+                fdoc = etree.fromstring(r.content)
+                return []
+            except Exception:
+                return ['{} contains an unknown error.\n'.format(self.get_path(identifier))]
+
+    def validate(self, identifier):
+        """Wrapper to call all validation functions. 
+
+        Args:
+            identifier (str): e.g. 'mvol-0001-0002-0003'
+        """
+
+        assert self.get_project(identifier) == 'mvol'
+
+        errors = []
+        errors += self.validate_alto_or_pos_directory(identifier)
+        errors += self.validate_jpeg_directory(identifier)
+        errors += self.validate_tiff_directory(identifier)
+        errors += self.validate_mets_xml(identifier)
+        errors += self.validate_pdf(identifier)
+        errors += self.validate_struct_txt(identifier)
+        errors += self.validate_txt(identifier)
+        errors += self.validate_dc_xml(identifier)
+        if not errors:
+            errors = self.finalcheck(identifier)
+        return errors
+
+
+    def get_path(self, identifier_chunk):
+        """Return the path to a given identifier chunk on owncloud's disk space.
+        N.B., you should use these paths for read-only access.
+
+        Args:
+            identifier_chunk (str): e.g., 'mvol-0001', 'mvol-0001-0002-0003'
+
+        Returns:
+            str: the path to an identifier chunk on disk. 
+        """
+
+        # for ewm, gms, and speculum, sections of the identifier are repeated
+        # in subfolders, e.g. ewm/ewm-0001
+        if self.get_project(identifier_chunk) in ('ewm', 'gms', 'speculum', 'chopin'):
+            subfolders = []
+            identifier_sections = identifier_chunk.split('-')
+            for i in range(0, len(identifier_sections)):
+                subfolders.append('-'.join(identifier_sections[:i+1]))
+            return 'C:/Users/ksong814/Desktop/IIIF_Files/{}'.format(
+                '/'.join(subfolders)
+            )
+        # for mvol, sections of the identifier are not repeated in subfolders,
+        # e.g. mvol/0001/0002/0003.
+        if self.get_project(identifier_chunk) in ('mvol','apf','rac'):
+            return 'C:/Users/ksong814/Desktop/IIIF_Files/{}'.format(identifier_chunk.replace('-', '/'))
+        else:
+            raise NotImplementedError
+
+    def recursive_ls(self, identifier_chunk):
+        """Get a list of identifiers in on disk. 
+
+        Args:
+            identifier chunk (str): e.g., 'mvol-0001', 'mvol-0001-0002-0003'
+
+        Returns:
+            list: a list of identifiers, e.g. 'mvol-0001-0002-0003'
+        """
+        if self.is_identifier(identifier_chunk):
+            return [identifier_chunk]
+        else:
+            identifiers = []
+            path = self.get_path(identifier_chunk)
+            #manually enter starting path
+            try:
+                for entry in os.listdir(path):
+                    entry_identifier_chunk = self.get_identifier_chunk(
+                        '{}/{}'.format(path, entry)
+                    )
+                    if self.is_identifier_chunk(entry_identifier_chunk):
+                        identifiers = identifiers + \
+                            self.recursive_ls(entry_identifier_chunk)
+            except FileNotFoundError:
+                return []
+            return identifiers
