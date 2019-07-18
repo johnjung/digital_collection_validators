@@ -22,22 +22,22 @@
 import operator
 import os
 import sys
-from classes import MvolOwnCloudSSH, OwnCloudWebDAV, XTFSSH
+from classes import MvolOwnCloudValidator, OwnCloudWebDAV, XTFValidator
 from docopt import docopt
 
 
 if __name__ == '__main__':
     arguments = docopt(__doc__)
 
-    owncloud_ssh = MvolOwnCloudSSH()
-    owncloud_ssh.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
+    mvol_valid = MvolOwnCloudValidator()
+    mvol_valid.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
 
     if any((arguments['check_sync'],)):
         if arguments['--owncloud-to-development']:
-            xtf_ssh = XTFSSH(False)
+            xtf_ssh = XTFvalidator(False)
             xtf_ssh.connect(os.environ['XTF_DEVELOPMENT_SERVER'], {})
         elif arguments['--owncloud-to-production']:
-            xtf_ssh = XTFSSH(True)
+            xtf_ssh = XTFValidator(True)
             xtf_ssh.connect(os.environ['XTF_PRODUCTION_SERVER'], {})
     '''
     if any((arguments['put_dc_xml'],
@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
     identifiers = set()
     for identifier_chunk in arguments['<identifier-chunk>']:
-        for i in owncloud_ssh.recursive_ls(identifier_chunk):
+        for i in mvol_valid.recursive_ls(identifier_chunk):
             if i.startswith('mvol'):
                 identifiers.add(i)
     identifiers = sorted(list(identifiers))
@@ -149,7 +149,7 @@ if __name__ == '__main__':
         for identifier in identifiers:
             try:
                 if comparison(
-                    owncloud_ssh.get_newest_modification_time(identifier),
+                    mvol_valid.get_newest_modification_time(identifier),
                     xtf_ssh.get_newest_modification_time(identifier)
                 ):
                     sys.stdout.write(identifier + '\n')
@@ -167,7 +167,7 @@ if __name__ == '__main__':
 
         csv_data = {}
         for i in identifier_years:
-            csv_data = {**csv_data, **owncloud_ssh.get_csv_data(i)}
+            csv_data = {**csv_data, **mvol_valid.get_csv_data(i)}
 
         csv_mvols = set(csv_data.keys())
         owncloud_mvols = set(identifiers)
@@ -185,7 +185,7 @@ if __name__ == '__main__':
             sys.stdout.write(identifier + '\n')
     elif arguments['validate']:
         for identifier in identifiers:
-            errors = owncloud_ssh.validate(identifier)
+            errors = mvol_valid.validate(identifier)
             if arguments['--show-errors']:
                 for error in errors:
                     sys.stdout.write(error)

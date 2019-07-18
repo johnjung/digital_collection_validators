@@ -12,7 +12,7 @@ from pathlib import Path
 from lxml import etree
 
 
-class SSH:
+class DigitalCollectionValidator:
     def connect(self, ssh_server, paramiko_kwargs):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -66,15 +66,22 @@ class SSH:
             identifier_sections = identifier_chunk.split('-')
             for i in range(0, len(identifier_sections)):
                 subfolders.append('-'.join(identifier_sections[:i+1]))
-            return '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/{}'.format(
+            r = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/{}'.format(
                 '/'.join(subfolders)
             )
         # for mvol, sections of the identifier are not repeated in subfolders,
         # e.g. mvol/0001/0002/0003.
         if self.get_project(identifier_chunk) in ('mvol','apf','rac'):
-            return '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/{}'.format(identifier_chunk.replace('-', '/'))
+            r = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/{}'.format(identifier_chunk.replace('-', '/'))
         else:
             raise NotImplementedError
+
+        if self.ftp:
+            return r
+        else:
+            local = 'C:/Users/ksong814/Desktop' # ENTER YOUR LOCAL PATH HERE
+            return (local + r[-11:])
+
 
     def get_project(self, identifier_chunk):
         """Return the first part of an identifier chunk, e.g. 'mvol'.
@@ -173,7 +180,7 @@ class SSH:
             identifiers = []
             path = self.get_path(identifier_chunk)
             try:
-                for entry in self.ftp.listdir(path):
+                for entry in self.cs_listdir(path):
                     entry_identifier_chunk = self.get_identifier_chunk(
                         '{}/{}'.format(path, entry)
                     )
@@ -204,11 +211,11 @@ class SSH:
 
         #prints all the files in all existing directories
         if identifier in general:
-            dir_files = self.ftp.listdir(self.get_path(identifier))
+            dir_files = self.cs_listdir
             for chunk in dir_files:
-                for folder in self.ftp.listdir(self.get_path(chunk)):
+                for folder in self.cs_listdir(self.get_path(chunk)):
                     if '.' not in folder:
-                        identifiers += self.ftp.listdir(self.get_path(chunk) + '/' + str(folder))
+                        identifiers += self.cs_listdir(self.get_path(chunk) + '/' + str(folder))
             return identifiers
 
         #prints all files in specified directory
@@ -219,10 +226,10 @@ class SSH:
         elif 'speculum' in identifier:
             path = self.get_path(identifier[:13])
 
-        dir_files = self.ftp.listdir(path)
+        dir_files = self.cs_listdir(path)
         for chunk in dir_files:
             if '.' not in chunk:
-                identifiers += self.ftp.listdir(path + '/' + str(chunk))
+                identifiers += self.cs_listdir(path + '/' + str(chunk))
 
         #searching for single, unique file
         if length >= general[self.get_project(identifier)]:
@@ -285,7 +292,24 @@ class SSH:
         return errors
 
 
-class OwnCloudSSH(SSH):
+    def cs_listdir(self, path):
+        if self.ftp:
+            return self.ftp.listdir(path)
+        else:
+            return os.listdir(path)
+    def cs_stat(self, path):
+        if self.ftp:
+            return self.ftp.stat(path)
+        else:
+            return os.stat(path)
+    def cs_open(self, path):
+        if self.ftp:
+            return self.ftp.open(path)
+        else:
+            return self.open(path)
+
+
+class OwnCloudValidator(DigitalCollectionValidator):
     def get_csv_data(self, identifier_chunk):
         """Get CSV data for a specific identifier chunk.
  
@@ -297,7 +321,7 @@ class OwnCloudSSH(SSH):
         """
         path = self.get_path(identifier_chunk)
         csv_data = {}
-        for entry in self.ftp.listdir(path):
+        for entry in self.cs_listdir(path):
             if re.search('\.csv$', entry):
                 f = self.ftp.file('{}/{}'.format(path, entry))
                 reader = csv.reader(f)
@@ -313,7 +337,7 @@ class OwnCloudSSH(SSH):
                     break
         return csv_data
 
-class RacOwnCloudSSH(OwnCloudSSH):
+class RacOwnCloudValidator(OwnCloudValidator):
     def validate_tiff_files(self, identifier):
         """For a given apf identifier, make sure a TIFF file exists. Confirm
         that the file is non-empty.
@@ -325,7 +349,7 @@ class RacOwnCloudSSH(OwnCloudSSH):
         assert self.get_project(identifier) == 'rac'
 
         try:
-            f = self.ftp.open('{}/{}.tiff'.format(
+            f = self.cs_open('{}/{}.tiff'.format(
                 self.get_path(identifier),
                 identifier))
             return SSH._validate_file_notempty(f)
@@ -358,20 +382,20 @@ class RacOwnCloudSSH(OwnCloudSSH):
         #prints all the files in all existing directories
         if identifier == 'rac':
             path = self.get_path('rac')
-            dir_files = self.ftp.listdir(path)
+            dir_files = self.cs_listdir(path)
             for chunk in dir_files:
                 path_new = path
                 path_new += '/' + str(chunk)
-                for folder in self.ftp.listdir(path_new):
-                    identifiers += self.ftp.listdir(path_new + '/' + str(folder))
+                for folder in self.cs_listdir(path_new):
+                    identifiers += self.cs_listdir(path_new + '/' + str(folder))
             return identifiers
 
         #prints all files in specified directory
         elif 'rac' in identifier:
             path = self.get_path(identifier)
-            dir_files = self.ftp.listdir(path)
+            dir_files = self.cs_listdir(path)
             for chunk in dir_files:
-                identifiers += self.ftp.listdir(path + '/' + str(chunk))
+                identifiers += self.cs_listdir(path + '/' + str(chunk))
             return identifiers
 
         #searching for single, unique file
@@ -379,14 +403,14 @@ class RacOwnCloudSSH(OwnCloudSSH):
             folder = identifier[-8:]
             folder = folder[:4]
             path = self.get_path('rac') + '/' + str(folder)
-            for folder in self.ftp.listdir(path):
-                identifiers += self.ftp.listdir(path + '/' + str(folder))
+            for folder in self.cs_listdir(path):
+                identifiers += self.cs_listdir(path + '/' + str(folder))
             for i in identifiers:
                 if identifier in i:
                     return [i]
 
 
-class EwmOwnCloudSSH(OwnCloudSSH):
+class EwmOwnCloudValidator(OwnCloudValidator):
     def validate_tiff_files(self, identifier):
         """For a given apf identifier, make sure a TIFF file exists. Confirm
         that the file is non-empty.
@@ -398,7 +422,7 @@ class EwmOwnCloudSSH(OwnCloudSSH):
         assert self.get_project(identifier) == 'ewm'
 
         try:
-            f = self.ftp.open('{}/{}.tiff'.format(
+            f = self.cs_open('{}/{}.tiff'.format(
                 self.get_path(identifier),
                 identifier))
             return SSH._validate_file_notempty(f)
@@ -419,7 +443,7 @@ class EwmOwnCloudSSH(OwnCloudSSH):
         return errors
         
 
-class ChopinOwnCloudSSH(OwnCloudSSH):
+class ChopinOwnClouValidator(OwnCloudValidator):
     def validate_tiff_directory(self, identifier, folder_name):
         """A helper function to validate TIFF folders inside chopin
         folders.
@@ -441,7 +465,7 @@ class ChopinOwnCloudSSH(OwnCloudSSH):
         chopin_path = self.get_path(identifier)
 
         # raise an IOError if the TIFF directory does not exist.
-        self.ftp.stat(chopin_path + '/' + folder_name)
+        self.cs_stat(chopin_path + '/' + folder_name)
 
         filename_re = '^%s-%s-%s-%s_\d{4}\.%s$' % (
             mmdd_path.split('/')[-4],
@@ -452,7 +476,7 @@ class ChopinOwnCloudSSH(OwnCloudSSH):
         )
 
         entries = []
-        for entry in self.ftp.listdir('{}/{}'.format(chopin_path, folder_name)):
+        for entry in self.cs_listdir('{}/{}'.format(chopin_path, folder_name)):
             if entry.endswith(extensions[folder_name]):
                 entries.append(entry)
         entries.sort()
@@ -495,7 +519,7 @@ class ChopinOwnCloudSSH(OwnCloudSSH):
         return errors
 
 
-class MvolOwnCloudSSH(OwnCloudSSH):
+class MvolOwnCloudValidator(OwnCloudValidator):
     def validate_directory(self, identifier, folder_name):
         """A helper function to validate ALTO, JPEG, and TIFF folders inside mmdd
         folders.
@@ -523,7 +547,7 @@ class MvolOwnCloudSSH(OwnCloudSSH):
         mmdd_path = self.get_path(identifier)
 
         # raise an IOError if the ALTO, JPEG, or TIFF directory does not exist.
-        self.ftp.stat(mmdd_path + '/' + folder_name)
+        self.cs_stat(mmdd_path + '/' + folder_name)
 
         filename_re = '^%s-%s-%s-%s_\d{4}\.%s$' % (
             mmdd_path.split('/')[-4],
@@ -534,7 +558,7 @@ class MvolOwnCloudSSH(OwnCloudSSH):
         )
 
         entries = []
-        for entry in self.ftp.listdir('{}/{}'.format(mmdd_path, folder_name)):
+        for entry in self.cs_listdir('{}/{}'.format(mmdd_path, folder_name)):
             if entry.endswith(extensions[folder_name]):
                 entries.append(entry)
         entries.sort()
@@ -868,7 +892,7 @@ class MvolOwnCloudSSH(OwnCloudSSH):
         return errors
 
 
-class ApfOwnCloudSSH(OwnCloudSSH):
+class ApfOwnCloudValidator(OwnCloudValidator):
     def validate_tiff_files(self, identifier):
         """For a given apf identifier, make sure a TIFF file exists. Confirm
         that the file is non-empty.
@@ -905,24 +929,29 @@ class ApfOwnCloudSSH(OwnCloudSSH):
         Args:
             identifier (str): e.g. 'apf1'
         '''
-        if identifier[:3] != 'apf':
-            print("File doesn't exist")
-            exit  
+
+        check_format = self.is_identifier_chunk(identifier)
+
+        if check_format == False:
+            print("File or directory doesn't exist")
+            sys.exit()
+
         path = "/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/apf/"
 
         length = len(identifier)
+
+        identifiers = []
         if length == 4 or length >= 10:
             path += identifier[3]
         elif length != 3:
             print("File doesn't exist")
         
         if identifier == 'apf':
-            identifiers = []
-            for dir in range(1,9):
-                identifiers += self.ftp.listdir(path + str(dir))
+            for directory in self.cs_listdir(path):
+                identifiers += self.cs_listdir(path + str(directory))
             return identifiers 
     
-        identifiers = self.ftp.listdir(path)
+        identifiers = self.cs_listdir(path)
 
         if length >= 10:
             for i in identifiers:
@@ -937,7 +966,7 @@ class ApfOwnCloudSSH(OwnCloudSSH):
         return fin  
 
 
-class XTFSSH(SSH):
+class XTFValidator(DigitalCollectionValidator):
     def __init__(self, production):
         super().__init__()
         self.production = production
@@ -1139,432 +1168,3 @@ class OwnCloudWebDAV:
             matches.group(4),
             index,
             extensions[matches.group(5)])
-
-        
-class MvolLocal(SSH):
-    def validate_directory(self, identifier, folder_name):
-        """A helper function to validate ALTO, JPEG, and TIFF folders inside mmdd
-        folders.
-
-        Args:
-            identifier (str): e.g. 'mvol-0001-0002-0003'
-            folder_name (str): the name of the folder: ALTO|JPEG|TIFF
-
-        Returns:
-            list: error messages, or an empty list.
-        """
-
-        assert self.get_project(identifier) == 'mvol'
-
-        extensions = {
-            'ALTO': 'xml',
-            'JPEG': 'jpg',
-            'POS': 'pos',
-            'TIFF': 'tif'
-        }
-
-        if folder_name not in extensions.keys():
-            raise ValueError('unsupported folder_name.\n')
-
-        mmdd_path = self.get_path(identifier)
-
-        # raise an IOError if the ALTO, JPEG, or TIFF directory does not exist.
-        os.stat(mmdd_path + '/' + folder_name) # ================= #
-
-        filename_re = '^%s-%s-%s-%s_\d{4}\.%s$' % (
-            mmdd_path.split('/')[-4],
-            mmdd_path.split('/')[-3],
-            mmdd_path.split('/')[-2],
-            mmdd_path.split('/')[-1],
-            extensions[folder_name]
-        )
-
-        entries = []
-        for entry in os.listdir('{}/{}'.format(mmdd_path, folder_name)): # ================= #
-            if entry.endswith(extensions[folder_name]):
-                entries.append(entry)
-        entries.sort()
-
-        entries_pass = []
-        entries_fail = []
-        for entry in entries:
-            if re.match(filename_re, entry):
-                entries_pass.append(entry)
-            else:
-                entries_fail.append(entry)
-
-        errors = []
-        if entries_fail:
-            if entries_pass:
-                # if failed entries and passing entries both exist, don't
-                # recommend filename changes to avoid collisions.
-                for entry in entries_fail:
-                    errors.append(
-                        '{}/{}/{} should match {}\n'.format(
-                            identifier,
-                            folder_name,
-                            entry,
-                            filename_re
-                        )
-                    )
-            else:
-                for i in range(len(entries_fail)): 
-                    errors.append(
-                        '{}/{}/{}/{} rename to {}_{:04}.{}\n'.format(
-                            self.get_path(identifier),
-                            identifier,
-                            folder_name,
-                            entries_fail[i],
-                            identifier,
-                            i + 1,
-                            extensions[folder_name]
-                        )
-                    )
-        return errors
-
-    def validate_alto_or_pos_directory(self, identifier):
-        """Validate that an ALTO or POS folder exists. Make sure it contains appropriate
-        files.
-
-        Args:
-            identifier (str): 'mvol-0001-0002-0003'
-
-        Returns:
-            list: error messages, or an empty list.
-        """
-
-        assert self.get_project(identifier) == 'mvol'
-
-        try:
-            return self.validate_directory(identifier, 'ALTO')
-        except IOError:
-            try:
-                return self.validate_directory(identifier, 'POS')
-            except IOError:
-                return ['{}/ALTO or POS missing\n'.format(self.get_path(identifier))]
-
-    def validate_jpeg_directory(self, identifier):
-        """Validate that an JPEG folder exists. Make sure it contains appropriate
-        files.
-
-        Args:
-            identifier (str): e.g. 'mvol-0001-0002-0003'
-
-        Returns:
-            list: error messages, or an empty list.
-        """
-
-        assert self.get_project(identifier) == 'mvol'
-
-        try:
-            return self.validate_directory(identifier, 'JPEG')
-        except IOError:
-            return ['{}/JPEG missing\n'.format(self.get_path(identifier))]
-
-    def validate_tiff_directory(self, identifier):
-        """Validate that an TIFF folder exists. Make sure it contains appropriate
-        files.
-
-        Args:
-            identifier (str): e.g. 'mvol-0001-0002-0003'
-
-        Returns:
-            list: error messages, or an empty list.
-        """
-
-        assert self.get_project(identifier) == 'mvol'
-        try:
-            return self.validate_directory(identifier, 'TIFF')
-        except IOError:
-            return ['{}/TIFF missing\n'.format(self.get_path(identifier))]
-
-    def validate_dc_xml(self, identifier, f=None):
-        """Make sure that a given dc.xml file is well-formed and valid, and that the
-        date element is arranged as yyyy-mm-dd.
-
-        Args:
-            identifier (str): e.g. 'mvol-0001-0002-0003'
-        """
-
-        assert self.get_project(identifier) == 'mvol'
-
-        dtdf = io.StringIO(
-            """<!ELEMENT metadata ((date, description, identifier, title)|
-                             (date, description, title, identifier)|
-                             (date, identifier, description, title)|
-                             (date, identifier, title, description)|
-                             (date, title, description, identifier)|
-                             (date, title, identifier, description)|
-                             (description, date, identifier, title)|
-                             (description, date, title, identifier)|
-                             (description, identifier, date, title)|
-                             (description, identifier, title, date)|
-                             (description, title, date, identifier)|
-                             (description, title, identifier, date)|
-                             (identifier, date, description, title)|
-                             (identifier, date, title, description)|
-                             (identifier, description, date, title)|
-                             (identifier, description, title, date)|
-                             (identifier, title, date, description)|
-                             (identifier, title, description, date)|
-                             (title, date, description, identifier)|
-                             (title, date, identifier, description)|
-                             (title, description, date, identifier)|
-                             (title, description, identifier, date)|
-                             (title, identifier, date, description)|
-                             (title, identifier, description, date))>
-         <!ELEMENT title (#PCDATA)>
-         <!ELEMENT date (#PCDATA)>
-         <!ELEMENT identifier (#PCDATA)>
-         <!ELEMENT description (#PCDATA)>
-         """)
-        dtd = etree.DTD(dtdf)
-        dtdf.close()
-        errors = []
-
-        try:
-            if not f:
-                f = self.ftp.file('{}/{}.dc.xml'.format( # =========== replace with open()?
-                    self.get_path(identifier),
-                    identifier)
-                )
-            metadata = etree.parse(f)
-            if not dtd.validate(metadata):
-                errors.append('{}/{}.dc.xml not valid\n'.format(self.get_path(identifier), identifier))
-            else:
-                datepull = metadata.findtext("date")
-                pattern = re.compile("^\d{4}(-\d{2})?(-\d{2})?")
-                attemptmatch = pattern.fullmatch(datepull)
-                if attemptmatch:
-                    sections = [int(s)
-                                for s in re.findall(r'\b\d+\b', datepull)]
-                    length = len(sections)
-                    if (sections[0] < 1700) | (sections[0] > 2100):
-                        errors.append(
-                            '{}/{}.dc.xml has an incorrect year field\n'.format(self.get_path(identifier), identifier))
-                    if length > 1:
-                        if (sections[1] < 1) | (sections[1] > 12):
-                            errors.append(
-                                '{}/{}.dc.xml has an incorrect month field\n'.format(self.get_path(identifier), identifier))
-                    if length > 2:
-                        if (sections[2] < 1) | (sections[2] > 31):
-                            errors.append(
-                                '{}/{}.dc.xml has an incorrect day field\n'.format(self.get_path(identifier), identifier))
-                    else:
-                        errors.append(
-                            '{}/{}.dc.xml has an incorrect date\n'.format(self.get_path(identifier), identifier))
-        except (FileNotFoundError, IOError):
-            errors.append('{}/{}.dc.xml missing\n'.format(self.get_path(identifier), identifier))
-            pass
-        except etree.XMLSyntaxError as e:
-            errors.append('{}/{}.dc.xml not well-formed\n'.format(self.get_path(identifier), identifier))
-            pass
-
-        return errors
-
-    def validate_mets_xml(self, identifier, f=None):
-        """Make sure that a given mets file is well-formed and valid.
-
-        Args:
-            identifier (str): e.g. 'mvol-0001-0002-0003'
-        """
-
-        assert self.get_project(identifier) == 'mvol'
-
-        errors = []
-
-        schemfd = open('{}/mets.xsd'.format(os.path.dirname(__file__)), 'r', encoding='utf8')
-        schemdoc = etree.parse(schemfd)
-        schemfd.close()
-        xmlschema = etree.XMLSchema(schemdoc)
-
-        if not f:
-            try:
-                f = self.ftp.file('{}/{}.mets.xml'.format( # ============ ^
-                    self.get_path(identifier),
-                    identifier)
-                )
-            except (FileNotFoundError, IOError):
-                errors.append('{}/{}.mets.xml missing\n'.format(self.get_path(identifier), identifier))
-                pass
-
-        try:
-            fdoc = etree.parse(f)
-            if not xmlschema.validate(fdoc):
-                errors.append(
-                    '{}/{}.mets.xml invalid\n'.format(self.get_path(identifier), identifier)
-                )
-        except etree.XMLSyntaxError:
-            errors.append(
-                '{}/{}.mets.xml not well-formed\n'.format(self.get_path(identifier), identifier)
-            )
-            pass
-        except TypeError:
-            errors.append(
-                '{}/{}.mets.xml problem\n'.format(self.get_path(identifier), identifier)
-            )
-            pass
-        return errors
-
-    def validate_struct_txt(self, identifier, f=None):
-        """Make sure that a given struct.txt is valid. It should be tab-delimited
-        data, with a header row. Each record should contains a field for object,
-        page and milestone.
-
-        Args:
-            identifier (str): e.g. 'mvol-0001-0002-0003'
-            f: a file-like object, for testing. 
-        """
-
-        assert self.get_project(identifier) == 'mvol'
-
-        if not f:
-            try:
-                f = self.ftp.open( # =========== ^
-                    '{}/{}.struct.txt'.format(self.get_path(identifier), identifier))
-            except (FileNotFoundError, IOError):
-                return ['{}/{}.struct.txt missing\n'.format(self.get_path(identifier), identifier)]
-
-        line = f.readline()
-        if not re.match('^object\tpage\tmilestone', line):
-            return ['{}/{}.struct.txt has one or more errors'.format(self.get_path(identifier), identifier)]
-        line = f.readline()
-        while line:
-            if not re.match('^\d{8}\t\d+', line):
-                return ['{}/{}.struct.txt has one or more errors'.format(self.get_path(identifier), identifier)]
-            line = f.readline()
-        return []
-
-    def validate_txt(self, identifier):
-        """Make sure that a .txt file exists for an identifier.
-
-        Args:
-            identifier (str): e.g. 'mvol-0001-0002-0003'
-        """
-
-        assert self.get_project(identifier) == 'mvol'
-
-        try:
-            f = self.ftp.open('{}/{}.txt'.format( # ============ ^
-                self.get_path(identifier),
-                identifier))
-            return SSH._validate_file_notempty(f)
-        except (FileNotFoundError, IOError):
-            return ['{}/{}.txt missing\n'.format(self.get_path(identifier), identifier)]
-
-    def validate_pdf(self, identifier):
-        """Make sure that a PDF exists for an identifier.
-
-        Args:
-            identifier (str): e.g. 'mvol-0001-0002-0003'
-        """
-
-        assert self.get_project(identifier) == 'mvol'
-
-        try:
-            f = self.ftp.open('{}/{}.pdf'.format( # =========== ^
-                self.get_path(identifier),
-                identifier))
-            return SSH._validate_file_notempty(f)
-        except (FileNotFoundError, IOError):
-            return ['{}/{}.pdf missing\n'.format(self.get_path(identifier), identifier)]
-
-    def finalcheck(self, identifier):
-        """Make sure that a passing directory does not ultimately fail validation
-        for an unknown reason
-
-        Args:
-            identifier (str): e.g. 'mvol-0001-0002-0003'
-        """
-
-        assert self.get_project(identifier) == 'mvol'
-
-        url = "https://digcollretriever.lib.uchicago.edu/projects/" + \
-            identifier + "/ocr?jpg_width=0&jpg_height=0&min_year=0&max_year=0"
-        r = requests.get(url)
-        if r.status_code != 200:
-            return ['{} contains an unknown error\n'.format(self.get_path(identifier))]
-        else:
-            try:
-                fdoc = etree.fromstring(r.content)
-                return []
-            except Exception:
-                return ['{} contains an unknown error.\n'.format(self.get_path(identifier))]
-
-    def validate(self, identifier):
-        """Wrapper to call all validation functions. 
-
-        Args:
-            identifier (str): e.g. 'mvol-0001-0002-0003'
-        """
-
-        assert self.get_project(identifier) == 'mvol'
-
-        errors = []
-        errors += self.validate_alto_or_pos_directory(identifier)
-        errors += self.validate_jpeg_directory(identifier)
-        errors += self.validate_tiff_directory(identifier)
-        errors += self.validate_mets_xml(identifier)
-        errors += self.validate_pdf(identifier)
-        errors += self.validate_struct_txt(identifier)
-        errors += self.validate_txt(identifier)
-        errors += self.validate_dc_xml(identifier)
-        if not errors:
-            errors = self.finalcheck(identifier)
-        return errors
-
-
-    def get_path(self, identifier_chunk):
-        """Return the path to a given identifier chunk on owncloud's disk space.
-        N.B., you should use these paths for read-only access.
-
-        Args:
-            identifier_chunk (str): e.g., 'mvol-0001', 'mvol-0001-0002-0003'
-
-        Returns:
-            str: the path to an identifier chunk on disk. 
-        """
-
-        # for ewm, gms, and speculum, sections of the identifier are repeated
-        # in subfolders, e.g. ewm/ewm-0001
-        if self.get_project(identifier_chunk) in ('ewm', 'gms', 'speculum', 'chopin'):
-            subfolders = []
-            identifier_sections = identifier_chunk.split('-')
-            for i in range(0, len(identifier_sections)):
-                subfolders.append('-'.join(identifier_sections[:i+1]))
-            return 'C:/Users/ksong814/Desktop/IIIF_Files/{}'.format(
-                '/'.join(subfolders)
-            )
-        # for mvol, sections of the identifier are not repeated in subfolders,
-        # e.g. mvol/0001/0002/0003.
-        if self.get_project(identifier_chunk) in ('mvol','apf','rac'):
-            return 'C:/Users/ksong814/Desktop/IIIF_Files/{}'.format(identifier_chunk.replace('-', '/'))
-        else:
-            raise NotImplementedError
-
-    def recursive_ls(self, identifier_chunk):
-        """Get a list of identifiers in on disk. 
-
-        Args:
-            identifier chunk (str): e.g., 'mvol-0001', 'mvol-0001-0002-0003'
-
-        Returns:
-            list: a list of identifiers, e.g. 'mvol-0001-0002-0003'
-        """
-        if self.is_identifier(identifier_chunk):
-            return [identifier_chunk]
-        else:
-            identifiers = []
-            path = self.get_path(identifier_chunk)
-            #manually enter starting path
-            try:
-                for entry in os.listdir(path):
-                    entry_identifier_chunk = self.get_identifier_chunk(
-                        '{}/{}'.format(path, entry)
-                    )
-                    if self.is_identifier_chunk(entry_identifier_chunk):
-                        identifiers = identifiers + \
-                            self.recursive_ls(entry_identifier_chunk)
-            except FileNotFoundError:
-                return []
-            return identifiers

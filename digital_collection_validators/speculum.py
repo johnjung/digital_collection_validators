@@ -13,12 +13,12 @@ from docopt import docopt
 if __name__ == '__main__':
     arguments = docopt(__doc__)
 
-    spec_owncloud_ssh = OwnCloudSSH()
-    spec_owncloud_ssh.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
+    spec_valid = OwnCloudValidator()
+    spec_valid.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
 
     identifiers = []
     for i in range(0,len(arguments['<identifier-chunk>'])):
-        identifiers.insert(i,(spec_owncloud_ssh.list_directory(arguments['<identifier-chunk>'][i])))
+        identifiers.insert(i,(spec_valid.list_directory(arguments['<identifier-chunk>'][i])))
 
     if arguments['ls']:
         for identifier in identifiers:
@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     elif arguments['validate']:
         for identifier in identifiers:
-            errors = spec_owncloud_ssh.validate(identifier)
+            errors = spec_valid.validate(identifier)
             if arguments['--show-errors']:
                 for error in errors:
                     sys.stdout.write(error)

@@ -7,14 +7,14 @@
 
 import os, glob
 import sys
-from classes import ApfOwnCloudSSH, OwnCloudWebDAV
+from classes import ApfOwnCloudValidator, OwnCloudWebDAV
 from docopt import docopt
 
 if __name__ == '__main__':
     arguments = docopt(__doc__)
 
-    apf_owncloud_ssh = ApfOwnCloudSSH()
-    apf_owncloud_ssh.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
+    apf_valid = ApfOwnCloudValidator()
+    apf_valid.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
 
     # build a set of identifiers (e.g. 'apf1-00001', 'apf1-00002', etc.) from
     # the identifier chunks (e.g. 'apf1', 'apf2', etc.) that were passed in on
@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
     identifiers = []
     for i in range(0,len(arguments['<identifier-chunk>'])):
-        identifiers.insert(i,(apf_owncloud_ssh.list_dir(arguments['<identifier-chunk>'][i])))
+        identifiers.insert(i,(apf_valid.list_dir(arguments['<identifier-chunk>'][i])))
 
     if arguments['ls']:
         for identifier in identifiers:
@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
     elif arguments['validate']:
         for identifier in identifiers:
-            errors = apf_owncloud_ssh.validate(identifier)
+            errors = apf_valid.validate(identifier)
             if arguments['--show-errors']:
                 for error in errors:
                     sys.stdout.write(error)
