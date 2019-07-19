@@ -5,10 +5,11 @@ from digital_collection_validators.classes import *
 from pathlib import Path
 
 
-class TestSSH(unittest.TestCase):
+class TestValidator(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.owncloud = OwnCloudSSH()
+        self.owncloud = OwnCloudValidator()
+        self.owncloud.connect('s3.lib.uchicago.edu', {})
 
     def test_is_identifier(self):
         """ 
@@ -89,12 +90,25 @@ class TestSSH(unittest.TestCase):
         self.assertEqual(True,self.owncloud.is_identifier_chunk('speculum-0001'))
         self.assertEqual(False,self.owncloud.is_identifier_chunk('speculum-'))
         self.assertEqual(False,self.owncloud.is_identifier_chunk('speculum-00001'))
+
+
+    def test_list_directory(self):
+
+        # === CHOPIN ===
+        identifiers = self.owncloud.list_directory('chopin-001')
+
+        path = "/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/chopin/chopin-001/tifs"
+        
+        #print(self.owncloud.cs_listdir(path))
+        #print(self.owncloud.cd_listdir(path))
+        self.assertTrue(set(identifiers)==set(self.owncloud.cs_listdir(path)))
         
 
 class TestMvolValidator(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.mvolowncloud = MvolOwnCloudSSH()
+        self.mvolowncloud = MvolOwnCloudValidator()
+        self.mvolowncloud.connect('s3.lib.uchicago.edu', {})
 
     def test_struct_txt_has_headers(self):
         """struct.txt validator requires headers."""
@@ -167,13 +181,13 @@ class TestMvolValidator(unittest.TestCase):
         with open(file, 'r') as f:
             self.assertEqual(
                 0,
-                len(MvolOwnCloudSSH._validate_file_notempty(f))
+                len(MvolOwnCloudValidator._validate_file_notempty(f))
             )
 
     def test_pdf_empty(self):
         """catches if pdf is empty file"""
         with io.StringIO('') as f:
-            self.assertTrue(len(MvolOwnCloudSSH._validate_file_notempty(f)) > 0)
+            self.assertTrue(len(MvolOwnCloudValidator._validate_file_notempty(f)) > 0)
 
     def test_mets_xml_pass(self):
         """mets validator confirms wellformed xml following mets standards"""
@@ -227,16 +241,17 @@ class TestApfValidator(unittest.TestCase):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.owncloud = ApfOwnCloudSSH()
-        self.owncloud.connect('s3.lib.uchicago.edu', {})
+        self.owncloud = ApfOwnCloudValidator()
+        #self.owncloud.connect('s3.lib.uchicago.edu', {})
 
+    """
     def test_list_dir(self):
         ''' confirms that all json files are listed in apf directory'''
 
         path = "/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/"
 
         test1 = path + 'apf/1'
-        list1 = self.owncloud.ftp.listdir(test1)
+        list1 = self.owncloud.cs_listdir(test1)
 
         fin = []
         for identifier in list1:
@@ -246,11 +261,11 @@ class TestApfValidator(unittest.TestCase):
         list2 = self.owncloud.list_dir('apf1')
 
         self.assertTrue(set(fin)==set(list2))
+    """
         
+    def test_validate(self):
+        self.assertTrue(self.owncloud.validate_tiff_files('apf1-00001'))
 
-    #def test_validate(self):
-    #    """mock a dummy system to test this."""
-    #    raise NotImplementedError
     
 
 if __name__ == '__main__':

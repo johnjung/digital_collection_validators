@@ -14,10 +14,10 @@ from lxml import etree
 
 class DigitalCollectionValidator:
     def connect(self, ssh_server, paramiko_kwargs):
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect('s3.lib.uchicago.edu', username='ksong814')
-        self.ftp = ssh.open_sftp()
+        self.ssh = paramiko.SSHClient()
+        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.ssh.connect('s3.lib.uchicago.edu', username='ksong814')
+        self.ftp = self.ssh.open_sftp()
  
 
     def get_identifier_chunk(self, path):
@@ -59,28 +59,49 @@ class DigitalCollectionValidator:
             str: the path to an identifier chunk on disk. 
         """
 
-        # for ewm, gms, and speculum, sections of the identifier are repeated
+        project = self.get_project(identifier_chunk)
+        ids = ['ewm','gms','speculum','chopin','mvol','apf','rac']
+        if project not in ids:
+            raise NotImplementedError
+
+        # for ewm, gms, speculum, and chopin, sections of the identifier are repeated
         # in subfolders, e.g. ewm/ewm-0001
-        if self.get_project(identifier_chunk) in ('ewm', 'gms', 'speculum', 'chopin'):
+        if project in ('ewm', 'gms', 'speculum', 'chopin'):
             subfolders = []
             identifier_sections = identifier_chunk.split('-')
             for i in range(0, len(identifier_sections)):
                 subfolders.append('-'.join(identifier_sections[:i+1]))
+
             r = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/{}'.format(
-                '/'.join(subfolders)
-            )
-        # for mvol, sections of the identifier are not repeated in subfolders,
+                '/'.join(subfolders))
+
+            if self.ftp:
+                return r
+            else:
+                local = 'C:/Users/ksong814/Desktop' # ENTER YOUR LOCAL PATH HERE
+                return (local + r[60:])
+
+        # for mvol, apf, and rac, sections of the identifier are not repeated in subfolders,
         # e.g. mvol/0001/0002/0003.
-        if self.get_project(identifier_chunk) in ('mvol','apf','rac'):
-            r = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/{}'.format(identifier_chunk.replace('-', '/'))
+        if project in ('mvol','apf','rac'):
+            if project == 'rac' and 'rac' not in identifier_chunk:
+                if self.is_identifier(identifier_chunk):
+                    #isolating directory number for chess/rose file
+                    identifier = identifier[-8:]
+                    identifier = identifier[:4]
+                    r = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/rac' + identifier
+                else:
+                    raise NotImplementedError
+            else:
+                r = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/{}'.format(identifier_chunk.replace('-', '/'))
+
+            if self.ssh.get_transport() is not None:
+                return r
+            else:
+                local = 'C:/Users/ksong814/Desktop' # ENTER YOUR LOCAL PATH HERE
+                return (local + r[60:])
         else:
             raise NotImplementedError
-
-        if self.ftp:
-            return r
-        else:
-            local = 'C:/Users/ksong814/Desktop' # ENTER YOUR LOCAL PATH HERE
-            return (local + r[-11:])
 
 
     def get_project(self, identifier_chunk):
@@ -192,6 +213,14 @@ class DigitalCollectionValidator:
             return identifiers
 
     def list_directory(self, identifier):
+        """Get a list of files from starting identifier.
+
+        Args:
+            identifier chunk (str): e.g., 'chopin', 'speculum-0001', 'ewm-0001-0001.tif'
+
+        Returns:
+            list or single file: e.g. 'chopin-003-001.tif, chopin-003-002.tif, chopin-003-003.tif ...', 'speculum-0006-001.tif'
+        """
 
         check_format = self.is_identifier_chunk(identifier)
 
@@ -211,7 +240,7 @@ class DigitalCollectionValidator:
 
         #prints all the files in all existing directories
         if identifier in general:
-            dir_files = self.cs_listdir
+            dir_files = self.cs_listdir(self.get_path(identifier))
             for chunk in dir_files:
                 for folder in self.cs_listdir(self.get_path(chunk)):
                     if '.' not in folder:
@@ -291,22 +320,58 @@ class DigitalCollectionValidator:
                 errors.append('empty file.\n')
         return errors
 
+    def validate_tiff_files(self, identifier):
+        """For a given identifier, make sure a TIFF file exists. Confirm
+        that the file is non-empty.
+
+        Args:
+            identifier (str): e.g. 'ewm-0001-0001'
+                                   'ewm-0001-0001cr
+        """
+        #assert self.get_project(identifier) == 'ewm'
+
+        try:
+            f = self.cs_open('{}/{}.tiff'.format(
+                self.get_path(identifier),
+                identifier))
+            return SSH._validate_file_notempty(f)
+        except:
+            return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
+
 
     def cs_listdir(self, path):
-        if self.ftp:
+        """Lists contents of specified directory in current server (Owncloud vs Local)
+
+        Args:
+            path (str): to a directory
+        """
+        if self.ssh.get_transport() is not None:
             return self.ftp.listdir(path)
         else:
             return os.listdir(path)
+
     def cs_stat(self, path):
-        if self.ftp:
+        """Performs stat() system call on specified path in current server (Owncloud vs Local)
+
+        Args:
+            path (str): to a directory
+        """
+        if self.ssh.get_transport() is not None:
             return self.ftp.stat(path)
         else:
             return os.stat(path)
+
     def cs_open(self, path):
-        if self.ftp:
+        """Opens a file to read or write on specified path in current server (Owncloud vs Local)
+
+        Args:
+            path (str): to a file
+        """
+        if self.ssh.get_transport() is not None:
             return self.ftp.open(path)
         else:
             return self.open(path)
+    
 
 
 class OwnCloudValidator(DigitalCollectionValidator):
@@ -338,23 +403,6 @@ class OwnCloudValidator(DigitalCollectionValidator):
         return csv_data
 
 class RacOwnCloudValidator(OwnCloudValidator):
-    def validate_tiff_files(self, identifier):
-        """For a given apf identifier, make sure a TIFF file exists. Confirm
-        that the file is non-empty.
-
-        Args:
-            identifier (str): e.g. 'chess-0392-001'
-                                   'rose-1380-001'
-        """
-        assert self.get_project(identifier) == 'rac'
-
-        try:
-            f = self.cs_open('{}/{}.tiff'.format(
-                self.get_path(identifier),
-                identifier))
-            return SSH._validate_file_notempty(f)
-        except:
-            return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
 
     def validate(self, identifier):
         """Wrapper to call all validation functions. 
@@ -370,7 +418,15 @@ class RacOwnCloudValidator(OwnCloudValidator):
         return errors
 
     def list_dir(self, identifier):
-        #rac has unique file names that must be parsed through
+        """Get a list of files from starting identifier. ('rac' directory has unique file names and structures)
+
+        Args:
+            identifier chunk (str): e.g., 'rac', 'rac-0392', 'chess-0392-0001.tif'
+
+        Returns:
+            list or single file: e.g. 'chess-0392-001.tif, chess-0392-002.tif, chess-0392-003.tif ...', 'rose-1380-001.tif'
+        """
+
         check_format = self.is_identifier_chunk(identifier)
 
         if check_format == False:
@@ -411,23 +467,6 @@ class RacOwnCloudValidator(OwnCloudValidator):
 
 
 class EwmOwnCloudValidator(OwnCloudValidator):
-    def validate_tiff_files(self, identifier):
-        """For a given apf identifier, make sure a TIFF file exists. Confirm
-        that the file is non-empty.
-
-        Args:
-            identifier (str): e.g. 'ewm-0001-0001'
-                                   'ewm-0001-0001cr
-        """
-        assert self.get_project(identifier) == 'ewm'
-
-        try:
-            f = self.cs_open('{}/{}.tiff'.format(
-                self.get_path(identifier),
-                identifier))
-            return SSH._validate_file_notempty(f)
-        except:
-            return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
 
     def validate(self, identifier):
         """Wrapper to call all validation functions. 
@@ -443,7 +482,7 @@ class EwmOwnCloudValidator(OwnCloudValidator):
         return errors
         
 
-class ChopinOwnClouValidator(OwnCloudValidator):
+class ChopinOwnCloudValidator(OwnCloudValidator):
     def validate_tiff_directory(self, identifier, folder_name):
         """A helper function to validate TIFF folders inside chopin
         folders.
@@ -893,23 +932,6 @@ class MvolOwnCloudValidator(OwnCloudValidator):
 
 
 class ApfOwnCloudValidator(OwnCloudValidator):
-    def validate_tiff_files(self, identifier):
-        """For a given apf identifier, make sure a TIFF file exists. Confirm
-        that the file is non-empty.
-
-        Args:
-            identifier (str): e.g. 'apf1-00001'
-        """
-        assert self.get_project(identifier) == 'apf'
-
-        try:
-            f = self.ftp.open('{}/{}.tiff'.format(
-                self.get_path(identifier),
-                identifier))
-            return SSH._validate_file_notempty(f)
-        except:
-            return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
-
     def validate(self, identifier):
         """Wrapper to call all validation functions. 
 
