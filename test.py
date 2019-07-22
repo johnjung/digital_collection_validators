@@ -8,7 +8,7 @@ from pathlib import Path
 class TestValidator(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.owncloud = OwnCloudValidator()
+        self.owncloud = DigitalCollectionValidator()
         self.owncloud.connect('s3.lib.uchicago.edu', {})
 
     def test_is_identifier(self):
@@ -107,7 +107,7 @@ class TestValidator(unittest.TestCase):
 class TestMvolValidator(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.mvolowncloud = MvolOwnCloudValidator()
+        self.mvolowncloud = MvolValidator()
         self.mvolowncloud.connect('s3.lib.uchicago.edu', {})
 
     def test_struct_txt_has_headers(self):
@@ -181,13 +181,13 @@ class TestMvolValidator(unittest.TestCase):
         with open(file, 'r') as f:
             self.assertEqual(
                 0,
-                len(MvolOwnCloudValidator._validate_file_notempty(f))
+                len(MvolValidator._validate_file_notempty(f))
             )
 
     def test_pdf_empty(self):
         """catches if pdf is empty file"""
         with io.StringIO('') as f:
-            self.assertTrue(len(MvolOwnCloudValidator._validate_file_notempty(f)) > 0)
+            self.assertTrue(len(MvolValidator._validate_file_notempty(f)) > 0)
 
     def test_mets_xml_pass(self):
         """mets validator confirms wellformed xml following mets standards"""
@@ -241,7 +241,7 @@ class TestApfValidator(unittest.TestCase):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.owncloud = ApfOwnCloudValidator()
+        self.owncloud = ApfValidator()
         self.owncloud.connect('s3.lib.uchicago.edu', {})
 
     """

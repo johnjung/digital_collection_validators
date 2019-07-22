@@ -373,10 +373,7 @@ class DigitalCollectionValidator:
             return self.ftp.open(path)
         else:
             return self.open(path)
-    
 
-
-class OwnCloudValidator(DigitalCollectionValidator):
     def get_csv_data(self, identifier_chunk):
         """Get CSV data for a specific identifier chunk.
  
@@ -403,8 +400,39 @@ class OwnCloudValidator(DigitalCollectionValidator):
                 except IndexError:
                     break
         return csv_data
+    
 
-class RacOwnCloudValidator(OwnCloudValidator):
+'''
+class DigitalCollectionValidator(DigitalCollectionValidator):
+    def get_csv_data(self, identifier_chunk):
+        """Get CSV data for a specific identifier chunk.
+ 
+        Args:
+            identifier_year (str): e.g. 'mvol-0004-1951'
+
+        Returns:
+            dict: data about these identifiers.
+        """
+        path = self.get_path(identifier_chunk)
+        csv_data = {}
+        for entry in self.cs_listdir(path):
+            if re.search('\.csv$', entry):
+                f = self.ftp.file('{}/{}'.format(path, entry))
+                reader = csv.reader(f)
+                next(reader, None)
+                try:
+                    for row in reader:
+                        csv_data[row[2]] = {
+                            'title': row[0],
+                            'date': row[1],
+                            'description': row[3]
+                        }
+                except IndexError:
+                    break
+        return csv_data
+'''
+
+class RacValidator(DigitalCollectionValidator):
 
     def validate(self, identifier):
         """Wrapper to call all validation functions. 
@@ -468,7 +496,7 @@ class RacOwnCloudValidator(OwnCloudValidator):
                     return [i]
 
 
-class EwmOwnCloudValidator(OwnCloudValidator):
+class EwmValidator(DigitalCollectionValidator):
 
     def validate(self, identifier):
         """Wrapper to call all validation functions. 
@@ -484,7 +512,7 @@ class EwmOwnCloudValidator(OwnCloudValidator):
         return errors
         
 
-class ChopinOwnCloudValidator(OwnCloudValidator):
+class ChopinValidator(DigitalCollectionValidator):
     def validate_tiff_directory(self, identifier, folder_name):
         """A helper function to validate TIFF folders inside chopin
         folders.
@@ -564,7 +592,7 @@ class ChopinOwnCloudValidator(OwnCloudValidator):
         return errors
 
 
-class MvolOwnCloudValidator(OwnCloudValidator):
+class MvolValidator(DigitalCollectionValidator):
     def validate_directory(self, identifier, folder_name):
         """A helper function to validate ALTO, JPEG, and TIFF folders inside mmdd
         folders.
@@ -937,7 +965,7 @@ class MvolOwnCloudValidator(OwnCloudValidator):
         return errors
 
 
-class ApfOwnCloudValidator(OwnCloudValidator):
+class ApfValidator(DigitalCollectionValidator):
     def validate(self, identifier):
         """Wrapper to call all validation functions. 
 

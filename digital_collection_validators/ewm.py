@@ -13,7 +13,7 @@ from docopt import docopt
 if __name__ == '__main__':
     arguments = docopt(__doc__)
 
-    ewm_valid = EwmOwnCloudValidator()
+    ewm_valid = EwmValidator()
     ewm_valid.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
 
     identifiers = []

@@ -13,7 +13,7 @@ from docopt import docopt
 if __name__ == '__main__':
     arguments = docopt(__doc__)
 
-    rac_valid = RacOwnCloudValidator()
+    rac_valid = RacValidator()
     rac_valid.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
 
     identifiers = []

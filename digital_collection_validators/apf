@@ -7,13 +7,13 @@
 
 import os, glob
 import sys
-from classes import ApfOwnCloudValidator, OwnCloudWebDAV
+from classes import ApfValidator, OwnCloudWebDAV
 from docopt import docopt
 
 if __name__ == '__main__':
     arguments = docopt(__doc__)
 
-    apf_valid = ApfOwnCloudValidator()
+    apf_valid = ApfValidator()
     #apf_valid.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
 
     # build a set of identifiers (e.g. 'apf1-00001', 'apf1-00002', etc.) from

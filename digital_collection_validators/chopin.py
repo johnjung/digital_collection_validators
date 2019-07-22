@@ -13,7 +13,7 @@ from docopt import docopt
 if __name__ == '__main__':
     arguments = docopt(__doc__)
 
-    chopin_valid = ChopinOwnCloudValidator()
+    chopin_valid = ChopinValidator()
     chopin_valid.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
 
     identifiers = []

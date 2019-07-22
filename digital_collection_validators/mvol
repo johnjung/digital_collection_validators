@@ -22,14 +22,14 @@
 import operator
 import os
 import sys
-from classes import MvolOwnCloudValidator, OwnCloudWebDAV, XTFValidator
+from classes import MvolValidator, OwnCloudWebDAV, XTFValidator
 from docopt import docopt
 
 
 if __name__ == '__main__':
     arguments = docopt(__doc__)
 
-    mvol_valid = MvolOwnCloudValidator()
+    mvol_valid = MvolValidator()
     mvol_valid.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
 
     if any((arguments['check_sync'],)):
