@@ -93,15 +93,55 @@ class TestValidator(unittest.TestCase):
 
 
     def test_list_directory(self):
+        '''Confirms that all file(s) are listed in chopin, ewm, gms, and speculum directories'''
+        # === CHOPIN === #
+        chopin1 = self.owncloud.list_directory('chopin-001')
+        chopin2 = self.owncloud.list_directory('chopin-017')
 
-        # === CHOPIN ===
-        identifiers = self.owncloud.list_directory('chopin-001')
+        self.assertTrue(set(chopin1) == set(self.owncloud.cs_listdir(self.owncloud.get_path('chopin-001') + '/tifs')))
+        self.assertTrue(set(chopin2) == set(self.owncloud.cs_listdir(self.owncloud.get_path('chopin-017') + '/tifs')))
 
-        path = "/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/chopin/chopin-001/tifs"
-        
-        #print(self.owncloud.cs_listdir(path))
-        #print(self.owncloud.cd_listdir(path))
-        self.assertTrue(set(identifiers)==set(self.owncloud.cs_listdir(path)))
+        # === EWM === #
+        ewm1 = self.owncloud.list_directory('ewm-0001-0001cr')
+        ewm2 = self.owncloud.list_directory('ewm-0009-0004')
+
+        self.assertTrue(ewm1[0] == 'ewm-0001-0001cr.tif')
+        self.assertTrue(ewm2[0] == 'ewm-0009-0004.tif')
+
+        # === GMS === #
+        gms1 = self.owncloud.list_directory('gms-0019')
+        gms2 = self.owncloud.list_directory('gms-0128-005')
+
+        self.assertTrue(set(gms1) == set(self.owncloud.cs_listdir(self.owncloud.get_path('gms-0019') + '/tifs')))
+        self.assertTrue(gms2[0] == 'gms-0128-005.tif')
+
+        # === SPECULUM === #
+        spec1 = self.owncloud.list_directory('speculum-0003')
+        spec2 = self.owncloud.list_directory('speculum-0009-001')
+
+        self.assertTrue(set(spec1) == set(self.owncloud.cs_listdir(self.owncloud.get_path('speculum-0003') + '/tifs')))
+        self.assertTrue(spec2[0] == 'speculum-0009-001.tif')
+
+
+
+
+class TestRacValidator(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.rac = RacValidator()
+        self.rac.connect('s3.lib.uchicago.edu', {})
+
+    def test_list_directory(self):
+        '''Confirms that all tif file(s) are listed in rac directories'''
+        rac1 = self.rac.list_dir('rac-0392')
+        rac2 = self.rac.list_dir('chess-0392-007')
+        rac3 = self.rac.list_dir('rac-1380')
+        rac4 = self.rac.list_dir('rose-1380-002')
+
+        self.assertTrue(set(rac1) == set(self.rac.cs_listdir(self.rac.get_path('rac-0392') + '/tifs')))
+        self.assertTrue(rac2[0] == 'chess-0392-007.tif')
+        self.assertTrue(set(rac3) == set(self.rac.cs_listdir(self.rac.get_path('rac-1380') + '/tifs')))
+        self.assertTrue(rac4[0] == 'rose-1380-002.tif')        
         
 
 class TestMvolValidator(unittest.TestCase):
@@ -244,11 +284,13 @@ class TestApfValidator(unittest.TestCase):
         self.owncloud = ApfValidator()
         self.owncloud.connect('s3.lib.uchicago.edu', {})
 
-    """
     def test_list_dir(self):
-        ''' confirms that all json files are listed in apf directory'''
+        ''' confirms that all tiff files are listed in apf directory'''
 
-        path = "/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/"
+        if (self.owncloud.connected):
+            path = "/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/"
+        else:
+            path = "C:/Users/ksong814/Desktop/IIIF_Files/"
 
         test1 = path + 'apf/1'
         list1 = self.owncloud.cs_listdir(test1)
@@ -261,12 +303,18 @@ class TestApfValidator(unittest.TestCase):
         list2 = self.owncloud.list_dir('apf1')
 
         self.assertTrue(set(fin)==set(list2))
-    """
-        
+    
     def test_validate(self):
+        ''' validates existing tiff files'''
+
         self.assertTrue(self.owncloud.validate_tiff_files('apf1-00001'))
+        self.assertTrue(self.owncloud.validate_tiff_files('apf5-00421'))
+        self.assertTrue(self.owncloud.validate_tiff_files('apf8-01199'))
+
+        self.assertTrue('tiff missing' in self.owncloud.validate_tiff_files('apf1-08913')[0])
+        self.assertTrue('tiff missing' in self.owncloud.validate_tiff_files('apf5-00117')[0])
+        self.assertTrue('tiff missing' in self.owncloud.validate_tiff_files('apf8-00321')[0])
 
     
-
 if __name__ == '__main__':
     unittest.main()

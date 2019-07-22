@@ -14,7 +14,7 @@ if __name__ == '__main__':
     arguments = docopt(__doc__)
 
     apf_valid = ApfValidator()
-    #apf_valid.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
+    apf_valid.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
 
     # build a set of identifiers (e.g. 'apf1-00001', 'apf1-00002', etc.) from
     # the identifier chunks (e.g. 'apf1', 'apf2', etc.) that were passed in on
@@ -31,9 +31,7 @@ if __name__ == '__main__':
     if arguments['ls']:
         for identifier in identifiers:
             for i in identifier:
-                if i.endswith('.tif'):
-                    i = i[:-4]
-                    sys.stdout.write(i + '\n')
+                sys.stdout.write(i + '\n')
 
     elif arguments['validate']:
         for identifier in identifiers:

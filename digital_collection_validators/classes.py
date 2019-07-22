@@ -13,9 +13,17 @@ from lxml import etree
 
 
 class DigitalCollectionValidator:
-    connected = 0 #variable that determines if SSH connection is made or not
+    connected = 0 #variable that determines if SSH connection is made or not --> default set to 0
 
     def connect(self, ssh_server, paramiko_kwargs):
+        """Connects user to owncloud server
+        
+        Args:
+            ssh-server (str): name of ssh server, e.g. 's3.lib.uchicago.edu'
+
+        Returns:
+            Returns no physical attribute, only establishes ssh connection 
+        """
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect('s3.lib.uchicago.edu', username='ksong814')
@@ -27,7 +35,7 @@ class DigitalCollectionValidator:
         """Get an identifier chunk from a path to an mmdd directory.
 
         Args:
-            path (str): to a directory on the remote server. 
+            path (str): to a directory on the server. 
 
         Returns:
             str: an identifier, e.g. 'mvol-0004-1930-0103'.
@@ -45,6 +53,14 @@ class DigitalCollectionValidator:
             raise NotImplementedError
 
     def get_identifier(self, path):
+        """Returns identifier chunk from a path
+        
+        Args:
+            path (str): to a directory on the server.
+            
+        Returns:
+            str: an identifier chunk, e.g. 'mvol-0001', 'chopin-001
+        """
         identifier_chunk = self.get_identifier_chunk(path)
         if self.is_identifier(identifier_chunk):
             return identifier_chunk
@@ -146,7 +162,8 @@ class DigitalCollectionValidator:
         elif self.get_project(identifier_chunk) == 'speculum':
             return bool(re.match('^speculum-\d{4}$', identifier_chunk))
         elif self.get_project(identifier_chunk) == 'apf':
-            return bool(re.match('^apf\d{1}-\d{5}$',identifier_chunk))
+            return (bool(re.match('^apf\d{1}-\d{5}$',identifier_chunk))
+                    or bool(re.match('^apf\d{1}-\d{5}-\d{3}',identifier_chunk)))
         elif self.get_project(identifier_chunk) == 'chopin':
             return bool(re.match('^chopin-\d{3}$',identifier_chunk)) 
         elif self.get_project(identifier_chunk) == 'rac':
@@ -175,7 +192,7 @@ class DigitalCollectionValidator:
         elif self.get_project(identifier_chunk) == 'speculum':
             r = '^speculum(-\d{4}(-\d{3})?)?$'
         elif self.get_project(identifier_chunk) == 'apf':
-            r = '^apf(\d{1}(-\d{5})?)?$'
+            r = '^apf(\d{1}(-\d{5}(-\d{3})?)?)?$'
         elif self.get_project(identifier_chunk) == 'chopin':
             r = '^chopin(-\d{3}(-\d{3})?)?$'
         elif self.get_project(identifier_chunk) == 'rac':
@@ -402,38 +419,7 @@ class DigitalCollectionValidator:
         return csv_data
     
 
-'''
-class DigitalCollectionValidator(DigitalCollectionValidator):
-    def get_csv_data(self, identifier_chunk):
-        """Get CSV data for a specific identifier chunk.
- 
-        Args:
-            identifier_year (str): e.g. 'mvol-0004-1951'
-
-        Returns:
-            dict: data about these identifiers.
-        """
-        path = self.get_path(identifier_chunk)
-        csv_data = {}
-        for entry in self.cs_listdir(path):
-            if re.search('\.csv$', entry):
-                f = self.ftp.file('{}/{}'.format(path, entry))
-                reader = csv.reader(f)
-                next(reader, None)
-                try:
-                    for row in reader:
-                        csv_data[row[2]] = {
-                            'title': row[0],
-                            'date': row[1],
-                            'description': row[3]
-                        }
-                except IndexError:
-                    break
-        return csv_data
-'''
-
 class RacValidator(DigitalCollectionValidator):
-
     def validate(self, identifier):
         """Wrapper to call all validation functions. 
 
@@ -513,82 +499,16 @@ class EwmValidator(DigitalCollectionValidator):
         
 
 class ChopinValidator(DigitalCollectionValidator):
-    def validate_tiff_directory(self, identifier, folder_name):
-        """A helper function to validate TIFF folders inside chopin
-        folders.
+    def validate(self, identifier):
+        """Wrapper to call all validation functions. 
 
         Args:
-            identifier (str): e.g. 'chopin-001'
-            folder_name (str): the name of the folder: TIFF/tif
-
-        Returns:
-            list: error messages, or an empty list.
+            identifier (str): e.g. 'chopin-001-001'
         """
         assert self.get_project(identifier) == 'chopin'
 
-        extensions = {'TIFF': 'tif'}
-
-        if folder_name != 'TIFF':
-            raise ValueError('unsupported folder_name.\n')
-
-        chopin_path = self.get_path(identifier)
-
-        # raise an IOError if the TIFF directory does not exist.
-        self.cs_stat(chopin_path + '/' + folder_name)
-
-        
-        filename_re = '^%s-%s-%s-%s_\d{4}\.%s$' % (
-            mmdd_path.split('/')[-4],
-            mmdd_path.split('/')[-3],
-            mmdd_path.split('/')[-2],
-            mmdd_path.split('/')[-1],
-            extensions[folder_name]
-        )
-        
-
-        #filename_re = '^%s-%s-_\d{4}\.$s'
-
-        entries = []
-        for entry in self.cs_listdir('{}/{}'.format(chopin_path, folder_name)):
-            if entry.endswith(extensions[folder_name]):
-                entries.append(entry)
-        entries.sort()
-
-        entries_pass = []
-        entries_fail = []
-        for entry in entries:
-            if re.match(filename_re, entry):
-                entries_pass.append(entry)
-            else:
-                entries_fail.append(entry)
-
         errors = []
-        if entries_fail:
-            if entries_pass:
-                # if failed entries and passing entries both exist, don't
-                # recommend filename changes to avoid collisions.
-                for entry in entries_fail:
-                    errors.append(
-                        '{}/{}/{} should match {}\n'.format(
-                            identifier,
-                            folder_name,
-                            entry,
-                            filename_re
-                        )
-                    )
-            else:
-                for i in range(len(entries_fail)): 
-                    errors.append(
-                        '{}/{}/{}/{} rename to {}_{:04}.{}\n'.format(
-                            self.get_path(identifier),
-                            identifier,
-                            folder_name,
-                            entries_fail[i],
-                            identifier,
-                            i + 1,
-                            extensions[folder_name]
-                        )
-                    )
+        errors += self.validate_tiff_files(identifier)
         return errors
 
 
@@ -998,7 +918,7 @@ class ApfValidator(DigitalCollectionValidator):
 
         identifiers = []
         if length == 4 or length >= 10:
-            path += identifier[3]
+            path += '/' + identifier[3]
         elif length != 3:
             print("File doesn't exist")
         
@@ -1006,19 +926,19 @@ class ApfValidator(DigitalCollectionValidator):
             for directory in self.cs_listdir(path):
                 identifiers += self.cs_listdir(path + '/' + str(directory))
             return identifiers 
-    
+
         identifiers = self.cs_listdir(path)
+
+        fin = []
+        for i in identifiers:
+            if i.endswith('.tif'):
+                fin.append(i)
 
         if length >= 10:
             for i in identifiers:
                 if i[:-4] == identifier:
                     return [i]
         
-        fin = []
-        for i in identifiers:
-            if i.endswith('.tif'):
-                fin.append(i)
-
         return fin  
 
 
