@@ -13,11 +13,14 @@ from lxml import etree
 
 
 class DigitalCollectionValidator:
+    connected = 0 #variable that determines if SSH connection is made or not
+
     def connect(self, ssh_server, paramiko_kwargs):
-        self.ssh = paramiko.SSHClient()
-        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.ssh.connect('s3.lib.uchicago.edu', username='ksong814')
-        self.ftp = self.ssh.open_sftp()
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect('s3.lib.uchicago.edu', username='ksong814')
+        self.ftp = ssh.open_sftp()
+        self.connected = 1
  
 
     def get_identifier_chunk(self, path):
@@ -75,10 +78,10 @@ class DigitalCollectionValidator:
             r = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/{}'.format(
                 '/'.join(subfolders))
 
-            if self.ftp:
+            if self.connected == 1:
                 return r
             else:
-                local = 'C:/Users/ksong814/Desktop' # ENTER YOUR LOCAL PATH HERE
+                local = 'C:/Users/ksong814/Desktop/' # ENTER YOUR LOCAL PATH HERE
                 return (local + r[60:])
 
         # for mvol, apf, and rac, sections of the identifier are not repeated in subfolders,
@@ -95,10 +98,10 @@ class DigitalCollectionValidator:
             else:
                 r = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/{}'.format(identifier_chunk.replace('-', '/'))
 
-            if self.ssh.get_transport() is not None:
+            if self.connected == 1:
                 return r
             else:
-                local = 'C:/Users/ksong814/Desktop' # ENTER YOUR LOCAL PATH HERE
+                local = 'C:/Users/ksong814/Desktop/' # ENTER YOUR LOCAL PATH HERE
                 return (local + r[60:])
         else:
             raise NotImplementedError
@@ -328,7 +331,6 @@ class DigitalCollectionValidator:
             identifier (str): e.g. 'ewm-0001-0001'
                                    'ewm-0001-0001cr
         """
-        #assert self.get_project(identifier) == 'ewm'
 
         try:
             f = self.cs_open('{}/{}.tiff'.format(
@@ -345,7 +347,7 @@ class DigitalCollectionValidator:
         Args:
             path (str): to a directory
         """
-        if self.ssh.get_transport() is not None:
+        if self.connected == 1:
             return self.ftp.listdir(path)
         else:
             return os.listdir(path)
@@ -356,7 +358,7 @@ class DigitalCollectionValidator:
         Args:
             path (str): to a directory
         """
-        if self.ssh.get_transport() is not None:
+        if self.connected == 1:
             return self.ftp.stat(path)
         else:
             return os.stat(path)
@@ -367,7 +369,7 @@ class DigitalCollectionValidator:
         Args:
             path (str): to a file
         """
-        if self.ssh.get_transport() is not None:
+        if self.connected == 1:
             return self.ftp.open(path)
         else:
             return self.open(path)
@@ -506,6 +508,7 @@ class ChopinOwnCloudValidator(OwnCloudValidator):
         # raise an IOError if the TIFF directory does not exist.
         self.cs_stat(chopin_path + '/' + folder_name)
 
+        
         filename_re = '^%s-%s-%s-%s_\d{4}\.%s$' % (
             mmdd_path.split('/')[-4],
             mmdd_path.split('/')[-3],
@@ -513,6 +516,9 @@ class ChopinOwnCloudValidator(OwnCloudValidator):
             mmdd_path.split('/')[-1],
             extensions[folder_name]
         )
+        
+
+        #filename_re = '^%s-%s-_\d{4}\.$s'
 
         entries = []
         for entry in self.cs_listdir('{}/{}'.format(chopin_path, folder_name)):
@@ -958,7 +964,7 @@ class ApfOwnCloudValidator(OwnCloudValidator):
             print("File or directory doesn't exist")
             sys.exit()
 
-        path = "/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/apf/"
+        path = self.get_path('apf')
 
         length = len(identifier)
 
@@ -970,7 +976,7 @@ class ApfOwnCloudValidator(OwnCloudValidator):
         
         if identifier == 'apf':
             for directory in self.cs_listdir(path):
-                identifiers += self.cs_listdir(path + str(directory))
+                identifiers += self.cs_listdir(path + '/' + str(directory))
             return identifiers 
     
         identifiers = self.cs_listdir(path)

@@ -242,7 +242,7 @@ class TestApfValidator(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.owncloud = ApfOwnCloudValidator()
-        #self.owncloud.connect('s3.lib.uchicago.edu', {})
+        self.owncloud.connect('s3.lib.uchicago.edu', {})
 
     """
     def test_list_dir(self):
