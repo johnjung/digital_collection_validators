@@ -3,6 +3,7 @@ import unittest
 import os
 from digital_collection_validators.classes import *
 from pathlib import Path
+import re
 
 
 class TestValidator(unittest.TestCase):
@@ -122,6 +123,36 @@ class TestValidator(unittest.TestCase):
         self.assertTrue(set(spec1) == set(self.owncloud.cs_listdir(self.owncloud.get_path('speculum-0003') + '/tifs')))
         self.assertTrue(spec2[0] == 'speculum-0009-001.tif')
 
+    def test_validate(self):
+        '''validates existing tiff files'''
+
+        # === CHOPIN === #
+        self.assertFalse(self.owncloud.validate_files('chopin-001-032'))
+        self.assertFalse(self.owncloud.validate_files('chopin-010-006'))
+
+        self.assertTrue('tiff missing' in self.owncloud.validate_files('chopin-001-033')[0])
+        self.assertTrue('tiff missing' in self.owncloud.validate_files('chopin-010-007')[0])
+
+        # === EWM === #
+        self.assertFalse(self.owncloud.validate_files('ewm-0001-0001cr'))
+        self.assertFalse(self.owncloud.validate_files('ewm-0009-0004'))
+
+        self.assertTrue('tiff missing' in self.owncloud.validate_files('ewm-0006-0335')[0])
+        self.assertTrue('tiff missing' in self.owncloud.validate_files('ewm-0009-0090')[0])
+
+        # === GMS === #
+        self.assertFalse(self.owncloud.validate_files('gms-0019-244'))
+        self.assertFalse(self.owncloud.validate_files('gms-0062-117'))
+
+        self.assertTrue('tiff missing' in self.owncloud.validate_files('gms-0062-300')[0])
+        self.assertTrue('tiff missing' in self.owncloud.validate_files('gms-0019-999')[0])
+
+        # === SPECULUM === #
+        self.assertFalse(self.owncloud.validate_files('speculum-0001-001'))
+        self.assertFalse(self.owncloud.validate_files('speculum-0017-001'))
+
+        self.assertTrue('tiff missing' in self.owncloud.validate_files('speculum-0001-002')[0])
+        self.assertTrue('tiff missing' in self.owncloud.validate_files('speculum-0017-002')[0])
 
 
 
@@ -141,8 +172,20 @@ class TestRacValidator(unittest.TestCase):
         self.assertTrue(set(rac1) == set(self.rac.cs_listdir(self.rac.get_path('rac-0392') + '/tifs')))
         self.assertTrue(rac2[0] == 'chess-0392-007.tif')
         self.assertTrue(set(rac3) == set(self.rac.cs_listdir(self.rac.get_path('rac-1380') + '/tifs')))
-        self.assertTrue(rac4[0] == 'rose-1380-002.tif')        
-        
+        self.assertTrue(rac4[0] == 'rose-1380-002.tif')      
+
+    def test_validate(self):
+        '''validates existing tiff files'''
+
+        self.assertFalse(self.rac.validate_tiff_files('chess-0392-001'))
+        self.assertFalse(self.rac.validate_tiff_files('rose-1380-009'))
+        self.assertFalse(self.rac.validate_tiff_files('rose-1380-113'))
+
+        self.assertTrue('tiff missing' in self.rac.validate_tiff_files('chess-0392-999')[0])
+        self.assertTrue('tiff missing' in self.rac.validate_tiff_files('rose-1380-999')[0])
+        self.assertTrue('tiff missing' in self.rac.validate_tiff_files('rose-1380-592')[0])  
+
+
 
 class TestMvolValidator(unittest.TestCase):
     def __init__(self, *args, **kwargs):
@@ -307,14 +350,14 @@ class TestApfValidator(unittest.TestCase):
     def test_validate(self):
         ''' validates existing tiff files'''
 
-        self.assertTrue(self.owncloud.validate_tiff_files('apf1-00001'))
-        self.assertTrue(self.owncloud.validate_tiff_files('apf5-00421'))
-        self.assertTrue(self.owncloud.validate_tiff_files('apf8-01199'))
-
-        self.assertTrue('tiff missing' in self.owncloud.validate_tiff_files('apf1-08913')[0])
-        self.assertTrue('tiff missing' in self.owncloud.validate_tiff_files('apf5-00117')[0])
-        self.assertTrue('tiff missing' in self.owncloud.validate_tiff_files('apf8-00321')[0])
-
+        self.assertFalse(self.owncloud.validate_tiff_files('apf1-00001'))
+        self.assertFalse(self.owncloud.validate_tiff_files('apf5-00421'))
+        self.assertFalse(self.owncloud.validate_tiff_files('apf8-01199'))
+        
+        self.assertTrue('tiff missing' in self.owncloud.validate_tiff_files('apf1-98913')[0])
+        self.assertTrue('tiff missing' in self.owncloud.validate_tiff_files('apf5-77000')[0])
+        self.assertTrue('tiff missing' in self.owncloud.validate_tiff_files('apf8-32145')[0])
+        
     
 if __name__ == '__main__':
     unittest.main()

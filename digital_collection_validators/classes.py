@@ -103,12 +103,14 @@ class DigitalCollectionValidator:
         # for mvol, apf, and rac, sections of the identifier are not repeated in subfolders,
         # e.g. mvol/0001/0002/0003.
         if project in ('mvol','apf','rac'):
-            if project == 'rac' and 'rac' not in identifier_chunk:
+            if ('rac' in project) and ('rac' not in identifier_chunk):
                 if self.is_identifier(identifier_chunk):
                     #isolating directory number for chess/rose file
-                    identifier = identifier[-8:]
-                    identifier = identifier[:4]
-                    r = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/rac' + identifier
+                    if 'chess' in identifier_chunk:
+                        folder = '0392'
+                    elif 'rose' in identifier_chunk:
+                        folder = '1380'
+                    r = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/rac/' + folder
                 else:
                     raise NotImplementedError
             else:
@@ -168,8 +170,8 @@ class DigitalCollectionValidator:
             return bool(re.match('^chopin-\d{3}$',identifier_chunk)) 
         elif self.get_project(identifier_chunk) == 'rac':
             return (bool(re.match('^rac-\d{4}$',identifier_chunk))
-                    or bool(re.match('^chess-d\{4}-\d{3}'))
-                    or bool(re.match('^rose-d\{4}-\d{3}')))
+                    or bool(re.match('^chess-\d{4}-\d{3}$',identifier_chunk))
+                    or bool(re.match('^rose-\d{4}-\d{3}$',identifier_chunk)))
         else:
             raise NotImplementedError
 
@@ -276,9 +278,9 @@ class DigitalCollectionValidator:
             path = self.get_path(identifier[:13])
 
         dir_files = self.cs_listdir(path)
-        for chunk in dir_files:
-            if '.' not in chunk:
-                identifiers += self.cs_listdir(path + '/' + str(chunk))
+        for folder in dir_files:
+            if '.' not in folder:
+                identifiers += self.cs_listdir(path + '/' + str(folder))
 
         #searching for single, unique file
         if length >= general[self.get_project(identifier)]:
@@ -286,6 +288,38 @@ class DigitalCollectionValidator:
                 if i[:-4] == identifier:
                     return [i]
         return identifiers
+
+    def validate_files(self, identifier):
+        """For a given identifier, make sure a TIFF file exists. Confirm
+        that the file is non-empty.
+        
+        Args:
+            identifier (str): e.g. 'speculum-0001-001', 'chopin-001-001'
+        """
+
+        if not self.is_identifier_chunk(identifier):
+            print("File doesn't exist")
+            sys.exit()
+
+        if 'ewm' in identifier or 'gms' in identifier:
+            path = self.get_path(identifier[:8])
+        elif 'chopin' in identifier:
+            path = self.get_path(identifier[:10])
+        elif 'speculum' in identifier:
+            path = self.get_path(identifier[:13])
+
+        dir_files = self.cs_listdir(path)
+
+        for folder in dir_files:
+            if '.' not in folder:
+                for image in self.cs_listdir(path + '/' + str(folder)):
+                    if identifier in image:
+                        path += '/' + str(folder) + '/' + str(image)
+                        f = self.cs_open(path)
+                        return self._validate_file_notempty(f)
+        
+        return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
+                        
 
     def get_newest_modification_time_from_directory(self, directory):
         """ Helper function for get_newest_modification_time. Recursively searches
@@ -338,25 +372,9 @@ class DigitalCollectionValidator:
                 errors.append('{} is an empty file.\n'.format(f.name))
             except AttributeError:
                 errors.append('empty file.\n')
+    
+        f.close()
         return errors
-
-    def validate_tiff_files(self, identifier):
-        """For a given identifier, make sure a TIFF file exists. Confirm
-        that the file is non-empty.
-
-        Args:
-            identifier (str): e.g. 'ewm-0001-0001'
-                                   'ewm-0001-0001cr
-        """
-
-        try:
-            f = self.cs_open('{}/{}.tiff'.format(
-                self.get_path(identifier),
-                identifier))
-            return SSH._validate_file_notempty(f)
-        except:
-            return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
-
 
     def cs_listdir(self, path):
         """Lists contents of specified directory in current server (Owncloud vs Local)
@@ -378,7 +396,7 @@ class DigitalCollectionValidator:
         if self.connected == 1:
             return self.ftp.stat(path)
         else:
-            return os.stat(path)
+            return os.stat(path, 'r')
 
     def cs_open(self, path):
         """Opens a file to read or write on specified path in current server (Owncloud vs Local)
@@ -389,7 +407,7 @@ class DigitalCollectionValidator:
         if self.connected == 1:
             return self.ftp.open(path)
         else:
-            return self.open(path)
+            return open(path)
 
     def get_csv_data(self, identifier_chunk):
         """Get CSV data for a specific identifier chunk.
@@ -420,6 +438,50 @@ class DigitalCollectionValidator:
     
 
 class RacValidator(DigitalCollectionValidator):
+    def validate_tiff_files(self, identifier):
+        """For a given identifier, make sure a TIFF file exists. Confirm
+        that the file is non-empty.
+        
+        Args:
+            identifier (str): e.g. 'rose-1380-001"""
+
+        path = self.get_path(identifier) + '/tifs/'
+
+        for image in self.cs_listdir(path):
+            if identifier in image:
+                path += image
+                f = self.cs_open(path)
+                return self._validate_file_notempty(f)
+
+        return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
+        
+
+    '''
+    def validate_tiff_files(self, identifier):
+        """For a given identifier, make sure a TIFF file exists. Confirm
+        that the file is non-empty.
+
+        Args:
+            identifier (str): e.g. 'ewm-0001-0001'
+                                   'ewm-0001-0001cr
+        """
+
+        path = self.get_path(identifier) + '/tifs/'
+
+        for image in self.cs_listdir(path):
+            if identifier in image:
+                path += image
+                break
+
+        print(path)
+
+        try:
+            f = self.cs_open(path)
+            return SSH._validate_file_notempty(f)
+        except:
+            return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
+    '''
+
     def validate(self, identifier):
         """Wrapper to call all validation functions. 
 
@@ -886,6 +948,25 @@ class MvolValidator(DigitalCollectionValidator):
 
 
 class ApfValidator(DigitalCollectionValidator):
+    def validate_tiff_files(self, identifier):
+        """For a given identifier, make sure a TIFF file exists. Confirm
+        that the file is non-empty.
+
+        Args:
+            identifier (str): e.g. 'apf1-00001'
+        """
+
+        path = self.get_path('apf') +  '/' + str(identifier[3])
+
+        for image in self.cs_listdir(path):
+            if identifier in image:
+                path += '/' + image
+                f = self.cs_open(path)
+                return self._validate_file_notempty(f)
+        
+        return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
+
+
     def validate(self, identifier):
         """Wrapper to call all validation functions. 
 
@@ -938,6 +1019,7 @@ class ApfValidator(DigitalCollectionValidator):
             for i in identifiers:
                 if i[:-4] == identifier:
                     return [i]
+            raise NotImplementedError
         
         return fin  
 
