@@ -289,6 +289,7 @@ class DigitalCollectionValidator:
                     return [i]
         return identifiers
 
+
     def validate_files(self, identifier):
         """For a given identifier, make sure a TIFF file exists. Confirm
         that the file is non-empty.
@@ -319,6 +320,55 @@ class DigitalCollectionValidator:
                         return self._validate_file_notempty(f)
         
         return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
+
+    def validate_tiff_directory(self, identifier, folder_name):
+        """Validates TIFF directories within an identifier.
+        
+        Args:
+            identifier (str): e.g. 'chopin-001' 
+            folder_name (str): e.g. 'TIFF' 
+            
+        Returns:
+            pass: empty list
+            fail: list with error messages
+        """
+
+        extensions = {
+            'ALTO': 'xml',
+            'JPEG': 'jpg',
+            'POS': 'pos',
+            'TIFF': 'tif'
+        }
+
+        if folder_name not in extensions:
+            raise ValueError('unsupported folder name.\n')
+
+        if not self.is_identifier(identifier):
+            raise ValueError('invalid identifier.\n')
+
+        path = self.get_path(identifier)
+        folders = self.cs_listdir(path)
+
+        entries = []
+        for directory in folders:
+            if '.' not in directory:
+                for entry in self.cs_listdir(path + '/' + str(directory)):
+                    entries.append(path + '/' + directory + '/' + str(entry))
+        
+        errors = []
+        for i in entries:
+            file_name = i.split('/')[-1]
+
+            if not file_name.endswith(extensions[folder_name]):
+                errors.append('%s is not a tif file' % file_name)
+
+            f = self.cs_open(i)
+            empty = self._validate_file_notempty(f)
+            if empty:
+                errors.append(empty[0])
+            f.close()
+
+        return errors
                         
 
     def get_newest_modification_time_from_directory(self, directory):
@@ -369,7 +419,9 @@ class DigitalCollectionValidator:
 
         if not size:
             try:
-                errors.append('{} is an empty file.\n'.format(f.name))
+                name = f.name
+                name = name.split('/')[-1]
+                errors.append('%s is an empty file.\n' % name)
             except AttributeError:
                 errors.append('empty file.\n')
     
@@ -455,32 +507,6 @@ class RacValidator(DigitalCollectionValidator):
 
         return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
         
-
-    '''
-    def validate_tiff_files(self, identifier):
-        """For a given identifier, make sure a TIFF file exists. Confirm
-        that the file is non-empty.
-
-        Args:
-            identifier (str): e.g. 'ewm-0001-0001'
-                                   'ewm-0001-0001cr
-        """
-
-        path = self.get_path(identifier) + '/tifs/'
-
-        for image in self.cs_listdir(path):
-            if identifier in image:
-                path += image
-                break
-
-        print(path)
-
-        try:
-            f = self.cs_open(path)
-            return SSH._validate_file_notempty(f)
-        except:
-            return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
-    '''
 
     def validate(self, identifier):
         """Wrapper to call all validation functions. 

@@ -123,6 +123,7 @@ class TestValidator(unittest.TestCase):
         self.assertTrue(set(spec1) == set(self.owncloud.cs_listdir(self.owncloud.get_path('speculum-0003') + '/tifs')))
         self.assertTrue(spec2[0] == 'speculum-0009-001.tif')
 
+
     def test_validate(self):
         '''validates existing tiff files'''
 
@@ -153,6 +154,11 @@ class TestValidator(unittest.TestCase):
 
         self.assertTrue('tiff missing' in self.owncloud.validate_files('speculum-0001-002')[0])
         self.assertTrue('tiff missing' in self.owncloud.validate_files('speculum-0017-002')[0])
+
+    def test_validate_directories(self):
+        '''validates batch of tiff files in directory'''
+
+        self.assertFalse(self.owncloud.validate_tiff_directory('chopin-001','TIFF'))
 
 
 
