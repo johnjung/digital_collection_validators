@@ -32,6 +32,18 @@ ssh server_name_here
 
 You'll have to use an SSH agent to run any of the commands below. 
 
+## Local Server
+If you're working on a local server, you can adjust the path in the configuration file to
+locate where your files are. In **files.ini**, replace the 'LOCAL' path with the one where your 
+archives are: 
+
+'''
+[FILES]
+local = C:/Users/ksong814/Desktop/ # --> CHANGE
+owncloud = /data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/
+'''  
+
+
 ## General Utility
 digcoll is a general utility for working with digital collections data. You can
 use it to report on files in the system.
