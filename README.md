@@ -37,11 +37,11 @@ If you're working on a local server, you can adjust the path in the configuratio
 locate where your files are. In **files.ini**, replace the 'LOCAL' path with the one where your 
 archives are: 
 
-'''
+```
 [FILES]
 local = C:/Users/ksong814/Desktop/ # --> CHANGE
 owncloud = /data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/
-'''  
+```  
 
 
 ## General Utility
