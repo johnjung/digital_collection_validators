@@ -4,7 +4,6 @@
    mvol check_sync (--owncloud-to-development | --owncloud-to-production) (--list-in-sync | --list-out-of-sync) <identifier-chunk> ...
    mvol csvreport <identifier-chunk> ...
    mvol ls <identifier-chunk> ...
-   mvol fix 
    mvol validate (--list-valid | --show-errors) <identifier-chunk> ...
 """
 
@@ -22,7 +21,7 @@
 import operator
 import os
 import sys
-from classes import MvolValidator, OwnCloudWebDAV, XTFValidator
+from classes import MvolValidator, XTFValidator
 from docopt import docopt
 
 
@@ -39,21 +38,6 @@ if __name__ == '__main__':
         elif arguments['--owncloud-to-production']:
             xtf_ssh = XTFValidator(True)
             xtf_ssh.connect(os.environ['XTF_PRODUCTION_SERVER'], {})
-    '''
-    if any((arguments['put_dc_xml'],
-            arguments['regularize_mets'],
-            arguments['regularize_pdf'],
-            arguments['regularize_struct'],
-            arguments['regularize_txt'],
-            arguments['rename_altos'],
-            arguments['rename_jpegs'],
-            arguments['rename_tiffs'])):
-        owncloud_webdav = OwnCloudWebDAV(
-            os.environ['OWNCLOUD_WEBDAV_SERVER'],
-            os.environ['OWNCLOUD_WEBDAV_USERNAME'],
-            os.environ['OWNCLOUD_WEBDAV_PASSWORD'],
-        )
-    '''
 
     identifiers = set()
     for identifier_chunk in arguments['<identifier-chunk>']:
@@ -61,85 +45,6 @@ if __name__ == '__main__':
             if i.startswith('mvol'):
                 identifiers.add(i)
     identifiers = sorted(list(identifiers))
-
-    if arguments['fix']:
-        print("WARNING: THE FOLLOWING COMMANDS MAKE DIRECT CHANGES TO OWNCLOUD FILES: " + "\n" + "\n"
-            + "'put_dc_xml" + "\n"
-            + "'regularize_mets'" + "\n"
-            + "'regularize_pdf'"  + "\n"
-            + "'regularize_struct'" + "\n"
-            + "'regularize_txt'"  + "\n"
-            + "'rename_altos'"    + "\n"
-            + "'rename_jpegs'"    + "\n"
-            + "'rename_tiffs"     + "\n"
-            + "\nENTER COMMAND:")
-
-        cmd = input("")
-
-        owncloud_webdav = OwnCloudWebDAV(
-            os.environ['OWNCLOUD_WEBDAV_SERVER'],
-            os.environ['OWNCLOUD_WEBDAV_USERNAME'],
-            os.environ['OWNCLOUD_WEBDAV_PASSWORD']
-        )
-
-        if cmd == 'put_dc_xml':
-            for identifier in identifiers:
-                owncloud_webdav.put_dc_xml(identifier)
-        elif cmd == 'regularize_mets':
-            try:
-                owncloud_webdav.regularize_mvol_file(identifier, '.mets.xml')
-            except RuntimeError:
-                sys.stdout.write(
-                    'COULD NOT REGULARIZE {}.mets.xml'.format(identifier))    
-        elif cmd == 'regularize_pdf':
-            for identifier in identifiers:
-                try:
-                    owncloud_webdav.regularize_mvol_file(identifier, '.pdf')
-                except RuntimeError:
-                    sys.stdout.write(
-                        'COULD NOT REGULARIZE {}.pdf'.format(identifier))
-        elif cmd == 'regularize_struct':
-            for identifier in identifiers:
-                try:
-                    owncloud_webdav.regularize_mvol_file(identifier, '.struct.txt')
-                except RuntimeError:
-                    sys.stdout.write(
-                        'COULD NOT REGULARIZE {}.struct.txt'.format(identifier))      
-        elif cmd == 'regularize_txt':
-            for identifier in identifiers:
-                try:
-                    owncloud_webdav.regularize_mvol_file(identifier, '.txt')
-                except RuntimeError:
-                    sys.stdout.write(
-                        'COULD NOT REGULARIZE {}.txt'.format(identifier))
-        elif cmd == 'rename_altos':
-            for identifier in identifiers:
-                try:
-                    owncloud_webdav.batch_rename(
-                        '{}/ALTO'.format(OwnCloudWebDAV.get_path(identifier)),
-                        OwnCloudWebDAV.get_mvol_numbered_filename
-                    )
-                except RuntimeError:
-                    sys.stdout.write('COULD NOT RENAME {}/ALTO'.format(identifier))    
-        elif cmd == 'rename_jpegs':
-            for identifier in identifiers:
-                try:
-                    owncloud_webdav.batch_rename(
-                        '{}/JPEG'.format(OwnCloudWebDAV.get_path(identifier)),
-                        OwnCloudWebDAV.get_mvol_numbered_filename
-                    )
-                except RuntimeError:
-                    sys.stdout.write('COULD NOT RENAME {}/JPEG'.format(identifier))
-        elif cmd == 'rename_tiffs':
-            for identifier in identifiers:
-                try:
-                    owncloud_webdav.batch_rename(
-                        '{}/TIFF'.format(OwnCloudWebDAV.get_path(identifier)),
-                        OwnCloudWebDAV.get_mvol_numbered_filename
-                    )
-                except RuntimeError:
-                    sys.stdout.write('COULD NOT RENAME {}/TIFF'.format(identifier))
-
 
     if arguments['check_sync']:
         if arguments['--list-in-sync']:

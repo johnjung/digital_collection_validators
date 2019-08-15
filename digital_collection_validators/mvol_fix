@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+
+"""Usage:
+   mvol_fix put_dc_xml <identifier-chunk> ...
+   mvol_fix regularize_mets <identifier-chunk> ...
+   mvol_fix regularize_pdf <identifier-chunk> ...
+   mvol_fix regularize_struct <identifier-chunk> ...
+   mvol_fix regularize_txt <identifier-chunk> ...
+   mvol_fix rename_altos <identifier-chunk> ...
+   mvol_fix rename_jpegs <identifier-chunk> ...
+   mvol_fix rename_tiffs <identifier-chunk> ...
+"""
+
+import os
+import sys
+from classes import MvolValidator, OwnCloudWebDAV
+from docopt import docopt
+
+
+if __name__ == '__main__':
+    arguments = docopt(__doc__)
+
+    mvol_valid = MvolValidator()
+    mvol_valid.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
+
+    owncloud_webdav = OwnCloudWebDAV(
+        os.environ['OWNCLOUD_WEBDAV_SERVER'],
+        os.environ['OWNCLOUD_WEBDAV_USERNAME'],
+        os.environ['OWNCLOUD_WEBDAV_PASSWORD']
+    )
+
+    identifiers = set()
+    for identifier_chunk in arguments['<identifier-chunk>']:
+        for i in mvol_valid.recursive_ls(identifier_chunk):
+            if i.startswith('mvol'):
+                identifiers.add(i)
+    identifiers = sorted(list(identifiers))
+
+    if arguments['put_dc_xml']:
+        for identifier in identifiers:
+            owncloud_webdav.put_dc_xml(identifier)
+    elif arguments['regularize_mets']:
+        for identifier in identifiers:
+            try:
+                owncloud_webdav.regularize_mvol_file(identifier, '.mets.xml')
+            except RuntimeError:
+                sys.stdout.write('COULD NOT REGULARIZE {}.mets.xml'.format(
+                    identifier)
+                )
+    elif arguments['regularize_pdf']:
+        for identifier in identifiers:
+            try:
+                owncloud_webdav.regularize_mvol_file(identifier, '.pdf')
+            except RuntimeError:
+                sys.stdout.write(
+                    'COULD NOT REGULARIZE {}.pdf'.format(identifier))
+    elif arguments['regularize_struct']:
+        for identifier in identifiers:
+            try:
+                owncloud_webdav.regularize_mvol_file(identifier, '.struct.txt')
+            except RuntimeError:
+                sys.stdout.write(
+                    'COULD NOT REGULARIZE {}.struct.txt'.format(identifier))      
+    elif arguments['regularize_txt']:
+        for identifier in identifiers:
+            try:
+                owncloud_webdav.regularize_mvol_file(identifier, '.txt')
+            except RuntimeError:
+                sys.stdout.write(
+                    'COULD NOT REGULARIZE {}.txt'.format(identifier))
+    elif arguments['rename_altos']:
+        for identifier in identifiers:
+            try:
+                owncloud_webdav.batch_rename(
+                    '{}/ALTO'.format(OwnCloudWebDAV.get_path(identifier)),
+                    OwnCloudWebDAV.get_mvol_numbered_filename
+                )
+            except RuntimeError:
+                sys.stdout.write('COULD NOT RENAME {}/ALTO'.format(identifier))    
+    elif arguments['rename_jpegs']:
+        for identifier in identifiers:
+            try:
+                owncloud_webdav.batch_rename(
+                    '{}/JPEG'.format(OwnCloudWebDAV.get_path(identifier)),
+                    OwnCloudWebDAV.get_mvol_numbered_filename
+                )
+            except RuntimeError:
+                sys.stdout.write('COULD NOT RENAME {}/JPEG'.format(identifier))
+    elif arguments['rename_tiffs']:
+        for identifier in identifiers:
+            try:
+                owncloud_webdav.batch_rename(
+                    '{}/TIFF'.format(OwnCloudWebDAV.get_path(identifier)),
+                    OwnCloudWebDAV.get_mvol_numbered_filename
+                )
+            except RuntimeError:
+                sys.stdout.write('COULD NOT RENAME {}/TIFF'.format(identifier))

@@ -1,4 +1,5 @@
 import csv
+import getpass
 import io
 import os
 import owncloud
@@ -26,7 +27,7 @@ class DigitalCollectionValidator:
         """
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect('s3.lib.uchicago.edu', username='ksong814')
+        ssh.connect('s3.lib.uchicago.edu', username=getpass.getuser())
         self.ftp = ssh.open_sftp()
         self.connected = 1
  
@@ -907,7 +908,7 @@ class MvolValidator(DigitalCollectionValidator):
             f = self.ftp.open('{}/{}.txt'.format(
                 self.get_path(identifier),
                 identifier))
-            return SSH._validate_file_notempty(f)
+            return DigitalCollectionValidator._validate_file_notempty(f)
         except (FileNotFoundError, IOError):
             return ['{}/{}.txt missing\n'.format(self.get_path(identifier), identifier)]
 
@@ -924,7 +925,7 @@ class MvolValidator(DigitalCollectionValidator):
             f = self.ftp.open('{}/{}.pdf'.format(
                 self.get_path(identifier),
                 identifier))
-            return SSH._validate_file_notempty(f)
+            return DigitalCollectionValidator._validate_file_notempty(f)
         except (FileNotFoundError, IOError):
             return ['{}/{}.pdf missing\n'.format(self.get_path(identifier), identifier)]
 
@@ -1119,10 +1120,12 @@ class OwnCloudWebDAV:
         if len(mvol_file_paths) == 0 or len(mvol_file_paths) > 1:
             raise RuntimeError
 
-        self.oc.move(
-            mvol_file_paths[0],
-            '{}/{}{}'.format(mvol_dir_path, identifier, extension)
-        )
+        destination = '{}/{}{}'.format(mvol_dir_path, identifier, extension)
+        if mvol_file_paths[0] != destination:
+            self.oc.move(
+                mvol_file_paths[0],
+                '{}/{}{}'.format(mvol_dir_path, identifier, extension)
+            )
 
     def batch_rename(self, directory, pattern_fun):
         """Rename files in a directory (e.g. ALTO, JPEG, TIFF, etc.)
@@ -1137,6 +1140,9 @@ class OwnCloudWebDAV:
         target_paths = []
         for i, s in enumerate(source_paths, 1):
             target_paths.append(pattern_fun(i, s))
+
+        if set(source_paths) == set(target_paths):
+            return
 
         if set(source_paths).intersection(set(target_paths)):
             raise RuntimeError
