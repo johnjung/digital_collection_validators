@@ -9,8 +9,9 @@ import requests
 import stat
 import sys
 from pathlib import Path 
-
 from lxml import etree
+from xml.etree import ElementTree
+
 
 
 class DigitalCollectionValidator:
@@ -649,37 +650,26 @@ class MvolValidator(DigitalCollectionValidator):
         entries_fail = []
         for entry in entries:
             if re.match(filename_re, entry):
-                entries_pass.append(entry)
+                if folder_name == 'ALTO':
+                    with self.cs_open('{}/ALTO/{}'.format(self.get_path(identifier), entry)) as f:
+                        try:
+                            ElementTree.fromstring(f.read())
+                            entries_pass.append(entry)
+                        except ElementTree.ParseError:
+                            entries_fail.append(entry)
             else:
                 entries_fail.append(entry)
 
         errors = []
         if entries_fail:
-            if entries_pass:
-                # if failed entries and passing entries both exist, don't
-                # recommend filename changes to avoid collisions.
-                for entry in entries_fail:
-                    errors.append(
-                        '{}/{}/{} should match {}\n'.format(
-                            identifier,
-                            folder_name,
-                            entry,
-                            filename_re
-                        )
+            for entry in entries_fail:
+                errors.append(
+                    '{}/{}/{} problem.\n'.format(
+                        identifier,
+                        folder_name,
+                        entry
                     )
-            else:
-                for i in range(len(entries_fail)): 
-                    errors.append(
-                        '{}/{}/{}/{} rename to {}_{:04}.{}\n'.format(
-                            self.get_path(identifier),
-                            identifier,
-                            folder_name,
-                            entries_fail[i],
-                            identifier,
-                            i + 1,
-                            extensions[folder_name]
-                        )
-                    )
+                )
         return errors
 
     def validate_alto_or_pos_directory(self, identifier):
@@ -850,10 +840,12 @@ class MvolValidator(DigitalCollectionValidator):
 
         try:
             fdoc = etree.parse(f)
+            '''
             if not xmlschema.validate(fdoc):
                 errors.append(
                     '{}/{}.mets.xml invalid\n'.format(self.get_path(identifier), identifier)
                 )
+            '''
         except etree.XMLSyntaxError:
             errors.append(
                 '{}/{}.mets.xml not well-formed\n'.format(self.get_path(identifier), identifier)
@@ -887,11 +879,11 @@ class MvolValidator(DigitalCollectionValidator):
 
         line = f.readline()
         if not re.match('^object\tpage\tmilestone', line):
-            return ['{}/{}.struct.txt has one or more errors'.format(self.get_path(identifier), identifier)]
+            return ['{}/{}.struct.txt has one or more errors\n'.format(self.get_path(identifier), identifier)]
         line = f.readline()
         while line:
             if not re.match('^\d{8}\t\d+', line):
-                return ['{}/{}.struct.txt has one or more errors'.format(self.get_path(identifier), identifier)]
+                return ['{}/{}.struct.txt has one or more errors\n'.format(self.get_path(identifier), identifier)]
             line = f.readline()
         return []
 
@@ -1127,30 +1119,6 @@ class OwnCloudWebDAV:
                 '{}/{}{}'.format(mvol_dir_path, identifier, extension)
             )
 
-    def batch_rename(self, directory, pattern_fun):
-        """Rename files in a directory (e.g. ALTO, JPEG, TIFF, etc.)
-        according to a pattern. 
-
-        Args:
-        directory (str): e.g. 'IIIF_Files/mvol/0001/0002/0003/ALTO/'
-        pattern_fun: a pattern function. 
-        """
-
-        source_paths = [f.path for f in self.oc.list(directory)]
-        target_paths = []
-        for i, s in enumerate(source_paths, 1):
-            target_paths.append(pattern_fun(i, s))
-
-        if set(source_paths) == set(target_paths):
-            return
-
-        if set(source_paths).intersection(set(target_paths)):
-            raise RuntimeError
-
-        for i in range(len(source_paths)):
-            self.oc.move(source_paths[i], target_paths[i])
-            i = i + 1
-
     def put_dc_xml(self, identifier):
         """Add a dc.xml file to the given mvol directory.
         according to a pattern. 
@@ -1225,36 +1193,3 @@ class OwnCloudWebDAV:
             )
         else:
             raise ValueError
-
-    @staticmethod
-    def get_mvol_numbered_filename(index, path):
-        """Pattern function for rename_files_owncloud, for mvol ALTO, JPEG, or TIFF
-        directories. 
-
-        Args:
-            index (int): the index of this file, e.g. 1, 2, etc. 
-            path str): e.g., 'IIIF_Files/mvol/0001/0002/0003/ALTO/'
-
-        Returns:
-            a correctly named file, e.g. 'mvol-0001-0002-0003_0001.xml'
-        """
-        extensions = {
-            'ALTO': 'xml',
-            'JPEG': 'jpg',
-            'POS': 'pos',
-            'TIFF': 'tif'
-        }
-        matches = re.search(
-            '^/IIIF_Files/(mvol)/(\d{4})/(\d{4})/(\d{4})/(ALTO|JPEG|POS|TIFF)', path)
-        return '/IIIF_Files/{}/{}/{}/{}/{}/{}-{}-{}-{}_{:04}.{}'.format(
-            matches.group(1),
-            matches.group(2),
-            matches.group(3),
-            matches.group(4),
-            matches.group(5),
-            matches.group(1),
-            matches.group(2),
-            matches.group(3),
-            matches.group(4),
-            index,
-            extensions[matches.group(5)])
