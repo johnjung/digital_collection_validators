@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+
+"""Usage:
+   fix_mvol_struct_txt (--fix-existing|--make-new) <identifier>
+
+   It's common for mvol source files to omit a .struct.txt file. This script
+   creates one of those files and uploads it to Owncloud via WebDAV.
+"""
+
+import csv, os, owncloud, re, sys
+from docopt import docopt
+from io import StringIO
+
+def get_jpeg_count(identifier):
+    c = 0
+    for entry in oc.list('IIIF_Files/{}/JPEG'.format(identifier.replace('-', '/'))):
+        if entry.get_name().startswith(identifier):
+            c += 1
+    return c
+
+if __name__ == '__main__':
+    options = docopt(__doc__)
+
+    oc = owncloud.Client(os.environ['OWNCLOUD_WEBDAV_SERVER'])
+    try:
+        oc.login(
+            os.environ['OWNCLOUD_WEBDAV_USERNAME'],
+            os.environ['OWNCLOUD_WEBDAV_PASSWORD']
+        )
+    except owncloud.HTTPResponseError:
+        sys.stderr.write('incorrect WebDAV password.\n')
+        sys.exit()
+
+    remote_path = 'IIIF_Files/{}/{}.struct.txt'.format(
+        options['<identifier>'].replace('-', '/'), 
+        options['<identifier>']
+    )
+
+    jpeg_count = get_jpeg_count(options['<identifier>'])
+    objects = [str(i).zfill(8) for i in range(1, jpeg_count + 1)]
+
+    if options['--fix-existing']:
+        try:
+            f = StringIO(oc.get_file_contents(remote_path).decode('utf-8'))
+        except owncloud.owncloud.HTTPResponseError:
+            sys.stderr.write('A .struct.txt file does not exist in that location.\n')
+            sys.exit()
+
+        pages = []
+        milestones = []
+
+        reader = csv.reader(f, delimiter='\t') 
+        for row in reader:
+            if row[0][0] != '0':
+                next
+            else:
+                try:
+                    pages.append(row[1])
+                except IndexError:
+                    pages.append('')
+                try: 
+                    milestones.append(row[2])
+                except IndexError:
+                    milestones.append('')
+    else:
+        pages = [str(i) for i in range(1, jpeg_count + 1)]
+        milestones = ['' for i in range(jpeg_count)]
+
+    if options['--make-new']:
+        try:
+            oc.file_info(remote_path)
+            sys.stderr.write('A .struct.txt file already exists in that location.\n')
+            sys.exit()
+        except owncloud.owncloud.HTTPResponseError:
+            pass
+
+    txt_data = 'object\tpage\tmilestone\n'
+    for i in range(jpeg_count):
+        txt_data = txt_data + '{}\t{}\t{}\n'.format(objects[i], pages[i], milestones[i])
+
+    oc.put_file_contents(remote_path, txt_data)

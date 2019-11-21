@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+
+"""Usage:
+   fix_mvol_dc_xml (--fix-existing|--make-new) <identifier>
+
+   It's common for mvol source files to have a .dc.xml file that isn't wrapped
+   in a root <metadata/> tag. Fix these cases in a sensible way and upload it 
+   to Owncloud via WebDAV.
+"""
+
+import os, owncloud, re, sys
+import xml.etree.ElementTree as ElementTree
+from docopt import docopt
+
+if __name__ == '__main__':
+    options = docopt(__doc__)
+
+    oc = owncloud.Client(os.environ['OWNCLOUD_WEBDAV_SERVER'])
+    try:
+        oc.login(
+            os.environ['OWNCLOUD_WEBDAV_USERNAME'],
+            os.environ['OWNCLOUD_WEBDAV_PASSWORD']
+        )
+    except owncloud.HTTPResponseError:
+        sys.stderr.write('incorrect WebDAV password.\n')
+        sys.exit()
+
+    remote_path = 'IIIF_Files/{}/{}.dc.xml'.format(
+        options['<identifier>'].replace('-', '/'), 
+        options['<identifier>']
+    )
+
+    if options['--fix-existing']:
+        try:
+            dc_str = oc.get_file_contents(remote_path).decode('utf-8')
+        except owncloud.owncloud.HTTPResponseError:
+            sys.stderr.write('A .dc.xml file does not exist in that location.\n')
+            sys.exit()
+
+    input_metadata = ElementTree.fromstring(dc_str)
+ 
+    # The description for mvol-0004 says that the Daily Maroon was published
+    # from 1902-1942, and that it was continued by the Chicago Maroon. Title
+    # metadata for later years currently reads "Daily Maroon". Throw an
+    # assertion error if the title is not Daily Maroon, and re-evaluate this
+    # code if other titles appear. 
+    title = input_metadata.find('title').text
+    if options['<identifier>'].startswith('mvol-0004'):
+        assert title == 'Daily Maroon'
+
+    # The date should be embedded in the identifier. Throw an error if the date 
+    # does not match the yyyy-mm-dd implied by the identifier. 
+    date = input_metadata.find('date').text
+    assert date == '{}-{}-{}'.format(
+        options['<identifier>'][10:14],
+        options['<identifier>'][15:17],
+        options['<identifier>'][17:19]
+    )
+
+    # Be sure the description matches what we expect. 
+    description = input_metadata.find('description').text
+    assert description == 'A newspaper produced by students of the University of Chicago. Published 1902-1942 and continued by the Chicago Maroon.'
+
+    output_metadata = ElementTree.fromtstring('<metadata><title>{}</title><date>{}</date><description>{}</description><identifier>{}</identifier></metadata>'.format(title, date, description, options['<identifier>']))
+
+    sys.stdout.write(ElementTree.tostring(output_metadata))
+ 
+    else:
+        pages = [str(i) for i in range(1, jpeg_count + 1)]
+        milestones = ['' for i in range(jpeg_count)]
+
+    if options['--make-new']:
+        try:
+            oc.file_info(remote_path)
+            sys.stderr.write('A .struct.txt file already exists in that location.\n')
+            sys.exit()
+        except owncloud.owncloud.HTTPResponseError:
+            pass
+
+    txt_data = 'object\tpage\tmilestone\n'
+    for i in range(jpeg_count):
+        txt_data = txt_data + '{}\t{}\t{}\n'.format(objects[i], pages[i], milestones[i])
+
+    oc.put_file_contents(remote_path, txt_data)

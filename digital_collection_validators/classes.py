@@ -882,7 +882,8 @@ class MvolValidator(DigitalCollectionValidator):
             return ['{}/{}.struct.txt has one or more errors\n'.format(self.get_path(identifier), identifier)]
         line = f.readline()
         while line:
-            if not re.match('^\d{8}\t\d+', line):
+            # if not re.match('^\d{8}\t\d+', line):
+            if not re.match('^\d{8}\t\d*(\t.*)?$', line):
                 return ['{}/{}.struct.txt has one or more errors\n'.format(self.get_path(identifier), identifier)]
             line = f.readline()
         return []
