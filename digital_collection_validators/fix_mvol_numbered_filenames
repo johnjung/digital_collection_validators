@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Usage:
-   batch_rename <directory>
+   fix_mvol_numbered_filenames <identifier> <directory>
 
-Rename files in mvol's ALTO, JPEG, POS and TIFF directories. The script renames
-files to an intermediate filename, composed of a timestamp in milliseconds,
-before correctly renumbering them to avoid collisions.
+   Rename files in mvol's ALTO, JPEG, POS and TIFF directories. The script
+   renames files to an intermediate filename, composed of a timestamp in
+   milliseconds, before correctly renumbering them to avoid collisions.
 """
 import os, owncloud, re, sys, time
 from docopt import docopt
@@ -72,26 +72,25 @@ def batch_rename_mvol(oc, directory):
 if __name__=='__main__':
     options = docopt(__doc__)
 
+    assert options['<identifier>'].startswith('mvol-')
+
     oc = owncloud.Client(os.environ['OWNCLOUD_WEBDAV_SERVER'])
     oc.login(os.environ['OWNCLOUD_WEBDAV_USERNAME'], os.environ['OWNCLOUD_WEBDAV_PASSWORD'])
 
-    if not options['<directory>'].startswith('/IIIF_Files/'):
-        sys.stderr.write('Directory path should start with /IIIF_Files/\n')
+    directory = 'IIIF_Files/{}/{}/'.format(
+        options['<identifier>'].replace('-', '/'), 
+        options['<directory>']
+    )
+
+    if not options['<directory>'] in ('ALTO', 'JPEG', 'POS', 'TIFF'):
+        sys.stderr.write('<directory> must be one of: ALTO, JPEG, POS, TIFF\n')
         sys.exit()
 
-    if not options['<directory>'].endswith('/'):
-        sys.stderr.write('Directory path should end with /.\n')
+    try:
+        batch_rename_mvol(oc, directory)
+    except RuntimeError:
+        sys.stderr.write('Could not rename {} {}.\n'.format(
+            options['<identifier>'],
+            options['<directory>']
+        )
         sys.exit()
-
-    if not options['<directory>'].split('/')[-2] in ('ALTO', 'JPEG', 'POS', 'TIFF'):
-        sys.stderr.write('Directory path should end with /ALTO/, /JPEG/, /POS/, or /TIFF/.\n')
-        sys.exit()
-
-    if options['<directory>'].startswith('/IIIF_Files/mvol/'):
-        try:
-            batch_rename_mvol(oc, options['<directory>'])
-        except RuntimeError:
-            sys.stderr.write('Could not rename {}.\n'.format(options['<directory>']))
-            sys.exit()
-    else:
-        raise NotImplementedError

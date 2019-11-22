@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+
+"""Usage:
+   fix_mvol_filenames (--mets-xml|--pdf|--struct-txt|--txt) <identifier>
+"""
+
+import os
+import sys
+from classes import MvolValidator, OwnCloudWebDAV
+from docopt import docopt
+
+
+def regularize_mvol_file(identifier, extension):
+    """Regularize METS, PDF, .txt or .struct.txt filenames. 
+
+    Args:
+        identifier (str): e.g. 'mvol-0001-0002-0003'
+        extension (str): e.g. '.mets.xml'
+    """
+
+    assert identifier.startswith('mvol-')
+
+
+    mvol_dir_path = 'IIIF_Files/{}/'.format(
+        options['<identifier>'].replace('-', '/')
+    )
+
+    mvol_file_paths = []
+    for f in oc.list(mvol_dir_path):
+        if extension == '.txt':
+            if f.path.endswith('.txt') and not f.path.endswith('.struct.txt'):
+                mvol_file_paths.append(f.path)
+        else:
+            if f.path.endswith(extension):
+                mvol_file_paths.append(f.path)
+
+    if len(mvol_file_paths) != 1:
+        raise RuntimeError
+
+    destination = '{}/{}{}'.format(mvol_dir_path, identifier, extension)
+    if mvol_file_paths[0] != destination:
+        oc.move(
+            mvol_file_paths[0],
+            '{}/{}{}'.format(mvol_dir_path, identifier, extension)
+        )
+
+
+if __name__ == '__main__':
+    options = docopt(__doc__)
+
+    oc = owncloud.Client(os.environ['OWNCLOUD_WEBDAV_SERVER'])
+    try:
+        oc.login(
+            os.environ['OWNCLOUD_WEBDAV_USERNAME'],
+            os.environ['OWNCLOUD_WEBDAV_PASSWORD']
+        )
+    except owncloud.HTTPResponseError:
+        sys.stderr.write('incorrect WebDAV password.\n')
+        sys.exit()
+
+    extension = None
+    for e in (options['--mets-xml'], 
+              options['--pdf'], 
+              options['--struct-txt'], 
+              options['--txt']):
+        if e:
+            extension = e[1:].replace('-', '.')
+            break
+    if extension:
+        try:
+            regularize_mvol_file(options['<identifier>'], extension)
+        except RuntimeError:
+            sys.stdout.write('COULD NOT REGULARIZE {}{}'.format(
+                identifier,
+                extension
+            )

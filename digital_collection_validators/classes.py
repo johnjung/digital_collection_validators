@@ -1089,33 +1089,3 @@ class OwnCloudWebDAV:
 
         m = re.search(path, 'IIIF_Files/(mvol)/(\d{4})/(\d{4})/(\d{4})/')
         return '{}-{}-{}-{}'.format(m.group(1), m.group(2), m.group(3), m.group(4))
-
-    def regularize_mvol_file(self, identifier, extension):
-        """Regularize METS, PDF, .txt or .struct.txt filenames. 
-
-        Args:
-            identifier (str): e.g. 'mvol-0001-0002-0003'
-            extension (str): e.g. '.mets.xml'
-        """
-
-        assert identifier.split('-')[0] == 'mvol'
-
-        mvol_dir_path = self.get_path(identifier)
-        mvol_file_paths = []
-        for f in self.oc.list(mvol_dir_path):
-            if extension == '.txt':
-                if f.path.endswith('.txt') and not f.path.endswith('.struct.txt'):
-                    mvol_file_paths.append(f.path)
-            else:
-                if f.path.endswith(extension):
-                    mvol_file_paths.append(f.path)
-
-        if len(mvol_file_paths) == 0 or len(mvol_file_paths) > 1:
-            raise RuntimeError
-
-        destination = '{}/{}{}'.format(mvol_dir_path, identifier, extension)
-        if mvol_file_paths[0] != destination:
-            self.oc.move(
-                mvol_file_paths[0],
-                '{}/{}{}'.format(mvol_dir_path, identifier, extension)
-            )
