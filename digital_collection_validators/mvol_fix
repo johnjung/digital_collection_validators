@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 """Usage:
-   mvol_fix put_dc_xml <identifier-chunk> ...
    mvol_fix regularize_mets <identifier-chunk> ...
    mvol_fix regularize_pdf <identifier-chunk> ...
    mvol_fix regularize_struct <identifier-chunk> ...
@@ -33,10 +32,7 @@ if __name__ == '__main__':
                 identifiers.add(i)
     identifiers = sorted(list(identifiers))
 
-    if arguments['put_dc_xml']:
-        for identifier in identifiers:
-            owncloud_webdav.put_dc_xml(identifier)
-    elif arguments['regularize_mets']:
+    if arguments['regularize_mets']:
         for identifier in identifiers:
             try:
                 owncloud_webdav.regularize_mvol_file(identifier, '.mets.xml')
