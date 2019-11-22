@@ -1,16 +1,80 @@
 #!/usr/bin/env python3
 
 """Usage:
-   fix_mvol_dc_xml (--fix-existing|--make-new) <identifier>
+   fix_mvol_dc_xml (--rewrap-existing|--make-new) [--force] <identifier>
 
-   It's common for mvol source files to have a .dc.xml file that isn't wrapped
-   in a root <metadata/> tag. Fix these cases in a sensible way and upload it 
-   to Owncloud via WebDAV.
+   --rewrap-existing will replace the parent element of .dc.xml metadata with a
+   <metadata/> tag. (e.g., very often existing metadata is wrapped in a
+   <dublin_core/> tag.)
+
+   --make-new creates new .dc.xml data based on the identifier. In combination
+   with --force, it will overwrite existing metadata.
 """
 
 import os, owncloud, re, sys
 import xml.etree.ElementTree as ElementTree
 from docopt import docopt
+
+
+def make_dc_title(identifier):
+    """Return a title based on the identifier.
+
+    N.B. The description for mvol-0004 says that the Daily Maroon was published
+    from 1902-1942, and that it was continued by the Chicago Maroon. Title
+    metadata for later years currently reads "Daily Maroon". Throw an assertion
+    error if the title is not Daily Maroon, and re-evaluate this code if other
+    titles appear. 
+
+    Args:
+        identifier (str): e.g. 'mvol-0001-0002-0003'
+
+    Returns:
+        str: the title for an identifier chunk like 'mvol-0004'.
+    """
+
+    identifier_chunk = '-'.join(identifier.split('-')[:2])
+    titles = {
+        'mvol-0004': 'Daily Maroon',
+    }
+    return titles[identifier_chunk]
+
+
+def make_dc_date(identifier):
+    """Return a date based on the identifier.
+
+    Args:
+        identifier (str): e.g. 'mvol-0004-1938-0103'
+
+    Returns:
+        str: a string, e.g. '1938-01-03'
+    """
+
+    if re.search('^mvol-0004-\d{4}-\d{4}$', identifier):
+        return '{}-{}-{}'.format(
+            identifier.split('-')[-2],
+            identifier.split('-')[-1][:2],
+            identifier.split('-')[-1][2:]
+        )
+    else:
+        raise ValueError
+
+
+def make_dc_description(identifier):
+    """Return a description based on the identifier. 
+
+    Args:
+        identifier (str): e.g. 'mvol-0001-0002-0003'
+
+    Returns:
+        str: the description for an identifier chunk like 'mvol-0004'.
+    """
+
+    identifier_chunk = '-'.join(identifier.split('-')[:2])
+    descriptions = {
+        'mvol-0004': 'A newspaper produced by students of the University of Chicago. Published 1902-1942 and continued by the Chicago Maroon.'
+    }
+    return descriptions[identifier_chunk]
+
 
 if __name__ == '__main__':
     options = docopt(__doc__)
@@ -30,55 +94,56 @@ if __name__ == '__main__':
         options['<identifier>']
     )
 
-    if options['--fix-existing']:
+    if options['--rewrap-existing']:
         try:
-            dc_str = oc.get_file_contents(remote_path).decode('utf-8')
+            input_metadata = ElementTree.fromstring(
+                oc.get_file_contents(remote_path).decode('utf-8')
+            )
         except owncloud.owncloud.HTTPResponseError:
             sys.stderr.write('A .dc.xml file does not exist in that location.\n')
             sys.exit()
 
-    input_metadata = ElementTree.fromstring(dc_str)
- 
-    # The description for mvol-0004 says that the Daily Maroon was published
-    # from 1902-1942, and that it was continued by the Chicago Maroon. Title
-    # metadata for later years currently reads "Daily Maroon". Throw an
-    # assertion error if the title is not Daily Maroon, and re-evaluate this
-    # code if other titles appear. 
-    title = input_metadata.find('title').text
-    if options['<identifier>'].startswith('mvol-0004'):
-        assert title == 'Daily Maroon'
+        title = input_metadata.find('title').text
 
-    # The date should be embedded in the identifier. Throw an error if the date 
-    # does not match the yyyy-mm-dd implied by the identifier. 
-    date = input_metadata.find('date').text
-    assert date == '{}-{}-{}'.format(
-        options['<identifier>'][10:14],
-        options['<identifier>'][15:17],
-        options['<identifier>'][17:19]
-    )
+        date = input_metadata.find('date').text
+        assert date == '{}-{}-{}'.format(
+            options['<identifier>'][10:14],
+            options['<identifier>'][15:17],
+            options['<identifier>'][17:19]
+        )
 
-    # Be sure the description matches what we expect. 
-    description = input_metadata.find('description').text
-    assert description == 'A newspaper produced by students of the University of Chicago. Published 1902-1942 and continued by the Chicago Maroon.'
+        identifier = input_metadata.find('identifier').text
+        assert identifier == options['<identifier>']
 
-    output_metadata = ElementTree.fromtstring('<metadata><title>{}</title><date>{}</date><description>{}</description><identifier>{}</identifier></metadata>'.format(title, date, description, options['<identifier>']))
+        description = input_metadata.find('description').text
+        assert description == 'A newspaper produced by students of the University of Chicago. Published 1902-1942 and continued by the Chicago Maroon.'
+        self.oc.put_file_contents(remote_path, ''.join((
+            '<?xml version="1.0" encoding="utf8"?>',
+            '<metadata>',
+            '<title>{}</title>'.format(title),
+            '<date>{}</date>'.format(data),
+            '<description>{}</description>'.format(description),
+            '<identifier>{}</identifier>'.format(identifier)
+            '</metadata>'
+        )))
+        sys.exit()
 
-    sys.stdout.write(ElementTree.tostring(output_metadata))
- 
-    else:
-        pages = [str(i) for i in range(1, jpeg_count + 1)]
-        milestones = ['' for i in range(jpeg_count)]
+    elif options['--make-new']:
+        if not options['--force']:
+            try:
+                oc.file_info(remote_path)
+                sys.stderr.write('A .struct.txt file already exists in that location.\n')
+                sys.exit()
+            except owncloud.owncloud.HTTPResponseError:
+                pass
 
-    if options['--make-new']:
-        try:
-            oc.file_info(remote_path)
-            sys.stderr.write('A .struct.txt file already exists in that location.\n')
-            sys.exit()
-        except owncloud.owncloud.HTTPResponseError:
-            pass
-
-    txt_data = 'object\tpage\tmilestone\n'
-    for i in range(jpeg_count):
-        txt_data = txt_data + '{}\t{}\t{}\n'.format(objects[i], pages[i], milestones[i])
-
-    oc.put_file_contents(remote_path, txt_data)
+        self.oc.put_file_contents(remote_path, ''.join((
+            '<?xml version="1.0" encoding="utf8"?>',
+            '<metadata>',
+            '<title>{}</title>'.format(make_dc_title(options['<identifier>'])),
+            '<date>{}</date>'.format(make_dc_date(options['<identifier>'])),
+            '<description>{}</description>'.format(make_dc_description(options['<identifier>'])),
+            '<identifier>{}</identifier>'.format(make_dc_identifier(options['<identifier>'])),
+            '</metadata>'
+        )))
+        sys.exit()
