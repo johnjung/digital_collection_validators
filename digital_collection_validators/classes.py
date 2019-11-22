@@ -16,6 +16,8 @@ from xml.etree import ElementTree
 
 class DigitalCollectionValidator:
     connected = 0 #variable that determines if SSH connection is made or not --> default set to 0
+    connected_root = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/'
+    local_root = None
 
     def connect(self, ssh_server, paramiko_kwargs):
         """Connects user to owncloud server
@@ -31,6 +33,14 @@ class DigitalCollectionValidator:
         ssh.connect('s3.lib.uchicago.edu', username=getpass.getuser())
         self.ftp = ssh.open_sftp()
         self.connected = 1
+
+    def set_local_root(self, local_root):
+        """Set a local root for local validation
+
+        Args:
+            local_root (str): absolute path to files.
+        """
+        self.local_root = local_root
  
 
     def get_identifier_chunk(self, path):
@@ -81,50 +91,33 @@ class DigitalCollectionValidator:
         """
 
         project = self.get_project(identifier_chunk)
-        ids = ['ewm','gms','speculum','chopin','mvol','apf','rac']
-        if project not in ids:
+        if project not in ('apf', 'chopin', 'ewm', 'gms', 'mvol', 'speculum'):
             raise NotImplementedError
 
         # for ewm, gms, speculum, and chopin, sections of the identifier are repeated
         # in subfolders, e.g. ewm/ewm-0001
-        if project in ('ewm', 'gms', 'speculum', 'chopin'):
+        if project in ('chopin', 'ewm', 'gms', 'speculum'):
             subfolders = []
             identifier_sections = identifier_chunk.split('-')
             for i in range(0, len(identifier_sections)):
                 subfolders.append('-'.join(identifier_sections[:i+1]))
 
-            r = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/{}'.format(
-                '/'.join(subfolders))
-
             if self.connected == 1:
-                return r
+                return self.connected_root + '/'.join(subfolders)
+            elif self.local_root:
+                return self.local_root + '/'.join(subfolders)
             else:
-                local = 'C:/Users/ksong814/Desktop/' # ENTER YOUR LOCAL PATH HERE
-                return (local + r[60:])
+                raise RuntimeError
 
         # for mvol, apf, and rac, sections of the identifier are not repeated in subfolders,
         # e.g. mvol/0001/0002/0003.
-        if project in ('mvol','apf','rac'):
-            if ('rac' in project) and ('rac' not in identifier_chunk):
-                if self.is_identifier(identifier_chunk):
-                    #isolating directory number for chess/rose file
-                    if 'chess' in identifier_chunk:
-                        folder = '0392'
-                    elif 'rose' in identifier_chunk:
-                        folder = '1380'
-                    r = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/rac/' + folder
-                else:
-                    raise NotImplementedError
-            else:
-                r = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/{}'.format(identifier_chunk.replace('-', '/'))
-
+        if project in ('apf', 'mvol'):
             if self.connected == 1:
-                return r
+                return self.connected_root + identifier_chunk.replace('-', '/')
+            elif self.local_root:
+                return self.local_root + identifier_chunk.replace('-', '/')
             else:
-                local = 'C:/Users/ksong814/Desktop/' # ENTER YOUR LOCAL PATH HERE
-                return (local + r[60:])
-        else:
-            raise NotImplementedError
+                raise RuntimeError
 
 
     def get_project(self, identifier_chunk):
@@ -450,7 +443,7 @@ class DigitalCollectionValidator:
         if self.connected == 1:
             return self.ftp.stat(path)
         else:
-            return os.stat(path, 'r')
+            return os.stat(path)
 
     def cs_open(self, path):
         """Opens a file to read or write on specified path in current server (Owncloud vs Local)
@@ -774,7 +767,7 @@ class MvolValidator(DigitalCollectionValidator):
 
         try:
             if not f:
-                f = self.ftp.file('{}/{}.dc.xml'.format(
+                f = self.cs_open('{}/{}.dc.xml'.format(
                     self.get_path(identifier),
                     identifier)
                 )
@@ -830,7 +823,7 @@ class MvolValidator(DigitalCollectionValidator):
 
         if not f:
             try:
-                f = self.ftp.file('{}/{}.mets.xml'.format(
+                f = self.cs_open('{}/{}.mets.xml'.format(
                     self.get_path(identifier),
                     identifier)
                 )
@@ -872,7 +865,7 @@ class MvolValidator(DigitalCollectionValidator):
 
         if not f:
             try:
-                f = self.ftp.open(
+                f = self.cs_open(
                     '{}/{}.struct.txt'.format(self.get_path(identifier), identifier))
             except (FileNotFoundError, IOError):
                 return ['{}/{}.struct.txt missing\n'.format(self.get_path(identifier), identifier)]
@@ -898,7 +891,7 @@ class MvolValidator(DigitalCollectionValidator):
         assert self.get_project(identifier) == 'mvol'
 
         try:
-            f = self.ftp.open('{}/{}.txt'.format(
+            f = self.cs_open('{}/{}.txt'.format(
                 self.get_path(identifier),
                 identifier))
             return DigitalCollectionValidator._validate_file_notempty(f)
@@ -915,7 +908,7 @@ class MvolValidator(DigitalCollectionValidator):
         assert self.get_project(identifier) == 'mvol'
 
         try:
-            f = self.ftp.open('{}/{}.pdf'.format(
+            f = self.cs_open('{}/{}.pdf'.format(
                 self.get_path(identifier),
                 identifier))
             return DigitalCollectionValidator._validate_file_notempty(f)
