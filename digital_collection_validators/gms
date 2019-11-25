@@ -1,37 +1,44 @@
 #!/usr/bin/env python3
 
 """Usage:
-   gms ls <identifier-chunk> ...
-   gms validate (--list-valid | --show-errors) <identifier-chunk> ...
+   gms ls [<identifier-chunk> ...]
+   gms validate (--list-valid | --show-errors) [<identifier-chunk> ...]
 """
 
-import os
-import sys
+import os, re, sys
 from classes import *
 from docopt import docopt
 
 if __name__ == '__main__':
     arguments = docopt(__doc__)
 
-    gms_valid = DigitalCollectionValidator()
-    gms_valid.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
+    gms_validator = GmsValidator()
+    gms_validator.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
 
     identifiers = []
-    for i in range(0,len(arguments['<identifier-chunk>'])):
-        identifiers.insert(i,(gms_valid.list_directory(arguments['<identifier-chunk>'][i])))
+    if 'gms' in arguments['<identifier-chunk>'] or \
+       len(arguments['<identifier-chunk>']) == 0:
+        identifiers = sorted(
+            gms_validator.cs_listdir(gms_validator.get_path('gms'))
+        )
+    else:
+        for i in arguments['<identifier-chunk>']:
+            if re.match('^gms-\d{4}$', i):
+                identifiers.append(i)
 
     if arguments['ls']:
-        for identifier in identifiers:
-            for i in identifier:
-                sys.stdout.write(i + '\n')
-
+        for i in identifiers:
+            sys.stdout.write(i + '\n')
+        sys.exit()
 
     elif arguments['validate']:
+        output = []
         for identifier in identifiers:
-            errors = spec_owncloud_ssh.validate(identifier)
+            errors = gms_validator.validate(identifier)
             if arguments['--show-errors']:
-                for error in errors:
-                    sys.stdout.write(error)
+                output.extend(errors)
             elif arguments['--list-valid']:
                 if not errors:
-                    sys.stdout.write('{}\n'.format(identifier))
+                    output.append(identifier)
+        sys.stdout.write(''.join(output))
+        sys.exit()

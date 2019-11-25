@@ -13,7 +13,6 @@ from lxml import etree
 from xml.etree import ElementTree
 
 
-
 class DigitalCollectionValidator:
     connected = 0 #variable that determines if SSH connection is made or not --> default set to 0
     connected_root = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/'
@@ -484,89 +483,98 @@ class DigitalCollectionValidator:
         return csv_data
     
 
-class RacValidator(DigitalCollectionValidator):
+class ApfValidator(DigitalCollectionValidator):
     def validate_tiff_files(self, identifier):
         """For a given identifier, make sure a TIFF file exists. Confirm
         that the file is non-empty.
-        
-        Args:
-            identifier (str): e.g. 'rose-1380-001"""
 
-        path = self.get_path(identifier) + '/tifs/'
+        Args:
+            identifier (str): e.g. 'apf1-00001'
+        """
+
+        path = self.get_path('apf') +  '/' + str(identifier[3])
 
         for image in self.cs_listdir(path):
             if identifier in image:
-                path += image
+                path += '/' + image
                 f = self.cs_open(path)
                 return self._validate_file_notempty(f)
-
-        return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
         
+        return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
+
 
     def validate(self, identifier):
         """Wrapper to call all validation functions. 
 
         Args:
-            identifier (str): e.g. 'chess-0392-001'
-                                   'rose-1380-001'
+            identifier (str): e.g. 'apf1-00001'
         """
-        assert self.get_project(identifier) == 'rac'
+        assert self.get_project(identifier) == 'apf'
 
         errors = []
         errors += self.validate_tiff_files(identifier)
         return errors
 
     def list_dir(self, identifier):
-        """Get a list of files from starting identifier. ('rac' directory has unique file names and structures)
+        '''
+        Lists all files within given identifier 
 
         Args:
-            identifier chunk (str): e.g., 'rac', 'rac-0392', 'chess-0392-0001.tif'
-
-        Returns:
-            list or single file: e.g. 'chess-0392-001.tif, chess-0392-002.tif, chess-0392-003.tif ...', 'rose-1380-001.tif'
-        """
+            identifier (str): e.g. 'apf1'
+        '''
 
         check_format = self.is_identifier_chunk(identifier)
 
         if check_format == False:
-            print("File or directory does not exist")
+            print("File or directory doesn't exist")
             sys.exit()
 
+        path = self.get_path('apf')
+
+        length = len(identifier)
+
         identifiers = []
+        if length == 4 or length >= 10:
+            path += '/' + identifier[3]
+        elif length != 3:
+            print("File doesn't exist")
+        
+        if identifier == 'apf':
+            for directory in self.cs_listdir(path):
+                identifiers += self.cs_listdir(path + '/' + str(directory))
+            return identifiers 
 
-        #prints all the files in all existing directories
-        if identifier == 'rac':
-            path = self.get_path('rac')
-            dir_files = self.cs_listdir(path)
-            for chunk in dir_files:
-                path_new = path
-                path_new += '/' + str(chunk)
-                for folder in self.cs_listdir(path_new):
-                    identifiers += self.cs_listdir(path_new + '/' + str(folder))
-            return identifiers
+        identifiers = self.cs_listdir(path)
 
-        #prints all files in specified directory
-        elif 'rac' in identifier:
-            path = self.get_path(identifier)
-            dir_files = self.cs_listdir(path)
-            for chunk in dir_files:
-                identifiers += self.cs_listdir(path + '/' + str(chunk))
-            return identifiers
+        fin = []
+        for i in identifiers:
+            if i.endswith('.tif'):
+                fin.append(i)
 
-        #searching for single, unique file
-        else:
-            folder = identifier[-8:]
-            folder = folder[:4]
-            path = self.get_path('rac') + '/' + str(folder)
-            for folder in self.cs_listdir(path):
-                identifiers += self.cs_listdir(path + '/' + str(folder))
+        if length >= 10:
             for i in identifiers:
-                if identifier in i:
+                if i[:-4] == identifier:
                     return [i]
+            raise NotImplementedError
+        
+        return fin  
+
+
+class ChopinValidator(DigitalCollectionValidator):
+    def validate(self, identifier):
+        """Wrapper to call all validation functions. 
+
+        Args:
+            identifier (str): e.g. 'chopin-001-001'
+        """
+        assert self.get_project(identifier) == 'chopin'
+
+        errors = []
+        errors += self.validate_tiff_files(identifier)
+        return errors
 
 
 class EwmValidator(DigitalCollectionValidator):
-
     def validate(self, identifier):
         """Wrapper to call all validation functions. 
 
@@ -581,14 +589,49 @@ class EwmValidator(DigitalCollectionValidator):
         return errors
         
 
-class ChopinValidator(DigitalCollectionValidator):
+class GmsValidator(DigitalCollectionValidator):
+    def validate_tiff_files(self, identifier):
+        """For a given identifier, make sure a TIFF file exists. Confirm
+        that the file is non-empty.
+        
+        Args:
+            identifier (str): e.g. 'gms-0019'
+        """
+
+        assert re.match('^gms-\d{4}$', identifier)
+
+        path = self.get_path(identifier) + '/tifs/'
+
+        # regex to match filenames that look correct.
+        r = '^' + identifier + '-\d{3}\.tif$'
+
+        existing_f = set(self.cs_listdir(path))
+
+        # get what looks like the highest object number on disk. 
+        hi_obj_num = 0
+        for f in sorted(list(existing_f)):
+            if re.match(r, f):
+                hi_obj_num = int(f.split('.')[0].split('-')[-1])
+
+	# build a set of expected filenames.
+        expected_f = set()
+        for i in range(1, hi_obj_num + 1):
+            expected_f.add('{}-{}.tif'.format(identifier, str(i).zfill(3)))
+
+        errors = []
+        for f in expected_f.difference(existing_f):
+            errors.append('{}/tifs/{} not found.\n'.format(identifier, f))
+        for f in existing_f.difference(expected_f):
+            errors.append('{}/tifs/{} not expected.\n'.format(identifier, f))
+        return errors
+
     def validate(self, identifier):
         """Wrapper to call all validation functions. 
 
         Args:
-            identifier (str): e.g. 'chopin-001-001'
+            identifier (str): e.g. 'gms-0019'
         """
-        assert self.get_project(identifier) == 'chopin'
+        assert self.get_project(identifier) == 'gms'
 
         errors = []
         errors += self.validate_tiff_files(identifier)
@@ -960,81 +1003,85 @@ class MvolValidator(DigitalCollectionValidator):
         return errors
 
 
-class ApfValidator(DigitalCollectionValidator):
+class RacValidator(DigitalCollectionValidator):
     def validate_tiff_files(self, identifier):
         """For a given identifier, make sure a TIFF file exists. Confirm
         that the file is non-empty.
-
+        
         Args:
-            identifier (str): e.g. 'apf1-00001'
-        """
+            identifier (str): e.g. 'rose-1380-001"""
 
-        path = self.get_path('apf') +  '/' + str(identifier[3])
+        path = self.get_path(identifier) + '/tifs/'
 
         for image in self.cs_listdir(path):
             if identifier in image:
-                path += '/' + image
+                path += image
                 f = self.cs_open(path)
                 return self._validate_file_notempty(f)
-        
-        return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
 
+        return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
+        
 
     def validate(self, identifier):
         """Wrapper to call all validation functions. 
 
         Args:
-            identifier (str): e.g. 'apf1-00001'
+            identifier (str): e.g. 'chess-0392-001'
+                                   'rose-1380-001'
         """
-        assert self.get_project(identifier) == 'apf'
+        assert self.get_project(identifier) == 'rac'
 
         errors = []
         errors += self.validate_tiff_files(identifier)
         return errors
 
     def list_dir(self, identifier):
-        '''
-        Lists all files within given identifier 
+        """Get a list of files from starting identifier. ('rac' directory has unique file names and structures)
 
         Args:
-            identifier (str): e.g. 'apf1'
-        '''
+            identifier chunk (str): e.g., 'rac', 'rac-0392', 'chess-0392-0001.tif'
+
+        Returns:
+            list or single file: e.g. 'chess-0392-001.tif, chess-0392-002.tif, chess-0392-003.tif ...', 'rose-1380-001.tif'
+        """
 
         check_format = self.is_identifier_chunk(identifier)
 
         if check_format == False:
-            print("File or directory doesn't exist")
+            print("File or directory does not exist")
             sys.exit()
 
-        path = self.get_path('apf')
-
-        length = len(identifier)
-
         identifiers = []
-        if length == 4 or length >= 10:
-            path += '/' + identifier[3]
-        elif length != 3:
-            print("File doesn't exist")
-        
-        if identifier == 'apf':
-            for directory in self.cs_listdir(path):
-                identifiers += self.cs_listdir(path + '/' + str(directory))
-            return identifiers 
 
-        identifiers = self.cs_listdir(path)
+        #prints all the files in all existing directories
+        if identifier == 'rac':
+            path = self.get_path('rac')
+            dir_files = self.cs_listdir(path)
+            for chunk in dir_files:
+                path_new = path
+                path_new += '/' + str(chunk)
+                for folder in self.cs_listdir(path_new):
+                    identifiers += self.cs_listdir(path_new + '/' + str(folder))
+            return identifiers
 
-        fin = []
-        for i in identifiers:
-            if i.endswith('.tif'):
-                fin.append(i)
+        #prints all files in specified directory
+        elif 'rac' in identifier:
+            path = self.get_path(identifier)
+            dir_files = self.cs_listdir(path)
+            for chunk in dir_files:
+                identifiers += self.cs_listdir(path + '/' + str(chunk))
+            return identifiers
 
-        if length >= 10:
+        #searching for single, unique file
+        else:
+            folder = identifier[-8:]
+            folder = folder[:4]
+            path = self.get_path('rac') + '/' + str(folder)
+            for folder in self.cs_listdir(path):
+                identifiers += self.cs_listdir(path + '/' + str(folder))
             for i in identifiers:
-                if i[:-4] == identifier:
+                if identifier in i:
                     return [i]
-            raise NotImplementedError
-        
-        return fin  
 
 
 class XTFValidator(DigitalCollectionValidator):
