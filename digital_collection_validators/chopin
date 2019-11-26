@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+
+"""Usage:
+   chopin ls [<identifier-chunk> ...]
+   chopin validate (--list-valid | --show-errors) [<identifier-chunk> ...]
+"""
+
+import os
+import sys
+from classes import *
+from docopt import docopt
+
+if __name__ == '__main__':
+    arguments = docopt(__doc__)
+
+    chopin_validator = ChopinValidator()
+    chopin_validator.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
+
+    if 'chopin' in arguments['<identifier-chunk>'] or \
+       len(arguments['<identifier-chunk>']) == 0:
+        identifiers = sorted(
+	    chopin_validator.cs_listdir(chopin_validator.get_path('chopin'))
+        )
+    else:
+        identifiers = []
+        for i in arguments['<identifier-chunk>']:
+            if re.match('^chopin-\d{3}$', i):
+                identifiers.append(i)
+
+    if arguments['ls']:
+        sys.stdout.write('\n'.join(identifiers) + '\n')
+
+    elif arguments['validate']:
+        for identifier in identifiers:
+            errors = chopin_validator.validate(identifier)
+            if arguments['--show-errors']:
+                for error in errors:
+                    sys.stdout.write(error)
+            elif arguments['--list-valid']:
+                if not errors:
+                    sys.stdout.write('{}\n'.format(identifier))
+
