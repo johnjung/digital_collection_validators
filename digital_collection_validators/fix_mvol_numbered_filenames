@@ -35,7 +35,7 @@ def batch_rename_mvol(oc, directory):
     ms_time = str(int(round(time.time() * 1000)))
 
     try:
-        source_names = [f.name for f in oc.list(directory)]
+        source_names = sorted([f.name for f in oc.list(directory)])
     except owncloud.owncloud.HTTPResponseError:
         sys.stderr.write('{} does not exist.\n'.format(options['<directory>']))
         sys.exit()
