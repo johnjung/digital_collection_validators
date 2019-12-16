@@ -22,9 +22,9 @@ if __name__ == '__main__':
     owncloud_ssh = paramiko.SSHClient()
     owncloud_ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     owncloud_ssh.connect(
-        os.environ['OWNCLOUD_SSH_SERVER'], 
-        username=os.environ['OWNCLOUD_SSH_USERNAME'],
-        password=os.environ['OWNCLOUD_SSH_PASSWORD']
+        os.environ['LDR_SSH_SERVER'], 
+        username=os.environ['LDR_SSH_USERNAME'],
+        password=os.environ['LDR_SSH_PASSWORD']
     )
     owncloud_ftp = owncloud_ssh.open_sftp()
     owncloud_path = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files'

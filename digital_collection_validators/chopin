@@ -14,7 +14,7 @@ if __name__ == '__main__':
     arguments = docopt(__doc__)
 
     chopin_validator = ChopinValidator()
-    chopin_validator.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
+    chopin_validator.connect(os.environ['LDR_SSH_SERVER'], {})
 
     if 'chopin' in arguments['<identifier-chunk>'] or \
        len(arguments['<identifier-chunk>']) == 0:

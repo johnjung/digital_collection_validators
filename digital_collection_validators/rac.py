@@ -14,7 +14,7 @@ if __name__ == '__main__':
     arguments = docopt(__doc__)
 
     rac_valid = RacValidator()
-    rac_valid.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
+    rac_valid.connect(os.environ['LDR_SSH_SERVER'], {})
 
     identifiers = []
     for i in range(0,len(arguments['<identifier-chunk>'])):

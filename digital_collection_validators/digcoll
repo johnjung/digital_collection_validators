@@ -12,7 +12,7 @@ from docopt import docopt
 
 if __name__ == '__main__':
     arguments = docopt(__doc__)
-    owncloud_ssh = OwnCloudSSH(os.environ['OWNCLOUD_SSH_SERVER'], {})
+    owncloud_ssh = OwnCloudSSH(os.environ['LDR_SSH_SERVER'], {})
 
     identifiers = set()
     for identifier_chunk in arguments['<identifier-chunk>']:

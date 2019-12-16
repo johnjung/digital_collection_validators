@@ -13,7 +13,7 @@ if __name__ == '__main__':
     arguments = docopt(__doc__)
 
     gms_validator = GmsValidator()
-    gms_validator.connect(os.environ['OWNCLOUD_SSH_SERVER'], {})
+    gms_validator.connect(os.environ['LDR_SSH_SERVER'], {})
 
     identifiers = []
     if 'gms' in arguments['<identifier-chunk>'] or \
