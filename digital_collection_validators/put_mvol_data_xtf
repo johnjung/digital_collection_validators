@@ -1,7 +1,6 @@
-"""put_mvol_data_xtf
-   Process mvol data on Owncloud and upload it to either the XTF development or production server.
+#!/usr/bin/env python3
 
-   Usage:
+"""Usage:
    put_mvol_data_xtf (--development|--production) --min-year=<min-year> --max-year=<max-year> <identifier> ...
 """
 
@@ -9,6 +8,7 @@ from docopt import docopt
 from PIL import Image
 import getpass
 import io
+import os
 import paramiko
 import re
 import requests

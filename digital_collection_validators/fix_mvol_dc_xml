@@ -3,12 +3,12 @@
 """Usage:
    fix_mvol_dc_xml (--rewrap-existing|--make-new) [--force] <identifier>
 
-   --rewrap-existing will replace the parent element of .dc.xml metadata with a
-   <metadata/> tag. (e.g., very often existing metadata is wrapped in a
-   <dublin_core/> tag.)
+   rewrap-existing will replace the parent element of .dc.xml metadata with a
+   <metadata/> tag. e.g., very often existing metadata is wrapped in a
+   <dublin_core/> tag.
 
-   --make-new creates new .dc.xml data based on the identifier. In combination
-   with --force, it will overwrite existing metadata.
+   make-new creates new .dc.xml data based on the identifier. In combination
+   with force, it will overwrite existing metadata.
 """
 
 import os, owncloud, re, sys
@@ -116,14 +116,13 @@ if __name__ == '__main__':
         assert identifier == options['<identifier>']
 
         description = input_metadata.find('description').text
-        assert description == 'A newspaper produced by students of the University of Chicago. Published 1902-1942 and continued by the Chicago Maroon.'
-        self.oc.put_file_contents(remote_path, ''.join((
+        oc.put_file_contents(remote_path, ''.join((
             '<?xml version="1.0" encoding="utf8"?>',
             '<metadata>',
             '<title>{}</title>'.format(title),
-            '<date>{}</date>'.format(data),
+            '<date>{}</date>'.format(date),
             '<description>{}</description>'.format(description),
-            '<identifier>{}</identifier>'.format(identifier)
+            '<identifier>{}</identifier>'.format(identifier),
             '</metadata>'
         )))
         sys.exit()
@@ -137,13 +136,13 @@ if __name__ == '__main__':
             except owncloud.owncloud.HTTPResponseError:
                 pass
 
-        self.oc.put_file_contents(remote_path, ''.join((
+        oc.put_file_contents(remote_path, ''.join((
             '<?xml version="1.0" encoding="utf8"?>',
             '<metadata>',
             '<title>{}</title>'.format(make_dc_title(options['<identifier>'])),
             '<date>{}</date>'.format(make_dc_date(options['<identifier>'])),
             '<description>{}</description>'.format(make_dc_description(options['<identifier>'])),
-            '<identifier>{}</identifier>'.format(make_dc_identifier(options['<identifier>'])),
+            '<identifier>{}</identifier>'.format(options['<identifier>']),
             '</metadata>'
         )))
         sys.exit()

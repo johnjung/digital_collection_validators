@@ -561,6 +561,41 @@ class ApfValidator(DigitalCollectionValidator):
 
 
 class ChopinValidator(DigitalCollectionValidator):
+    def validate_tiff_files(self, identifier):
+        """For a given identifier, make sure a TIFF file exists. Confirm
+        that the file is non-empty.
+        
+        Args:
+            identifier (str): e.g. 'chopin-002'
+        """
+
+        assert re.match('^chopin-\d{3}$', identifier)
+
+        path = self.get_path(identifier) + '/tifs/'
+
+        # regex to match filenames that look correct.
+        r = '^' + identifier + '-\d{3}\.tif$'
+
+        existing_f = set(self.cs_listdir(path))
+
+        # get what looks like the highest object number on disk. 
+        hi_obj_num = 0
+        for f in sorted(list(existing_f)):
+            if re.match(r, f):
+                hi_obj_num = int(f.split('.')[0].split('-')[-1])
+
+	# build a set of expected filenames.
+        expected_f = set()
+        for i in range(1, hi_obj_num + 1):
+            expected_f.add('{}-{}.tif'.format(identifier, str(i).zfill(3)))
+
+        errors = []
+        for f in sorted(list(expected_f.difference(existing_f))):
+            errors.append('{}/tifs/{} not found.\n'.format(identifier, f))
+        for f in sorted(list(existing_f.difference(expected_f))):
+            errors.append('{}/tifs/{} not expected.\n'.format(identifier, f))
+        return errors
+
     def validate(self, identifier):
         """Wrapper to call all validation functions. 
 
@@ -619,9 +654,9 @@ class GmsValidator(DigitalCollectionValidator):
             expected_f.add('{}-{}.tif'.format(identifier, str(i).zfill(3)))
 
         errors = []
-        for f in expected_f.difference(existing_f):
+        for f in sorted(list(expected_f.difference(existing_f))):
             errors.append('{}/tifs/{} not found.\n'.format(identifier, f))
-        for f in existing_f.difference(expected_f):
+        for f in sorted(list(existing_f.difference(expected_f))):
             errors.append('{}/tifs/{} not expected.\n'.format(identifier, f))
         return errors
 
@@ -919,7 +954,7 @@ class MvolValidator(DigitalCollectionValidator):
         line = f.readline()
         while line:
             # if not re.match('^\d{8}\t\d+', line):
-            if not re.match('^\d{8}\t\d*(\t.*)?$', line):
+            if not re.match('^\d{8}\t\d*.*?$', line):
                 return ['{}/{}.struct.txt has one or more errors\n'.format(self.get_path(identifier), identifier)]
             line = f.readline()
         return []

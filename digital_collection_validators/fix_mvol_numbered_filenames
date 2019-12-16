@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Usage:
-   fix_mvol_numbered_filenames <identifier> <directory>
+   fix_mvol_numbered_filenames [--dry-run] <identifier> <directory>
 
    Rename files in mvol's ALTO, JPEG, POS and TIFF directories. The script
    renames files to an intermediate filename, composed of a timestamp in
@@ -9,7 +9,7 @@
 import os, owncloud, re, sys, time
 from docopt import docopt
 
-def batch_rename_mvol(oc, directory):
+def batch_rename_mvol(oc, directory, dry_run = True):
     """Rename files in a directory (e.g. ALTO, JPEG, TIFF, etc.)
     according to a pattern. 
 
@@ -26,9 +26,9 @@ def batch_rename_mvol(oc, directory):
         'TIFF': 'tif'
     }
 
-    assert len(directory.split('/')) == 8
+    assert len(directory.split('/')) == 7
 
-    mvol_str = '-'.join(directory.split('/')[2:6])
+    mvol_str = '-'.join(directory.split('/')[1:5])
 
     extension = extensions[directory.split('/')[-2]]
 
@@ -40,7 +40,7 @@ def batch_rename_mvol(oc, directory):
         sys.stderr.write('{} does not exist.\n'.format(options['<directory>']))
         sys.exit()
 
-    intermediate_names = ['{}_{}'.format(ms_time, p) for p in source_names]
+    intermediate_names = ['{}.{}'.format(p, ms_time) for p in source_names]
 
     target_names = []
     for i in range(len(source_names)):
@@ -58,15 +58,29 @@ def batch_rename_mvol(oc, directory):
     if set(source_names).intersection(set(intermediate_names)):
         raise RuntimeError
 
-    for i in range(len(source_names)):
-        oc.move(directory + source_names[i], directory + intermediate_names[i])
-        i = i + 1
-
     if set(intermediate_names).intersection(set(target_names)):
         raise RuntimeError
 
+    for i in range(len(source_names)):
+        if dry_run:
+            sys.stdout.write('move {0}{1} to {0}{2}\n'.format(
+                directory, 
+                source_names[i], 
+                intermediate_names[i]
+            ))
+        else:
+            oc.move(directory + source_names[i], directory + intermediate_names[i])
+        i = i + 1
+
     for i in range(len(intermediate_names)):
-        oc.move(directory + intermediate_names[i], directory + target_names[i])
+        if dry_run:
+            sys.stdout.write('move {0}{1} to {0}{2}\n'.format(
+                directory,
+                intermediate_names[i],
+                target_names[i]
+            ))
+        else:
+            oc.move(directory + intermediate_names[i], directory + target_names[i])
         i = i + 1
 
 if __name__=='__main__':
@@ -87,10 +101,10 @@ if __name__=='__main__':
         sys.exit()
 
     try:
-        batch_rename_mvol(oc, directory)
+        batch_rename_mvol(oc, directory, options['--dry-run'])
     except RuntimeError:
         sys.stderr.write('Could not rename {} {}.\n'.format(
             options['<identifier>'],
             options['<directory>']
-        )
+        ))
         sys.exit()
