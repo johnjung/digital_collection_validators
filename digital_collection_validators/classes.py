@@ -90,6 +90,7 @@ class DigitalCollectionValidator:
         """
 
         project = self.get_project(identifier_chunk)
+
         if project not in ('apf', 'chopin', 'ewm', 'gms', 'mvol', 'speculum'):
             raise NotImplementedError
 
@@ -114,7 +115,7 @@ class DigitalCollectionValidator:
             if self.connected == 1:
                 return self.connected_root + identifier_chunk.replace('-', '/')
             elif self.local_root:
-                return self.local_root + identifier_chunk.replace('-', '/')
+                return self.local_root + '/' + identifier_chunk.replace('-', '/')
             else:
                 raise RuntimeError
 
@@ -154,7 +155,7 @@ class DigitalCollectionValidator:
         elif self.get_project(identifier_chunk) == 'gms':
             return bool(re.match('^gms-\d{4}$', identifier_chunk))
         elif self.get_project(identifier_chunk) == 'mvol':
-            return bool(re.match('^mvol-\d{4}-\d{4}-\d{4}$', identifier_chunk))
+            return bool(re.match('^mvol-\d{4}-\d{4}-\d{4}(-\d{2})?$', identifier_chunk))
         elif self.get_project(identifier_chunk) == 'speculum':
             return bool(re.match('^speculum-\d{4}$', identifier_chunk))
         elif self.get_project(identifier_chunk) == 'apf':
@@ -703,13 +704,23 @@ class MvolValidator(DigitalCollectionValidator):
         # raise an IOError if the ALTO, JPEG, or TIFF directory does not exist.
         self.cs_stat(mmdd_path + '/' + folder_name)
 
-        filename_re = '^%s-%s-%s-%s_\d{4}\.%s$' % (
-            mmdd_path.split('/')[-4],
-            mmdd_path.split('/')[-3],
-            mmdd_path.split('/')[-2],
-            mmdd_path.split('/')[-1],
-            extensions[folder_name]
-        )
+        if bool(re.search('-[0-9]{2}$', identifier)):
+            filename_re = '^%s-%s-%s-%s-%s_\d{4}\.%s$' % (
+                mmdd_path.split('/')[-5],
+                mmdd_path.split('/')[-4],
+                mmdd_path.split('/')[-3],
+                mmdd_path.split('/')[-2],
+                mmdd_path.split('/')[-1],
+                extensions[folder_name]
+            )
+        else:
+            filename_re = '^%s-%s-%s-%s_\d{4}\.%s$' % (
+                mmdd_path.split('/')[-4],
+                mmdd_path.split('/')[-3],
+                mmdd_path.split('/')[-2],
+                mmdd_path.split('/')[-1],
+                extensions[folder_name]
+            )
 
         entries = []
         for entry in self.cs_listdir('{}/{}'.format(mmdd_path, folder_name)):
@@ -1028,12 +1039,13 @@ class MvolValidator(DigitalCollectionValidator):
         errors += self.validate_alto_or_pos_directory(identifier)
         errors += self.validate_jpeg_directory(identifier)
         errors += self.validate_tiff_directory(identifier)
-        errors += self.validate_mets_xml(identifier)
+        #errors += self.validate_mets_xml(identifier)
         errors += self.validate_pdf(identifier)
         errors += self.validate_struct_txt(identifier)
         errors += self.validate_txt(identifier)
         errors += self.validate_dc_xml(identifier)
         if not errors:
+            #pass
             errors = self.finalcheck(identifier)
         return errors
 

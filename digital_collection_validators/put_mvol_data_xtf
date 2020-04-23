@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """Usage:
-   put_mvol_data_xtf (--development|--production) --min-year=<min-year> --max-year=<max-year> <identifier> ...
+   put_mvol_data_xtf (--development|--production) --local-root=<local-root> --min-year=<min-year> --max-year=<max-year> <identifier> ...
 """
 
 from docopt import docopt
@@ -12,22 +12,13 @@ import os
 import paramiko
 import re
 import requests
+import subprocess
 import statistics
 import sys
 
 
 if __name__ == '__main__':
     arguments = docopt(__doc__)
-
-    owncloud_ssh = paramiko.SSHClient()
-    owncloud_ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    owncloud_ssh.connect(
-        os.environ['LDR_SSH_SERVER'], 
-        username=os.environ['LDR_SSH_USERNAME'],
-        password=os.environ['LDR_SSH_PASSWORD']
-    )
-    owncloud_ftp = owncloud_ssh.open_sftp()
-    owncloud_path = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files'
 
     xtf_ssh = paramiko.SSHClient()
     xtf_ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -51,18 +42,16 @@ if __name__ == '__main__':
     xtf_ftp = xtf_ssh.open_sftp()
 
     for identifier in arguments['<identifier>']:
-        try:
-            xtf_ftp.stat(xtf_path + '/' + identifier)
-            sys.stdout.write('This directory exists on the XTF server.\n')
+
+        if identifier in xtf_ftp.listdir(xtf_path):
+            sys.stderr.write(identifier + ' directory exists.')
             sys.exit()
-        except FileNotFoundError:
-            pass
-    
+
         xtf_ftp.mkdir('{}/{}'.format(xtf_path, identifier), mode=0o755)
     
-        img_dir = owncloud_path + '/' + '/'.join(identifier.split('-')) + '/' + 'JPEG'
+        img_dir = arguments['--local-root'] + '/' + '/'.join(identifier.split('-')) + '/' + 'JPEG'
         imgs= []
-        for img in owncloud_ftp.listdir(img_dir):
+        for img in os.listdir(img_dir):
             imgs.append(img_dir + '/' + img)
         imgs.sort()
     
@@ -74,10 +63,8 @@ if __name__ == '__main__':
         sizes = []
         i = 1
         for img in imgs:
-            in_memory_in = io.BytesIO()
             in_memory_out = io.BytesIO()
-            owncloud_ftp.getfo(img, in_memory_in)
-            im = Image.open(in_memory_in)
+            im = Image.open(img)
             im.thumbnail(size)
             sizes.append(im.size)
             im.save(in_memory_out, format='JPEG')
@@ -86,7 +73,7 @@ if __name__ == '__main__':
     
             if i == 1:
                 in_memory_out = io.BytesIO()
-                im = Image.open(in_memory_in)
+                im = Image.open(img)
                 im.thumbnail((100, 100))
                 im.save(in_memory_out, format='JPEG')
                 in_memory_out.seek(0)
@@ -95,16 +82,17 @@ if __name__ == '__main__':
     
         width = int(statistics.median([s[0] for s in sizes]))
         height = int(statistics.median([s[1] for s in sizes]))
-    
-        url = 'https://digcollretriever.lib.uchicago.edu/projects/{}/ocr?jpg_width={}&jpg_height={}&min_year={}&max_year={}'.format(
+
+        ocr_text = subprocess.check_output([
+            'python',
+            '/data/s4/jej/ocr_converters/build_ia_bookreader_ocr.py',
+            '--local-root={}'.format(arguments['--local-root']),
             identifier,
-            width,
-            height,
             arguments['--min-year'],
             arguments['--max-year']
-        )
+        ]).decode('utf-8')
+
         in_memory_ocr = io.StringIO()
-        ocr_text = requests.get(url).text
         in_memory_ocr.write(ocr_text)
         in_memory_ocr.seek(0)
         try:
