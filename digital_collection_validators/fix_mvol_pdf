@@ -38,10 +38,16 @@ if __name__ == '__main__':
             sys.stderr.write('{} exists!\n'.format(struct_txt_path))
             sys.exit()
 
-        jpegs = [f if f.endswith('.jpg') for f in os.listdir(jpeg_dir)]
+        jpegs = [f for f in os.listdir(jpeg_dir) if f.endswith('.jpg')]
 
-        pdf = FPDF(unit = "pt", format = Image.open(jpegs[0].size)
+        pdf = FPDF(unit = "pt", format = Image.open(
+            '{}/JPEG/{}'.format(base_dir, jpegs[0])
+        ).size)
         for j in jpegs:
             pdf.add_page()
-            pdf.image(j, 0, 0)
+            pdf.image(
+                '{}/JPEG/{}'.format(base_dir, j),
+                0, 
+                0
+            )
         pdf.output(pdf_path, "F")
