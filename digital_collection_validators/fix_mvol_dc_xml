@@ -1,17 +1,10 @@
 #!/usr/bin/env python3
 
 """Usage:
-   fix_mvol_dc_xml (--rewrap-existing|--make-new) [--force] <identifier>
-
-   rewrap-existing will replace the parent element of .dc.xml metadata with a
-   <metadata/> tag. e.g., very often existing metadata is wrapped in a
-   <dublin_core/> tag.
-
-   make-new creates new .dc.xml data based on the identifier. In combination
-   with force, it will overwrite existing metadata.
+   fix_mvol_dc_xml <identifier>
 """
 
-import os, owncloud, re, sys
+import os, re, sys
 import xml.etree.ElementTree as ElementTree
 from docopt import docopt
 
@@ -79,70 +72,12 @@ def make_dc_description(identifier):
 if __name__ == '__main__':
     options = docopt(__doc__)
 
-    oc = owncloud.Client(os.environ['OWNCLOUD_WEBDAV_SERVER'])
-    try:
-        oc.login(
-            os.environ['OWNCLOUD_WEBDAV_USERNAME'],
-            os.environ['OWNCLOUD_WEBDAV_PASSWORD']
-        )
-    except owncloud.HTTPResponseError:
-        sys.stderr.write('incorrect WebDAV password.\n')
-        sys.exit()
-
-    remote_path = 'IIIF_Files/{}/{}.dc.xml'.format(
-        options['<identifier>'].replace('-', '/'), 
-        options['<identifier>']
-    )
-
-    if options['--rewrap-existing']:
-        try:
-            input_metadata = ElementTree.fromstring(
-                oc.get_file_contents(remote_path).decode('utf-8')
-            )
-        except owncloud.owncloud.HTTPResponseError:
-            sys.stderr.write('A .dc.xml file does not exist in that location.\n')
-            sys.exit()
-
-        title = input_metadata.find('title').text
-
-        date = input_metadata.find('date').text
-        assert date == '{}-{}-{}'.format(
-            options['<identifier>'][10:14],
-            options['<identifier>'][15:17],
-            options['<identifier>'][17:19]
-        )
-
-        identifier = input_metadata.find('identifier').text
-        assert identifier == options['<identifier>']
-
-        description = input_metadata.find('description').text
-        oc.put_file_contents(remote_path, ''.join((
-            '<?xml version="1.0" encoding="utf8"?>',
-            '<metadata>',
-            '<title>{}</title>'.format(title),
-            '<date>{}</date>'.format(date),
-            '<description>{}</description>'.format(description),
-            '<identifier>{}</identifier>'.format(identifier),
-            '</metadata>'
-        )))
-        sys.exit()
-
-    elif options['--make-new']:
-        if not options['--force']:
-            try:
-                oc.file_info(remote_path)
-                sys.stderr.write('A .struct.txt file already exists in that location.\n')
-                sys.exit()
-            except owncloud.owncloud.HTTPResponseError:
-                pass
-
-        oc.put_file_contents(remote_path, ''.join((
-            '<?xml version="1.0" encoding="utf8"?>',
-            '<metadata>',
-            '<title>{}</title>'.format(make_dc_title(options['<identifier>'])),
-            '<date>{}</date>'.format(make_dc_date(options['<identifier>'])),
-            '<description>{}</description>'.format(make_dc_description(options['<identifier>'])),
-            '<identifier>{}</identifier>'.format(options['<identifier>']),
-            '</metadata>'
-        )))
-        sys.exit()
+    sys.stdout.write(''.join((
+        '<?xml version="1.0" encoding="utf8"?>',
+        '<metadata>',
+        '<title>{}</title>'.format(make_dc_title(options['<identifier>'])),
+        '<date>{}</date>'.format(make_dc_date(options['<identifier>'])),
+        '<description>{}</description>'.format(make_dc_description(options['<identifier>'])),
+        '<identifier>{}</identifier>'.format(options['<identifier>']),
+        '</metadata>'
+    )))

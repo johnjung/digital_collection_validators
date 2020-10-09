@@ -7,6 +7,7 @@ import paramiko
 import re
 import requests
 import stat
+import subprocess
 import sys
 from pathlib import Path 
 from lxml import etree
@@ -155,7 +156,7 @@ class DigitalCollectionValidator:
         elif self.get_project(identifier_chunk) == 'gms':
             return bool(re.match('^gms-\d{4}$', identifier_chunk))
         elif self.get_project(identifier_chunk) == 'mvol':
-            return bool(re.match('^mvol-\d{4}-\d{4}-\d{4}(-\d{2})?$', identifier_chunk))
+            return bool(re.match('^mvol-\d{4}-\d{4}-[0-9A-Z]{4}(-\d{2})?$', identifier_chunk))
         elif self.get_project(identifier_chunk) == 'speculum':
             return bool(re.match('^speculum-\d{4}$', identifier_chunk))
         elif self.get_project(identifier_chunk) == 'apf':
@@ -185,7 +186,7 @@ class DigitalCollectionValidator:
         elif self.get_project(identifier_chunk) == 'gms':
             r = '^gms(-\d{4}(-\d{3})?)?$'
         elif self.get_project(identifier_chunk) == 'mvol':
-            r = '^mvol(-\d{4}(-\d{4}(-\d{4})?)?)?$'
+            r = '^mvol(-\d{4}(-\d{4}(-[0-9A-Z]{4}(-\d{2})?)?)?)?$'
         elif self.get_project(identifier_chunk) == 'speculum':
             r = '^speculum(-\d{4}(-\d{3})?)?$'
         elif self.get_project(identifier_chunk) == 'apf':
@@ -212,22 +213,15 @@ class DigitalCollectionValidator:
         Returns:
             list: a list of identifiers, e.g. 'mvol-0001-0002-0003'
         """
-        if self.is_identifier(identifier_chunk):
-            return [identifier_chunk]
-        else:
-            identifiers = []
-            path = self.get_path(identifier_chunk)
-            try:
-                for entry in self.cs_listdir(path):
-                    entry_identifier_chunk = self.get_identifier_chunk(
-                        '{}/{}'.format(path, entry)
-                    )
-                    if self.is_identifier_chunk(entry_identifier_chunk):
-                        identifiers = identifiers + \
-                            self.recursive_ls(entry_identifier_chunk)
-            except FileNotFoundError:
-                return []
-            return identifiers
+        identifiers = []
+        for root, dirs, files in os.walk(self.get_path(identifier_chunk)):
+            if bool(set(dirs).intersection(
+                set(('jpg', 'pos', 'tif', 'ALTO', 'JPEG', 'POS', 'TIFF'))
+            )):
+                identifier = '-'.join(root.split(os.sep)[5:])
+                if self.is_identifier(identifier):
+                    identifiers.append(identifier)
+        return identifiers
 
     def list_directory(self, identifier):
         """Get a list of files from starting identifier.
@@ -863,7 +857,7 @@ class MvolValidator(DigitalCollectionValidator):
             metadata = etree.parse(f)
             if not dtd.validate(metadata):
                 errors.append('{}/{}.dc.xml not valid\n'.format(self.get_path(identifier), identifier))
-            else:
+            elif identifier.startswith('mvol-0004'):
                 datepull = metadata.findtext("date")
                 pattern = re.compile("^\d{4}(-\d{2})?(-\d{2})?")
                 attemptmatch = pattern.fullmatch(datepull)
@@ -965,7 +959,7 @@ class MvolValidator(DigitalCollectionValidator):
         line = f.readline()
         while line:
             # if not re.match('^\d{8}\t\d+', line):
-            if not re.match('^\d{8}\t\d*.*?$', line):
+            if not re.match('^\d{8}', line):
                 return ['{}/{}.struct.txt has one or more errors\n'.format(self.get_path(identifier), identifier)]
             line = f.readline()
         return []
@@ -1004,9 +998,76 @@ class MvolValidator(DigitalCollectionValidator):
         except (FileNotFoundError, IOError):
             return ['{}/{}.pdf missing\n'.format(self.get_path(identifier), identifier)]
 
-    def finalcheck(self, identifier):
-        """Make sure that a passing directory does not ultimately fail validation
-        for an unknown reason
+    def validate_allowable_files_only(self, identifier):
+        """
+        JEJ TODO: make sure only allowable files are in the directory.
+        """
+        assert self.get_project(identifier) == 'mvol'
+
+        errors = []
+
+        allowable_files = set((
+            '{}.dc.xml'.format(identifier),
+            '{}.mets.xml'.format(identifier),
+            '{}.pdf'.format(identifier),
+            '{}.struct.txt'.format(identifier),
+            '{}.txt'.format(identifier)
+        ))
+
+        files_present = set()
+        for f in os.listdir('{}/{}'.format(
+            self.local_root, 
+            identifier.replace('-', '/')
+        )):
+            if os.path.isfile('{}/{}/{}'.format(
+                self.local_root,
+                identifier.replace('-', '/'),
+                f
+            )):
+                files_present.add(f)
+
+        for f in files_present.difference(allowable_files):
+            errors.append('non-allowable file {} in {}\n'.format(f, identifier))
+
+        if not os.path.isdir('{}/{}/JPEG'.format(
+            self.local_root,
+            identifier.replace('-', '/')
+        )):
+            errors.append('JPEG dir missing in {}\n'.format(identifier))
+
+        if not os.path.isdir('{}/{}/TIFF'.format(
+            self.local_root,
+            identifier.replace('-', '/')
+        )):
+            errors.append('JPEG dir missing in {}\n'.format(identifier))
+
+        if not os.path.isdir('{}/{}/ALTO'.format(
+            self.local_root,
+            identifier.replace('-', '/')
+        )) and not os.path.isdir('{}/{}/POS'.format(
+            self.local_root,
+            identifier.replace('-', '/')
+        )):
+            errors.append('ALTO or POS dir missing in {}\n'.format(identifier))
+
+        counts = {}
+        for d in ('ALTO', 'POS', 'JPEG', 'TIFF'):
+            directory = '{}/{}/{}'.format(
+                self.local_root,
+                identifier.replace('-', '/'),
+                d
+            )
+            if os.path.isdir(directory):
+                counts[d] = len(os.listdir(directory))
+
+        if len(set(counts.values())) > 1:
+            errors.append('file count mismatch in {}\n'.format(identifier))
+
+        return errors
+
+
+    def validate_ocr(self, identifier):
+        """Be sure OCR conversion works for this item.
 
         Args:
             identifier (str): e.g. 'mvol-0001-0002-0003'
@@ -1014,17 +1075,21 @@ class MvolValidator(DigitalCollectionValidator):
 
         assert self.get_project(identifier) == 'mvol'
 
-        url = "https://digcollretriever.lib.uchicago.edu/projects/" + \
-            identifier + "/ocr?jpg_width=0&jpg_height=0&min_year=0&max_year=0"
-        r = requests.get(url)
-        if r.status_code != 200:
-            return ['{} contains an unknown error\n'.format(self.get_path(identifier))]
+        with open('/dev/null', 'w') as f:
+            return_code = subprocess.call([
+                'python',
+                '/data/s4/jej/ocr_converters/build_ia_bookreader_ocr.py',
+                '--local-root={}'.format(self.local_root),
+                identifier,
+                '0',
+                '0'
+            ],
+            stdout=f
+        )
+        if return_code == 0:
+            return []
         else:
-            try:
-                fdoc = etree.fromstring(r.content)
-                return []
-            except Exception:
-                return ['{} contains an unknown error.\n'.format(self.get_path(identifier))]
+            return ['trouble with OCR on {}\n'.format(identifier)]
 
     def validate(self, identifier):
         """Wrapper to call all validation functions. 
@@ -1039,14 +1104,13 @@ class MvolValidator(DigitalCollectionValidator):
         errors += self.validate_alto_or_pos_directory(identifier)
         errors += self.validate_jpeg_directory(identifier)
         errors += self.validate_tiff_directory(identifier)
-        #errors += self.validate_mets_xml(identifier)
         errors += self.validate_pdf(identifier)
         errors += self.validate_struct_txt(identifier)
         errors += self.validate_txt(identifier)
         errors += self.validate_dc_xml(identifier)
+        errors += self.validate_allowable_files_only(identifier)
         if not errors:
-            #pass
-            errors = self.finalcheck(identifier)
+            errors += self.validate_ocr(identifier)
         return errors
 
 

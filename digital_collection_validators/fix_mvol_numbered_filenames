@@ -6,15 +6,14 @@
    renames files to an intermediate filename, composed of a timestamp in
    milliseconds, before correctly renumbering them to avoid collisions.
 """
-import os, owncloud, re, sys, time
+import os, re, sys, time
 from docopt import docopt
 
-def batch_rename_mvol(oc, directory, dry_run = True):
+def batch_rename_mvol(directory, dry_run = True):
     """Rename files in a directory (e.g. ALTO, JPEG, TIFF, etc.)
     according to a pattern. 
 
     Args:
-    oc: an owncloud object.
     directory (str): e.g. 'IIIF_Files/mvol/0001/0002/0003/ALTO/'
     pattern_fun: a pattern function. 
     """
@@ -23,22 +22,19 @@ def batch_rename_mvol(oc, directory, dry_run = True):
         'ALTO': 'xml',
         'JPEG': 'jpg',
         'POS': 'pos',
-        'TIFF': 'tif'
+        'TIFF': 'tif',
+        'XML': 'xml'
     }
 
-    assert len(directory.split('/')) == 7
+    assert len(directory.split('/')) == 11
 
-    mvol_str = '-'.join(directory.split('/')[1:5])
+    mvol_str = '-'.join(directory.split('/')[5:9])
 
     extension = extensions[directory.split('/')[-2]]
 
     ms_time = str(int(round(time.time() * 1000)))
 
-    try:
-        source_names = sorted([f.name for f in oc.list(directory)])
-    except owncloud.owncloud.HTTPResponseError:
-        sys.stderr.write('{} does not exist.\n'.format(options['<directory>']))
-        sys.exit()
+    source_names = sorted(os.listdir(directory))
 
     intermediate_names = ['{}.{}'.format(p, ms_time) for p in source_names]
 
@@ -69,7 +65,7 @@ def batch_rename_mvol(oc, directory, dry_run = True):
                 intermediate_names[i]
             ))
         else:
-            oc.move(directory + source_names[i], directory + intermediate_names[i])
+            os.rename(directory + source_names[i], directory + intermediate_names[i])
         i = i + 1
 
     for i in range(len(intermediate_names)):
@@ -80,7 +76,7 @@ def batch_rename_mvol(oc, directory, dry_run = True):
                 target_names[i]
             ))
         else:
-            oc.move(directory + intermediate_names[i], directory + target_names[i])
+            os.rename(directory + intermediate_names[i], directory + target_names[i])
         i = i + 1
 
 if __name__=='__main__':
@@ -88,20 +84,17 @@ if __name__=='__main__':
 
     assert options['<identifier>'].startswith('mvol-')
 
-    oc = owncloud.Client(os.environ['OWNCLOUD_WEBDAV_SERVER'])
-    oc.login(os.environ['OWNCLOUD_WEBDAV_USERNAME'], os.environ['OWNCLOUD_WEBDAV_PASSWORD'])
-
-    directory = 'IIIF_Files/{}/{}/'.format(
+    directory = '/data/digital_collections/IIIF/IIIF_Files/{}/{}/'.format(
         options['<identifier>'].replace('-', '/'), 
         options['<directory>']
     )
 
-    if not options['<directory>'] in ('ALTO', 'JPEG', 'POS', 'TIFF'):
-        sys.stderr.write('<directory> must be one of: ALTO, JPEG, POS, TIFF\n')
+    if not options['<directory>'] in ('ALTO', 'JPEG', 'POS', 'TIFF', 'XML'):
+        sys.stderr.write('<directory> must be one of: ALTO, JPEG, POS, TIFF, XML\n')
         sys.exit()
 
     try:
-        batch_rename_mvol(oc, directory, options['--dry-run'])
+        batch_rename_mvol(directory, options['--dry-run'])
     except RuntimeError:
         sys.stderr.write('Could not rename {} {}.\n'.format(
             options['<identifier>'],

@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+
+"""Usage:
+   fix_mvol_txt (--fix-existing|--make-new) <identifier>
+"""
+
+import os, sys
+from docopt import docopt
+
+import xml.etree.ElementTree as ET
+
+if __name__ == '__main__':
+    options = docopt(__doc__)
+
+    txt_path = '/data/digital_collections/IIIF/IIIF_Files/{}/{}.txt'.format(
+        options['<identifier>'].replace('-', '/'), 
+        options['<identifier>']
+    )
+
+    if options['--fix-existing']:
+        raise NotImplementedError
+
+    if options['--make-new']:
+        txt_data = []
+
+        if os.path.exists(txt_path):
+            sys.stderr.write('{} exists!\n'.format(txt_path))
+            sys.exit()
+
+    filenames = os.listdir('/data/digital_collections/IIIF/IIIF_Files/{}/ALTO'.format( 
+        options['<identifier>'].replace('-', '/'),
+    ))
+
+    output_text = []
+    for filename in sorted(filenames):
+        if not filename.endswith('.xml'):
+            continue
+
+        x = ET.parse('/data/digital_collections/IIIF/IIIF_Files/{}/ALTO/{}'.format(
+            options['<identifier>'].replace('-', '/'),
+            filename
+        ))
+        for e in x.findall('.//a:line', {'a': 'http://www.abbyy.com/FineReader_xml/FineReader8-schema-v2.xml'}):
+            for t in e.itertext():
+                output_text.append(t)
+
+    with open(txt_path, 'w') as f:
+        f.write('\n'.join(output_text))

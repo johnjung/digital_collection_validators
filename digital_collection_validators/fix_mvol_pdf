@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+
+"""Usage:
+   fix_mvol_pdf (--fix-existing|--make-new) <identifier>
+"""
+
+import os, sys
+from docopt import docopt
+from fpdf import FPDF
+from PIL import Image
+
+
+if __name__ == '__main__':
+    options = docopt(__doc__)
+
+    base_dir = '/data/digital_collections/IIIF/IIIF_Files/{}'.format( 
+        options['<identifier>'].replace('-', '/'),
+    )
+
+    jpeg_dir = '{}/JPEG'.format(
+        base_dir
+    )
+
+    pdf_path = '{}/{}.pdf'.format(
+        base_dir,
+        options['<identifier>']
+    )
+
+    if not os.path.isdir(jpeg_dir):
+        sys.stderr.write('{} does not exist!\n'.format(jpeg_dir))
+        sys.exit()
+
+    if options['--fix-existing']:
+        raise NotImplementedError
+
+    if options['--make-new']:
+        if os.path.exists(pdf_path):
+            sys.stderr.write('{} exists!\n'.format(struct_txt_path))
+            sys.exit()
+
+        jpegs = [f if f.endswith('.jpg') for f in os.listdir(jpeg_dir)]
+
+        pdf = FPDF(unit = "pt", format = Image.open(jpegs[0].size)
+        for j in jpegs:
+            pdf.add_page()
+            pdf.image(j, 0, 0)
+        pdf.output(pdf_path, "F")

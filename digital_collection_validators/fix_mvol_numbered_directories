@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+
+"""Usage:
+   fix_mvol_numbered_directories <identifier>
+"""
+
+import os
+from docopt import docopt
+
+if __name__ == '__main__':
+    options = docopt(__doc__)
+
+    mvol_path = '/data/digital_collections/IIIF/IIIF_Files/{}'.format(
+        options['<identifier>'].replace('-', '/'), 
+    )
+
+    '''
+    for old, new in {
+        'jpg': 'JPEG',
+        'pos': 'POS',
+        'tif': 'TIFF',
+        'XML': 'ALTO'
+    '''
+    for old, new in {
+        'XML': 'ALTO'
+    }.items():
+        if not os.path.exists('{}/{}'.format(mvol_path, new)):
+            os.rename(
+                '{}/{}'.format(mvol_path, old),
+                '{}/{}'.format(mvol_path, new)
+            )

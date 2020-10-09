@@ -7,31 +7,21 @@
    creates one of those files and uploads it to Owncloud via WebDAV.
 """
 
-import csv, os, owncloud, re, sys
+import csv, os, re, sys
 from docopt import docopt
 from io import StringIO
 
 def get_jpeg_count(identifier):
     c = 0
-    for entry in oc.list('IIIF_Files/{}/JPEG'.format(identifier.replace('-', '/'))):
-        if entry.get_name().startswith(identifier):
+    for entry in os.listdir('/data/digital_collections/IIIF/IIIF_Files/{}/JPEG'.format(identifier.replace('-', '/'))):
+        if entry.endswith('.jpg'):
             c += 1
     return c
 
 if __name__ == '__main__':
     options = docopt(__doc__)
 
-    oc = owncloud.Client(os.environ['OWNCLOUD_WEBDAV_SERVER'])
-    try:
-        oc.login(
-            os.environ['OWNCLOUD_WEBDAV_USERNAME'],
-            os.environ['OWNCLOUD_WEBDAV_PASSWORD']
-        )
-    except owncloud.HTTPResponseError:
-        sys.stderr.write('incorrect WebDAV password.\n')
-        sys.exit()
-
-    remote_path = 'IIIF_Files/{}/{}.struct.txt'.format(
+    struct_txt_path = '/data/digital_collections/IIIF/IIIF_Files/{}/{}.struct.txt'.format(
         options['<identifier>'].replace('-', '/'), 
         options['<identifier>']
     )
@@ -40,42 +30,18 @@ if __name__ == '__main__':
     objects = [str(i).zfill(8) for i in range(1, jpeg_count + 1)]
 
     if options['--fix-existing']:
-        try:
-            f = StringIO(oc.get_file_contents(remote_path).decode('utf-8'))
-        except owncloud.owncloud.HTTPResponseError:
-            sys.stderr.write('A .struct.txt file does not exist in that location.\n')
-            sys.exit()
-
-        pages = []
-        milestones = []
-
-        reader = csv.reader(f, delimiter='\t') 
-        for row in reader:
-            if row[0][0] != '0':
-                next
-            else:
-                try:
-                    pages.append(row[1])
-                except IndexError:
-                    pages.append('')
-                try: 
-                    milestones.append(row[2])
-                except IndexError:
-                    milestones.append('')
-    else:
-        pages = [str(i) for i in range(1, jpeg_count + 1)]
-        milestones = ['' for i in range(jpeg_count)]
+        raise NotImplementedError
 
     if options['--make-new']:
-        try:
-            oc.file_info(remote_path)
-            sys.stderr.write('A .struct.txt file already exists in that location.\n')
-            sys.exit()
-        except owncloud.owncloud.HTTPResponseError:
-            pass
-
-    txt_data = 'object\tpage\tmilestone\n'
+        pages = [str(i) for i in range(1, jpeg_count + 1)]
+        milestones = ['' for i in range(jpeg_count)]
+        txt_data = 'object\tpage\tmilestone\n'
     for i in range(jpeg_count):
         txt_data = txt_data + '{}\t{}\t{}\n'.format(objects[i], pages[i], milestones[i])
 
-    oc.put_file_contents(remote_path, txt_data)
+    if os.path.exists(struct_txt_path):
+        sys.stderr.write('{} exists!\n'.format(struct_txt_path))
+        sys.exit()
+    else:
+        with open(struct_txt_path, 'w') as f:
+            f.write(txt_data)
