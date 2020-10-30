@@ -3,12 +3,14 @@
 """Usage:
    mvol check_sync (--owncloud-to-development | --owncloud-to-production) (--list-in-sync | --list-out-of-sync) <identifier-chunk> ...
    mvol csvreport <identifier-chunk> ...
-   mvol ls [--local-root=<path>] <identifier-chunk> ...
+   mvol ls [--local-root=<path>] [--clean] <identifier-chunk> ...
    mvol validate (--list-valid|--show-errors) [--local-root=<path>] <identifier-chunk> ...
 """
 
+import datetime
 import operator
 import os
+import sqlite3
 import sys
 from classes import MvolValidator, XTFValidator
 from docopt import docopt
@@ -17,7 +19,10 @@ from docopt import docopt
 if __name__ == '__main__':
     arguments = docopt(__doc__)
 
+    conn = sqlite3.connect('/data/s4/jej/validation.db')
+    c = conn.cursor()
     mvol_valid = MvolValidator()
+
     if arguments['--local-root']:
         mvol_valid.set_local_root(arguments['--local-root'])
     else:
@@ -31,13 +36,17 @@ if __name__ == '__main__':
             xtf_ssh = XTFValidator(True)
             xtf_ssh.connect(os.environ['XTF_PRODUCTION_SERVER'], {})
 
+    # pull identifiers from database by default. if the user selects a
+    # clean ls, then rebuild the appropriate parts of the table.
     identifiers = set()
     for identifier_chunk in arguments['<identifier-chunk>']:
-        for i in mvol_valid.recursive_ls(identifier_chunk):
-            if i.startswith('mvol'):
-                identifiers.add(i)
-    identifiers = sorted(list(identifiers))
-
+        c.execute(
+            'SELECT identifier FROM validation WHERE identifier LIKE ?',
+            ('{}%'.format(identifier_chunk),)
+        )
+    for r in c.fetchall():
+        identifiers.add(r[0])
+    
     if arguments['check_sync']:
         if arguments['--list-in-sync']:
             comparison = operator.le
@@ -78,6 +87,38 @@ if __name__ == '__main__':
             sys.stdout.write('The following mvols are present in Owncloud but not in CSV data:\n')
             sys.stdout.write('\n'.join(sorted(owncloud_only)) + '\n')
     elif arguments['ls']:
+        if arguments['--clean']:
+            # get identifiers from disk.
+            identifiers = set()
+            for identifier_chunk in arguments['<identifier-chunk>']:
+                for i in mvol_valid.recursive_ls(identifier_chunk):
+                    if i.startswith('mvol'):
+                        identifiers.add(i)
+            identifiers = sorted(list(identifiers))
+
+            # delete identifiers from db, if present.
+            for identifier_chunk in arguments['<identifier-chunk>']:
+                c.execute(
+                    'DELETE FROM validation WHERE identifier LIKE ?',
+                    ('{}%'.format(identifier_chunk),)
+                )
+                conn.commit()
+
+            # load new identifiers into db.
+            for identifier in identifiers:
+                c.execute(
+                    'INSERT INTO validation (identifier, identifier_date, validation, validation_date, validation_errors) VALUES (?, ?, ?, ?, ?)',
+                    (
+                        identifier,
+                        datetime.datetime.now().isoformat(),
+                        0,
+                        '',
+                        ''
+                    )
+                )
+            conn.commit()
+
+        # print identifiers
         for identifier in identifiers:
             sys.stdout.write(identifier + '\n')
     elif arguments['validate']:
