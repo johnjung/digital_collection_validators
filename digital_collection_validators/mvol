@@ -4,7 +4,7 @@
    mvol check_sync (--owncloud-to-development | --owncloud-to-production) (--list-in-sync | --list-out-of-sync) <identifier-chunk> ...
    mvol csvreport <identifier-chunk> ...
    mvol ls [--local-root=<path>] [--clean] <identifier-chunk> ...
-   mvol validate (--list-valid|--show-errors) [--local-root=<path>] <identifier-chunk> ...
+   mvol validate (--list-valid|--show-errors) [--local-root=<path>] [--clean] <identifier-chunk> ...
 """
 
 import datetime
@@ -122,11 +122,32 @@ if __name__ == '__main__':
         for identifier in identifiers:
             sys.stdout.write(identifier + '\n')
     elif arguments['validate']:
-        for identifier in identifiers:
-            errors = mvol_valid.validate(identifier)
+        if arguments['--clean']:
+            for identifier in identifiers:
+                errors = mvol_valid.validate(identifier)
+                validation = not(bool(errors))
+                c.execute(
+                    'UPDATE validation SET validation = ?, validation_date = ?, validation_errors = ? WHERE identifier = ?',
+                    (
+                        validation,
+                        datetime.datetime.now().isoformat(),
+                        ''.join(errors),
+                        identifier,
+                    )
+                )
+            conn.commit()
+        for identifier_chunk in arguments['<identifier-chunk>']:
             if arguments['--show-errors']:
-                for error in errors:
-                    sys.stdout.write(error)
+                c.execute(
+                    'SELECT validation_errors FROM validation WHERE identifier LIKE ? AND validation = 0',
+                    ('{}%'.format(identifier_chunk),)
+                )
+                for r in c.fetchall():
+                    print(r[0])
             elif arguments['--list-valid']:
-                if not errors:
-                    sys.stdout.write('{}\n'.format(identifier))
+                c.execute(
+                    'SELECT identifier FROM validation WHERE identifier LIKE ? AND validation = 1',
+                    ('{}%'.format(identifier_chunk),)
+                )
+                for r in c.fetchall():
+                    sys.stdout.write(r[0])
