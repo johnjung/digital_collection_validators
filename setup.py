@@ -8,7 +8,7 @@ setuptools.setup(
     author_email='jej@uchicago.edu',
     description='Scripts to validate digital collections before converting them to OCFL',
     install_requires=[
-        'cryptography==2.5.0',
+        'cryptography==3.2',
         'docopt',
         'lxml',
         'paramiko',

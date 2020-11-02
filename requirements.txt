@@ -1,6 +1,6 @@
 # including cryptography as a temporary workaround, see:
 # https://github.com/paramiko/paramiko/issues/1369
-cryptography==2.5.0
+cryptography==3.2
 docopt
 lxml
 pyocclient
