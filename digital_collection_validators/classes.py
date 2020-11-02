@@ -15,7 +15,69 @@ from xml.etree import ElementTree
 
 
 class DigitalCollectionValidator:
-    local_root = None
+    def __init__(self):
+        self.local_root = None
+
+    def connect_to_db(self, db_path):
+        self.conn = sqlite3.connect(db_path)
+
+    def get_identifiers_from_db(self, identifier_chunk, valid_only=True):
+        """Get valid and non-valid identifiers for a given identifier chunk.
+        If the identifier_chunk is itself an identifier, this function
+        should return a list with one element, containing that identifier
+        only.
+
+        Args:
+            identifier_chunk (str): e.g., 'mvol', 'mvol-0005',
+            'mvol-0005-0001', 'mvol-0005-0001-0001'
+
+            valid_only (bool)
+
+        Returns:
+            a list of identifiers from the database.
+        """
+    
+        c = self.conn.cursor()
+        if valid_only:
+            sql = 'SELECT identifier FROM validation WHERE (identifier LIKE ? OR identifier = ?) AND validation = 1'
+        else:
+            sql = 'SELECT identifier FROM validation WHERE (identifier LIKE ? OR identifier = ?)'
+
+        c.execute(
+            sql,
+            ('{}-%'.format(identifier_chunk), identifier_chunk)
+        )
+        identifiers = set()
+        for r in c.fetchall():
+            identifiers.add(r[0])
+        return sorted(list(identifiers))
+
+    def get_identifier_chunk_children_from_db(self, identifier_chunk):
+        """Get the children of a given identifier chunk. In cases where the
+        children of an identifier chunk are themselves identifiers, those
+        identifiers should all be valid. In cases where the children of an 
+        identifier chunk are identifiers, those identifier chunks should
+        each contain at least one valid child.
+
+        Args:
+            identifier_chunk (str): e.g., 'mvol', 'mvol-0005',
+            'mvol-0005-0001', 'mvol-0005-0001-0001'
+
+        Returns:
+            a list of identifier chunk children, e.g. 'mvol-0001',
+            'mvol-0002', 'mvol-0004', etc.
+
+        """
+    
+        child_chunk_count = len(identifier_chunk.split('-')) + 1
+    
+        identifier_chunks = set()
+        for i in self.get_identifiers_from_db(identifier_chunk):
+            test_child = '-'.join(i.split('-')[:child_chunk_count])
+            if len(test_child.split('-')) == child_chunk_count:
+                identifier_chunks.add(test_child)
+        return sorted(list(identifier_chunks))
+
 
     def set_local_root(self, local_root):
         """Set a local root for local validation
@@ -832,52 +894,6 @@ class MvolValidator(DigitalCollectionValidator):
             errors.append('{}/{}.dc.xml not well-formed\n'.format(self.get_path(identifier), identifier))
             pass
 
-        return errors
-
-    def validate_mets_xml(self, identifier, f=None):
-        """Make sure that a given mets file is well-formed and valid.
-
-        Args:
-            identifier (str): e.g. 'mvol-0001-0002-0003'
-        """
-
-        assert self.get_project(identifier) == 'mvol'
-
-        errors = []
-
-        schemfd = open('{}/mets.xsd'.format(os.path.dirname(__file__)), 'r', encoding='utf8')
-        schemdoc = etree.parse(schemfd)
-        schemfd.close()
-        xmlschema = etree.XMLSchema(schemdoc)
-
-        if not f:
-            try:
-                f = self.open('{}/{}.mets.xml'.format(
-                    self.get_path(identifier),
-                    identifier)
-                )
-            except (FileNotFoundError, IOError):
-                errors.append('{}/{}.mets.xml missing\n'.format(self.get_path(identifier), identifier))
-                pass
-
-        try:
-            fdoc = etree.parse(f)
-            '''
-            if not xmlschema.validate(fdoc):
-                errors.append(
-                    '{}/{}.mets.xml invalid\n'.format(self.get_path(identifier), identifier)
-                )
-            '''
-        except etree.XMLSyntaxError:
-            errors.append(
-                '{}/{}.mets.xml not well-formed\n'.format(self.get_path(identifier), identifier)
-            )
-            pass
-        except TypeError:
-            errors.append(
-                '{}/{}.mets.xml problem\n'.format(self.get_path(identifier), identifier)
-            )
-            pass
         return errors
 
     def validate_struct_txt(self, identifier, f=None):
