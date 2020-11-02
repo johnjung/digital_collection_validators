@@ -2,7 +2,6 @@
 # https://github.com/paramiko/paramiko/issues/1369
 cryptography==2.5.0
 docopt
--e git+https://github.com/owncloud/pyocclient.git@aa6b4374a779bf0f9e060117b2e8d1e810342bc8#egg=pyocclient
 lxml
 pyocclient
 paramiko
