@@ -349,7 +349,7 @@ class DigitalCollectionValidator:
                         f = self.open(path)
                         return self._validate_file_notempty(f)
         
-        return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
+        return ['{} tiff missing\n'.format(identifier)]
 
     def validate_tiff_directory(self, identifier, folder_name):
         """Validates TIFF directories within an identifier.
@@ -503,7 +503,7 @@ class ApfValidator(DigitalCollectionValidator):
                 f = self.open(path)
                 return self._validate_file_notempty(f)
         
-        return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
+        return ['{} tiff missing\n'.format(identifier)]
 
 
     def validate(self, identifier):
@@ -775,7 +775,7 @@ class MvolValidator(DigitalCollectionValidator):
             try:
                 return self.validate_directory(identifier, 'POS')
             except IOError:
-                return ['{}/ALTO or POS missing\n'.format(self.get_path(identifier))]
+                return ['{} ALTO or POS missing\n'.format(identifier)]
 
     def validate_jpeg_directory(self, identifier):
         """Validate that an JPEG folder exists. Make sure it contains appropriate
@@ -793,7 +793,7 @@ class MvolValidator(DigitalCollectionValidator):
         try:
             return self.validate_directory(identifier, 'JPEG')
         except IOError:
-            return ['{}/JPEG missing\n'.format(self.get_path(identifier))]
+            return ['{} JPEG missing\n'.format(identifier)]
 
     def validate_tiff_directory(self, identifier):
         """Validate that an TIFF folder exists. Make sure it contains appropriate
@@ -810,7 +810,7 @@ class MvolValidator(DigitalCollectionValidator):
         try:
             return self.validate_directory(identifier, 'TIFF')
         except IOError:
-            return ['{}/TIFF missing\n'.format(self.get_path(identifier))]
+            return ['{} TIFF missing\n'.format(identifier)]
 
     def validate_dc_xml(self, identifier, f=None):
         """Make sure that a given dc.xml file is well-formed and valid, and that the
@@ -821,6 +821,23 @@ class MvolValidator(DigitalCollectionValidator):
         """
 
         assert self.get_project(identifier) == 'mvol'
+        errors = []
+
+        if not f:
+            try:
+                f = self.open('{}/{}.dc.xml'.format(
+                    self.get_path(identifier),
+                    identifier)
+                )
+            except (FileNotFoundError, IOError):
+                errors.append('{} dc.xml missing\n'.format(identifier))
+                return errors
+
+        try:
+            metadata = etree.parse(f)
+        except etree.XMLSyntaxError as e:
+            errors.append('{} dc.xml not well-formed\n'.format(identifier))
+            return errors
 
         dtdf = io.StringIO(
             """<!ELEMENT metadata ((date, description, identifier, title)|
@@ -854,45 +871,31 @@ class MvolValidator(DigitalCollectionValidator):
       """)
         dtd = etree.DTD(dtdf)
         dtdf.close()
-        errors = []
 
-        try:
-            if not f:
-                f = self.open('{}/{}.dc.xml'.format(
-                    self.get_path(identifier),
-                    identifier)
-                )
-            metadata = etree.parse(f)
-            if not dtd.validate(metadata):
-                errors.append('{}/{}.dc.xml not valid\n'.format(self.get_path(identifier), identifier))
-            elif identifier.startswith('mvol-0004'):
-                datepull = metadata.findtext("date")
-                pattern = re.compile("^\d{4}(-\d{2})?(-\d{2})?")
-                attemptmatch = pattern.fullmatch(datepull)
-                if attemptmatch:
-                    sections = [int(s)
-                                for s in re.findall(r'\b\d+\b', datepull)]
-                    length = len(sections)
-                    if (sections[0] < 1700) | (sections[0] > 2100):
+        if not dtd.validate(metadata):
+            errors.append('{} dc.xml not valid\n'.format(identifier))
+        elif identifier.startswith('mvol-0004'):
+            datepull = metadata.findtext("date")
+            pattern = re.compile("^\d{4}(-\d{2})?(-\d{2})?")
+            attemptmatch = pattern.fullmatch(datepull)
+            if attemptmatch:
+                sections = [int(s)
+                            for s in re.findall(r'\b\d+\b', datepull)]
+                length = len(sections)
+                if (sections[0] < 1700) | (sections[0] > 2100):
+                    errors.append(
+                        '{} dc.xml has an incorrect year field\n'.format(identifier))
+                if length > 1:
+                    if (sections[1] < 1) | (sections[1] > 12):
                         errors.append(
-                            '{}/{}.dc.xml has an incorrect year field\n'.format(self.get_path(identifier), identifier))
-                    if length > 1:
-                        if (sections[1] < 1) | (sections[1] > 12):
-                            errors.append(
-                                '{}/{}.dc.xml has an incorrect month field\n'.format(self.get_path(identifier), identifier))
-                    if length > 2:
-                        if (sections[2] < 1) | (sections[2] > 31):
-                            errors.append(
-                                '{}/{}.dc.xml has an incorrect day field\n'.format(self.get_path(identifier), identifier))
-                    else:
+                            '{} dc.xml has an incorrect month field\n'.format(identifier))
+                if length > 2:
+                    if (sections[2] < 1) | (sections[2] > 31):
                         errors.append(
-                            '{}/{}.dc.xml has an incorrect date\n'.format(self.get_path(identifier), identifier))
-        except (FileNotFoundError, IOError):
-            errors.append('{}/{}.dc.xml missing\n'.format(self.get_path(identifier), identifier))
-            pass
-        except etree.XMLSyntaxError as e:
-            errors.append('{}/{}.dc.xml not well-formed\n'.format(self.get_path(identifier), identifier))
-            pass
+                            '{} dc.xml has an incorrect day field\n'.format(identifier))
+                else:
+                    errors.append(
+                        '{} dc.xml has an incorrect date\n'.format(identifier))
 
         return errors
 
@@ -913,15 +916,15 @@ class MvolValidator(DigitalCollectionValidator):
                 f = self.open(
                     '{}/{}.struct.txt'.format(self.get_path(identifier), identifier))
             except (FileNotFoundError, IOError):
-                return ['{}/{}.struct.txt missing\n'.format(self.get_path(identifier), identifier)]
+                return ['{} struct.txt missing\n'.format(identifier)]
 
         line = f.readline()
         if not re.match('^object\tpage\tmilestone', line):
-            return ['{}/{}.struct.txt has one or more errors\n'.format(self.get_path(identifier), identifier)]
+            return ['{} struct.txt has one or more errors\n'.format(identifier)]
         line = f.readline()
         while line:
             if not re.match('^\d{8}(\t.*)?$', line):
-                return ['{}/{}.struct.txt has one or more errors\n'.format(self.get_path(identifier), identifier)]
+                return ['{} struct.txt has one or more errors\n'.format(identifier)]
             line = f.readline()
         return []
 
@@ -940,7 +943,7 @@ class MvolValidator(DigitalCollectionValidator):
                 identifier))
             return DigitalCollectionValidator._validate_file_notempty(f)
         except (FileNotFoundError, IOError):
-            return ['{}/{}.txt missing\n'.format(self.get_path(identifier), identifier)]
+            return ['{} txt missing\n'.format(identifier)]
 
     def validate_pdf(self, identifier):
         """Make sure that a PDF exists for an identifier.
@@ -957,7 +960,7 @@ class MvolValidator(DigitalCollectionValidator):
                 identifier))
             return DigitalCollectionValidator._validate_file_notempty(f)
         except (FileNotFoundError, IOError):
-            return ['{}/{}.pdf missing\n'.format(self.get_path(identifier), identifier)]
+            return ['{} pdf missing\n'.format(identifier)]
 
     def validate_allowable_files_only(self, identifier):
         """
@@ -1091,7 +1094,7 @@ class RacValidator(DigitalCollectionValidator):
                 f = self.open(path)
                 return self._validate_file_notempty(f)
 
-        return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
+        return ['{} tiff missing\n'.format(identifier)]
         
 
     def validate(self, identifier):
