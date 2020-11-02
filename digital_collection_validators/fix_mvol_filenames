@@ -6,7 +6,7 @@
 
 import os
 import sys
-from classes import MvolValidator, OwnCloudWebDAV
+from classes import MvolValidator
 from docopt import docopt
 
 

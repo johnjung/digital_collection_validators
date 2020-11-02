@@ -7,7 +7,7 @@
 
 import os, glob
 import sys
-from classes import ApfValidator, OwnCloudWebDAV
+from classes import ApfValidator
 from docopt import docopt
 
 if __name__ == '__main__':

@@ -1206,36 +1206,3 @@ class XTFValidator(DigitalCollectionValidator):
             return '/usr/local/apache-tomcat-6.0/webapps/campub/data/bookreader/{}'.format(identifier)
         else:
             return '/usr/local/apache-tomcat-6.0/webapps/xtf/data/bookreader/{}'.format(identifier)
-
-
-class OwnCloudWebDAV:
-    def __init__(self, server, user, password):
-        self.oc = owncloud.Client(server)
-        self.oc.login(user, password)
-
-    @staticmethod
-    def get_path(identifier):
-        """Return a path for a given identifier on owncloud.
-
-        Args:
-            identifier (str): e.g. 'mvol-0001-0002-0003'
-
-        Returns:
-            str: the path to this file on owncloud.
-        """
-
-        return '/IIIF_Files/{}'.format(identifier.replace('-', '/'))
-
-    @staticmethod
-    def get_identifier(self, path):
-        """Return an identifier for a given owncloud path. 
-
-        Args:
-            identifier (str): e.g. 'IIIF_Files/mvol/0001/0002/0003/ALTO/0001.xml'
-
-        Returns:
-            str: an identifier, e.g. 'mvol-0001-0002-0003'
-        """
-
-        m = re.search(path, 'IIIF_Files/(mvol)/(\d{4})/(\d{4})/(\d{4})/')
-        return '{}-{}-{}-{}'.format(m.group(1), m.group(2), m.group(3), m.group(4))
