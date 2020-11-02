@@ -15,24 +15,7 @@ from xml.etree import ElementTree
 
 
 class DigitalCollectionValidator:
-    connected = 0 #variable that determines if SSH connection is made or not --> default set to 0
-    connected_root = '/data/voldemort/digital_collections/data/ldr_oc_admin/files/IIIF_Files/'
     local_root = None
-
-    def connect(self, ssh_server, paramiko_kwargs):
-        """Connects user to owncloud server
-        
-        Args:
-            ssh-server (str): name of ssh server, e.g. 's3.lib.uchicago.edu'
-
-        Returns:
-            Returns no physical attribute, only establishes ssh connection 
-        """
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect('s3.lib.uchicago.edu', username=getpass.getuser())
-        self.ftp = ssh.open_sftp()
-        self.connected = 1
 
     def set_local_root(self, local_root):
         """Set a local root for local validation
@@ -103,9 +86,7 @@ class DigitalCollectionValidator:
             for i in range(0, len(identifier_sections)):
                 subfolders.append('-'.join(identifier_sections[:i+1]))
 
-            if self.connected == 1:
-                return self.connected_root + '/'.join(subfolders)
-            elif self.local_root:
+            if self.local_root:
                 return self.local_root + '/'.join(subfolders)
             else:
                 raise RuntimeError
@@ -113,9 +94,7 @@ class DigitalCollectionValidator:
         # for mvol, apf, and rac, sections of the identifier are not repeated in subfolders,
         # e.g. mvol/0001/0002/0003.
         if project in ('apf', 'mvol'):
-            if self.connected == 1:
-                return self.connected_root + identifier_chunk.replace('-', '/')
-            elif self.local_root:
+            if self.local_root:
                 return self.local_root + '/' + identifier_chunk.replace('-', '/')
             else:
                 raise RuntimeError
@@ -251,11 +230,11 @@ class DigitalCollectionValidator:
 
         #prints all the files in all existing directories
         if identifier in general:
-            dir_files = self.cs_listdir(self.get_path(identifier))
+            dir_files = os.listdir(self.get_path(identifier))
             for chunk in dir_files:
-                for folder in self.cs_listdir(self.get_path(chunk)):
+                for folder in os.listdir(self.get_path(chunk)):
                     if '.' not in folder:
-                        identifiers += self.cs_listdir(self.get_path(chunk) + '/' + str(folder))
+                        identifiers += os.listdir(self.get_path(chunk) + '/' + str(folder))
             return identifiers
 
         #prints all files in specified directory
@@ -266,10 +245,10 @@ class DigitalCollectionValidator:
         elif 'speculum' in identifier:
             path = self.get_path(identifier[:13])
 
-        dir_files = self.cs_listdir(path)
+        dir_files = os.listdir(path)
         for folder in dir_files:
             if '.' not in folder:
-                identifiers += self.cs_listdir(path + '/' + str(folder))
+                identifiers += os.listdir(path + '/' + str(folder))
 
         #searching for single, unique file
         if length >= general[self.get_project(identifier)]:
@@ -298,14 +277,14 @@ class DigitalCollectionValidator:
         elif 'speculum' in identifier:
             path = self.get_path(identifier[:13])
 
-        dir_files = self.cs_listdir(path)
+        dir_files = os.listdir(path)
 
         for folder in dir_files:
             if '.' not in folder:
-                for image in self.cs_listdir(path + '/' + str(folder)):
+                for image in os.listdir(path + '/' + str(folder)):
                     if identifier in image:
                         path += '/' + str(folder) + '/' + str(image)
-                        f = self.cs_open(path)
+                        f = self.open(path)
                         return self._validate_file_notempty(f)
         
         return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
@@ -336,12 +315,12 @@ class DigitalCollectionValidator:
             raise ValueError('invalid identifier.\n')
 
         path = self.get_path(identifier)
-        folders = self.cs_listdir(path)
+        folders = os.listdir(path)
 
         entries = []
         for directory in folders:
             if '.' not in directory:
-                for entry in self.cs_listdir(path + '/' + str(directory)):
+                for entry in os.listdir(path + '/' + str(directory)):
                     entries.append(path + '/' + directory + '/' + str(entry))
         
         errors = []
@@ -351,7 +330,7 @@ class DigitalCollectionValidator:
             if not file_name.endswith(extensions[folder_name]):
                 errors.append('%s is not a tif file' % file_name)
 
-            f = self.cs_open(i)
+            f = self.open(i)
             empty = self._validate_file_notempty(f)
             if empty:
                 errors.append(empty[0])
@@ -417,39 +396,6 @@ class DigitalCollectionValidator:
         f.close()
         return errors
 
-    def cs_listdir(self, path):
-        """Lists contents of specified directory in current server (Owncloud vs Local)
-
-        Args:
-            path (str): to a directory
-        """
-        if self.connected == 1:
-            return self.ftp.listdir(path)
-        else:
-            return os.listdir(path)
-
-    def cs_stat(self, path):
-        """Performs stat() system call on specified path in current server (Owncloud vs Local)
-
-        Args:
-            path (str): to a directory
-        """
-        if self.connected == 1:
-            return self.ftp.stat(path)
-        else:
-            return os.stat(path)
-
-    def cs_open(self, path):
-        """Opens a file to read or write on specified path in current server (Owncloud vs Local)
-
-        Args:
-            path (str): to a file
-        """
-        if self.connected == 1:
-            return self.ftp.open(path)
-        else:
-            return open(path)
-
     def get_csv_data(self, identifier_chunk):
         """Get CSV data for a specific identifier chunk.
  
@@ -461,7 +407,7 @@ class DigitalCollectionValidator:
         """
         path = self.get_path(identifier_chunk)
         csv_data = {}
-        for entry in self.cs_listdir(path):
+        for entry in os.listdir(path):
             if re.search('\.csv$', entry):
                 f = self.ftp.file('{}/{}'.format(path, entry))
                 reader = csv.reader(f)
@@ -489,10 +435,10 @@ class ApfValidator(DigitalCollectionValidator):
 
         path = self.get_path('apf') +  '/' + str(identifier[3])
 
-        for image in self.cs_listdir(path):
+        for image in os.listdir(path):
             if identifier in image:
                 path += '/' + image
-                f = self.cs_open(path)
+                f = self.open(path)
                 return self._validate_file_notempty(f)
         
         return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
@@ -535,11 +481,11 @@ class ApfValidator(DigitalCollectionValidator):
             print("File doesn't exist")
         
         if identifier == 'apf':
-            for directory in self.cs_listdir(path):
-                identifiers += self.cs_listdir(path + '/' + str(directory))
+            for directory in os.listdir(path):
+                identifiers += os.listdir(path + '/' + str(directory))
             return identifiers 
 
-        identifiers = self.cs_listdir(path)
+        identifiers = os.listdir(path)
 
         fin = []
         for i in identifiers:
@@ -571,7 +517,7 @@ class ChopinValidator(DigitalCollectionValidator):
         # regex to match filenames that look correct.
         r = '^' + identifier + '-\d{3}\.tif$'
 
-        existing_f = set(self.cs_listdir(path))
+        existing_f = set(os.listdir(path))
 
         # get what looks like the highest object number on disk. 
         hi_obj_num = 0
@@ -635,7 +581,7 @@ class GmsValidator(DigitalCollectionValidator):
         # regex to match filenames that look correct.
         r = '^' + identifier + '-\d{3}\.tif$'
 
-        existing_f = set(self.cs_listdir(path))
+        existing_f = set(os.listdir(path))
 
         # get what looks like the highest object number on disk. 
         hi_obj_num = 0
@@ -696,7 +642,7 @@ class MvolValidator(DigitalCollectionValidator):
         mmdd_path = self.get_path(identifier)
 
         # raise an IOError if the ALTO, JPEG, or TIFF directory does not exist.
-        self.cs_stat(mmdd_path + '/' + folder_name)
+        os.stat(mmdd_path + '/' + folder_name)
 
         if bool(re.search('-[0-9]{2}$', identifier)):
             filename_re = '^%s-%s-%s-%s-%s_\d{4}\.%s$' % (
@@ -717,7 +663,7 @@ class MvolValidator(DigitalCollectionValidator):
             )
 
         entries = []
-        for entry in self.cs_listdir('{}/{}'.format(mmdd_path, folder_name)):
+        for entry in os.listdir('{}/{}'.format(mmdd_path, folder_name)):
             if entry.endswith(extensions[folder_name]):
                 entries.append(entry)
         entries.sort()
@@ -727,7 +673,7 @@ class MvolValidator(DigitalCollectionValidator):
         for entry in entries:
             if re.match(filename_re, entry):
                 if folder_name == 'ALTO':
-                    with self.cs_open('{}/ALTO/{}'.format(self.get_path(identifier), entry)) as f:
+                    with self.open('{}/ALTO/{}'.format(self.get_path(identifier), entry)) as f:
                         try:
                             ElementTree.fromstring(f.read())
                             entries_pass.append(entry)
@@ -850,7 +796,7 @@ class MvolValidator(DigitalCollectionValidator):
 
         try:
             if not f:
-                f = self.cs_open('{}/{}.dc.xml'.format(
+                f = self.open('{}/{}.dc.xml'.format(
                     self.get_path(identifier),
                     identifier)
                 )
@@ -906,7 +852,7 @@ class MvolValidator(DigitalCollectionValidator):
 
         if not f:
             try:
-                f = self.cs_open('{}/{}.mets.xml'.format(
+                f = self.open('{}/{}.mets.xml'.format(
                     self.get_path(identifier),
                     identifier)
                 )
@@ -948,7 +894,7 @@ class MvolValidator(DigitalCollectionValidator):
 
         if not f:
             try:
-                f = self.cs_open(
+                f = self.open(
                     '{}/{}.struct.txt'.format(self.get_path(identifier), identifier))
             except (FileNotFoundError, IOError):
                 return ['{}/{}.struct.txt missing\n'.format(self.get_path(identifier), identifier)]
@@ -973,7 +919,7 @@ class MvolValidator(DigitalCollectionValidator):
         assert self.get_project(identifier) == 'mvol'
 
         try:
-            f = self.cs_open('{}/{}.txt'.format(
+            f = self.open('{}/{}.txt'.format(
                 self.get_path(identifier),
                 identifier))
             return DigitalCollectionValidator._validate_file_notempty(f)
@@ -990,7 +936,7 @@ class MvolValidator(DigitalCollectionValidator):
         assert self.get_project(identifier) == 'mvol'
 
         try:
-            f = self.cs_open('{}/{}.pdf'.format(
+            f = self.open('{}/{}.pdf'.format(
                 self.get_path(identifier),
                 identifier))
             return DigitalCollectionValidator._validate_file_notempty(f)
@@ -1123,10 +1069,10 @@ class RacValidator(DigitalCollectionValidator):
 
         path = self.get_path(identifier) + '/tifs/'
 
-        for image in self.cs_listdir(path):
+        for image in os.listdir(path):
             if identifier in image:
                 path += image
-                f = self.cs_open(path)
+                f = self.open(path)
                 return self._validate_file_notempty(f)
 
         return ['{}/{}.tiff missing\n'.format(self.get_path(identifier), identifier)]
@@ -1166,20 +1112,20 @@ class RacValidator(DigitalCollectionValidator):
         #prints all the files in all existing directories
         if identifier == 'rac':
             path = self.get_path('rac')
-            dir_files = self.cs_listdir(path)
+            dir_files = os.listdir(path)
             for chunk in dir_files:
                 path_new = path
                 path_new += '/' + str(chunk)
-                for folder in self.cs_listdir(path_new):
-                    identifiers += self.cs_listdir(path_new + '/' + str(folder))
+                for folder in os.listdir(path_new):
+                    identifiers += os.listdir(path_new + '/' + str(folder))
             return identifiers
 
         #prints all files in specified directory
         elif 'rac' in identifier:
             path = self.get_path(identifier)
-            dir_files = self.cs_listdir(path)
+            dir_files = os.listdir(path)
             for chunk in dir_files:
-                identifiers += self.cs_listdir(path + '/' + str(chunk))
+                identifiers += os.listdir(path + '/' + str(chunk))
             return identifiers
 
         #searching for single, unique file
@@ -1187,8 +1133,8 @@ class RacValidator(DigitalCollectionValidator):
             folder = identifier[-8:]
             folder = folder[:4]
             path = self.get_path('rac') + '/' + str(folder)
-            for folder in self.cs_listdir(path):
-                identifiers += self.cs_listdir(path + '/' + str(folder))
+            for folder in os.listdir(path):
+                identifiers += os.listdir(path + '/' + str(folder))
             for i in identifiers:
                 if identifier in i:
                     return [i]
