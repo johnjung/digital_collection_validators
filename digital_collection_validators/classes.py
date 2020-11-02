@@ -6,6 +6,7 @@ import owncloud
 import paramiko
 import re
 import requests
+import sqlite3
 import stat
 import subprocess
 import sys

@@ -1,15 +1,101 @@
 import io
 import unittest
 import os
+import re
+import sqlite3
+
 from digital_collection_validators.classes import *
 from pathlib import Path
-import re
 
 
 class TestValidator(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.validator = DigitalCollectionValidator()
+        self.validator.connect_to_db('testdocs/validation_test.db')
+
+    def test_get_identifiers_from_db(self):
+        self.assertEqual(
+            self.validator.get_identifiers_from_db('mvol', True),
+            [
+                'mvol-0005-0001-0001',
+                'mvol-0005-0001-0002',
+                'mvol-0005-0001-0003',
+                'mvol-0005-0001-0004',
+                'mvol-0005-0002-0001',
+                'mvol-0005-0002-0002',
+                'mvol-0005-0002-0003',
+                'mvol-0005-0002-0004',
+                'mvol-0005-0003-0001',
+                'mvol-0005-0003-0003',
+                'mvol-0005-0003-0004',
+                'mvol-0005-0003-0005',
+                'mvol-0005-0004-0001',
+                'mvol-0005-0004-0002',
+                'mvol-0005-0004-0003'
+            ]
+        )
+
+        self.assertEqual(
+            self.validator.get_identifiers_from_db('mvol', False),
+            [
+                'mvol-0005-0001-0001',
+                'mvol-0005-0001-0002',
+                'mvol-0005-0001-0003',
+                'mvol-0005-0001-0004',
+                'mvol-0005-0002-0001',
+                'mvol-0005-0002-0002',
+                'mvol-0005-0002-0003',
+                'mvol-0005-0002-0004',
+                'mvol-0005-0003-0001',
+                'mvol-0005-0003-0002',
+                'mvol-0005-0003-0003',
+                'mvol-0005-0003-0004',
+                'mvol-0005-0003-0005',
+                'mvol-0005-0003-0006',
+                'mvol-0005-0004-0001',
+                'mvol-0005-0004-0002',
+                'mvol-0005-0004-0003'
+            ]
+        )
+
+        self.assertEqual(
+            self.validator.get_identifiers_from_db('mvol-0005-0001', True),
+            [
+                'mvol-0005-0001-0001',
+                'mvol-0005-0001-0002',
+                'mvol-0005-0001-0003',
+                'mvol-0005-0001-0004'
+            ]
+        )
+
+        self.assertEqual(
+            self.validator.get_identifiers_from_db('mvol-0005-0001-0001', True),
+            [
+                'mvol-0005-0001-0001'
+            ]
+        )
+
+    def test_get_identifier_chunk_children_from_db(self):
+        self.assertEqual(
+            self.validator.get_identifier_chunk_children_from_db('mvol'),
+            ['mvol-0005']
+        )
+
+        self.assertEqual(
+            self.validator.get_identifier_chunk_children_from_db('mvol-0005'),
+            ['mvol-0005-0001', 'mvol-0005-0002', 'mvol-0005-0003', 'mvol-0005-0004']
+        )
+
+        self.assertEqual(
+            self.validator.get_identifier_chunk_children_from_db('mvol-0005-0001'),
+            ['mvol-0005-0001-0001', 'mvol-0005-0001-0002', 'mvol-0005-0001-0003', 'mvol-0005-0001-0004']
+        )
+
+        self.assertEqual(
+            self.validator.get_identifier_chunk_children_from_db('mvol-0005-0001-0001'),
+            []
+        )
 
     def test_is_identifier(self):
         """ 
