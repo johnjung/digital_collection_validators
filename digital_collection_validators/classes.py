@@ -162,7 +162,6 @@ class DigitalCollectionValidator:
             else:
                 raise RuntimeError
 
-
     def get_project(self, identifier_chunk):
         """Return the first part of an identifier chunk, e.g. 'mvol'.
 
@@ -255,14 +254,20 @@ class DigitalCollectionValidator:
         Returns:
             list: a list of identifiers, e.g. 'mvol-0001-0002-0003'
         """
+        output = subprocess.run(
+            [
+                'find',
+                self.local_root + os.sep + identifier_chunk.replace('-', os.sep),
+                '-name',
+                '*.dc.xml'
+            ],
+            capture_output=True
+        )
         identifiers = []
-        for root, dirs, files in os.walk(self.get_path(identifier_chunk)):
-            if bool(set(dirs).intersection(
-                set(('jpg', 'pos', 'tif', 'ALTO', 'JPEG', 'POS', 'TIFF'))
-            )):
-                identifier = '-'.join(root.split(os.sep)[5:])
-                if self.is_identifier(identifier):
-                    identifiers.append(identifier)
+        for line in output.stdout.decode('utf-8').split('\n'):
+            potential_identifier = os.path.basename(line).replace('.dc.xml', '')
+            if potential_identifier and self.is_identifier(potential_identifier):
+                identifiers.append(potential_identifier)
         return identifiers
 
     def list_directory(self, identifier):
@@ -347,7 +352,7 @@ class DigitalCollectionValidator:
                 for image in os.listdir(path + '/' + str(folder)):
                     if identifier in image:
                         path += '/' + str(folder) + '/' + str(image)
-                        f = self.open(path)
+                        f = open(path)
                         return self._validate_file_notempty(f)
         
         return ['{} tiff missing\n'.format(identifier)]
@@ -393,7 +398,7 @@ class DigitalCollectionValidator:
             if not file_name.endswith(extensions[folder_name]):
                 errors.append('%s is not a tif file' % file_name)
 
-            f = self.open(i)
+            f = open(i)
             empty = self._validate_file_notempty(f)
             if empty:
                 errors.append(empty[0])
@@ -501,7 +506,7 @@ class ApfValidator(DigitalCollectionValidator):
         for image in os.listdir(path):
             if identifier in image:
                 path += '/' + image
-                f = self.open(path)
+                f = open(path)
                 return self._validate_file_notempty(f)
         
         return ['{} tiff missing\n'.format(identifier)]
@@ -736,7 +741,7 @@ class MvolValidator(DigitalCollectionValidator):
         for entry in entries:
             if re.match(filename_re, entry):
                 if folder_name == 'ALTO':
-                    with self.open('{}/ALTO/{}'.format(self.get_path(identifier), entry)) as f:
+                    with open('{}/ALTO/{}'.format(self.get_path(identifier), entry)) as f:
                         try:
                             ElementTree.fromstring(f.read())
                             entries_pass.append(entry)
@@ -826,7 +831,7 @@ class MvolValidator(DigitalCollectionValidator):
 
         if not f:
             try:
-                f = self.open('{}/{}.dc.xml'.format(
+                f = open('{}/{}.dc.xml'.format(
                     self.get_path(identifier),
                     identifier)
                 )
@@ -914,7 +919,7 @@ class MvolValidator(DigitalCollectionValidator):
 
         if not f:
             try:
-                f = self.open(
+                f = open(
                     '{}/{}.struct.txt'.format(self.get_path(identifier), identifier))
             except (FileNotFoundError, IOError):
                 return ['{} struct.txt missing\n'.format(identifier)]
@@ -939,7 +944,7 @@ class MvolValidator(DigitalCollectionValidator):
         assert self.get_project(identifier) == 'mvol'
 
         try:
-            f = self.open('{}/{}.txt'.format(
+            f = open('{}/{}.txt'.format(
                 self.get_path(identifier),
                 identifier))
             return DigitalCollectionValidator._validate_file_notempty(f)
@@ -956,7 +961,7 @@ class MvolValidator(DigitalCollectionValidator):
         assert self.get_project(identifier) == 'mvol'
 
         try:
-            f = self.open('{}/{}.pdf'.format(
+            f = open('{}/{}.pdf'.format(
                 self.get_path(identifier),
                 identifier))
             return DigitalCollectionValidator._validate_file_notempty(f)
@@ -1092,7 +1097,7 @@ class RacValidator(DigitalCollectionValidator):
         for image in os.listdir(path):
             if identifier in image:
                 path += image
-                f = self.open(path)
+                f = open(path)
                 return self._validate_file_notempty(f)
 
         return ['{} tiff missing\n'.format(identifier)]
