@@ -89,7 +89,14 @@ if __name__ == '__main__':
                 errors = mvol_valid.validate(identifier)
                 validation = not(bool(errors))
                 c.execute(
-                    'UPDATE validation SET validation = ?, validation_date = ?, validation_errors = ? WHERE identifier = ?',
+                    'DELETE FROM validation WHERE identifier = ?',
+                    (
+                        identifier,
+                    )
+                )
+                conn.commit()
+                c.execute(
+                    'INSERT INTO validation (validation, validation_date, validation_errors, identifier) VALUES (?, ?, ?, ?)',
                     (
                         validation,
                         datetime.datetime.now().isoformat(),
@@ -97,7 +104,7 @@ if __name__ == '__main__':
                         identifier,
                     )
                 )
-            conn.commit()
+                conn.commit()
         for identifier_chunk in arguments['<identifier-chunk>']:
             if arguments['--show-errors']:
                 c.execute(
@@ -112,4 +119,4 @@ if __name__ == '__main__':
                     ('{}%'.format(identifier_chunk),)
                 )
                 for r in c.fetchall():
-                    sys.stdout.write(r[0])
+                    print(r[0])
