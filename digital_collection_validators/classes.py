@@ -840,6 +840,14 @@ class MvolValidator(DigitalCollectionValidator):
                 return errors
 
         try:
+            ElementTree.parse(f)
+        except ElementTree.ParseError:
+            errors.append('{} dc.xml not well-formed\n'.format(identifier))
+            return errors
+
+        f.seek(0)
+
+        try:
             metadata = etree.parse(f)
         except etree.XMLSyntaxError as e:
             errors.append('{} dc.xml not well-formed\n'.format(identifier))
