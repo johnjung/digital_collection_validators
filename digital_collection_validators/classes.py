@@ -2,7 +2,6 @@ import csv
 import getpass
 import io
 import os
-import owncloud
 import paramiko
 import re
 import requests
@@ -712,23 +711,7 @@ class MvolValidator(DigitalCollectionValidator):
         # raise an IOError if the ALTO, JPEG, or TIFF directory does not exist.
         os.stat(mmdd_path + '/' + folder_name)
 
-        if bool(re.search('-[0-9]{2}$', identifier)):
-            filename_re = '^%s-%s-%s-%s-%s_\d{4}\.%s$' % (
-                mmdd_path.split('/')[-5],
-                mmdd_path.split('/')[-4],
-                mmdd_path.split('/')[-3],
-                mmdd_path.split('/')[-2],
-                mmdd_path.split('/')[-1],
-                extensions[folder_name]
-            )
-        else:
-            filename_re = '^%s-%s-%s-%s_\d{4}\.%s$' % (
-                mmdd_path.split('/')[-4],
-                mmdd_path.split('/')[-3],
-                mmdd_path.split('/')[-2],
-                mmdd_path.split('/')[-1],
-                extensions[folder_name]
-            )
+        filename_re = '^{}_[0-9]+\.{}$'.format(identifier, extensions[folder_name])
 
         entries = []
         for entry in os.listdir('{}/{}'.format(mmdd_path, folder_name)):
@@ -745,7 +728,7 @@ class MvolValidator(DigitalCollectionValidator):
                         try:
                             ElementTree.fromstring(f.read())
                             entries_pass.append(entry)
-                        except ElementTree.ParseError:
+                        except (ElementTree.ParseError, UnicodeDecodeError):
                             entries_fail.append(entry)
             else:
                 entries_fail.append(entry)
@@ -819,13 +802,15 @@ class MvolValidator(DigitalCollectionValidator):
             return ['{} TIFF missing\n'.format(identifier)]
 
     def validate_dc_xml(self, identifier, f=None):
-        """Make sure that a given dc.xml file is well-formed and valid, and that the
-        date element is arranged as yyyy-mm-dd.
+        """Make sure that a given dc.xml file is well-formed and valid,
+        and that the date element is arranged as yyyy-mm-dd. The file
+        should include an XML declaration, the root element should be
+        <metadata>, and it should include four sub-elements: <dc:title>,
+        <dc:identifier>, <dc:date>, and <dc:description>.
 
         Args:
             identifier (str): e.g. 'mvol-0001-0002-0003'
         """
-
         assert self.get_project(identifier) == 'mvol'
         errors = []
 
@@ -853,43 +838,23 @@ class MvolValidator(DigitalCollectionValidator):
             errors.append('{} dc.xml not well-formed\n'.format(identifier))
             return errors
 
-        dtdf = io.StringIO(
-            """<!ELEMENT metadata ((date, description, identifier, title)|
-                             (date, description, title, identifier)|
-                             (date, identifier, description, title)|
-                             (date, identifier, title, description)|
-                             (date, title, description, identifier)|
-                             (date, title, identifier, description)|
-                             (description, date, identifier, title)|
-                             (description, date, title, identifier)|
-                             (description, identifier, date, title)|
-                             (description, identifier, title, date)|
-                             (description, title, date, identifier)|
-                             (description, title, identifier, date)|
-                             (identifier, date, description, title)|
-                             (identifier, date, title, description)|
-                             (identifier, description, date, title)|
-                             (identifier, description, title, date)|
-                             (identifier, title, date, description)|
-                             (identifier, title, description, date)|
-                             (title, date, description, identifier)|
-                             (title, date, identifier, description)|
-                             (title, description, date, identifier)|
-                             (title, description, identifier, date)|
-                             (title, identifier, date, description)|
-                             (title, identifier, description, date))>
-         <!ELEMENT title (#PCDATA)>
-         <!ELEMENT date (#PCDATA)>
-         <!ELEMENT identifier (#PCDATA)>
-         <!ELEMENT description (#PCDATA)>
-      """)
-        dtd = etree.DTD(dtdf)
-        dtdf.close()
+        if not metadata.getroot().tag == 'metadata':
+            errors.append('{} dc.xml root is not metadata element\n'.format(identifier))
 
-        if not dtd.validate(metadata):
-            errors.append('{} dc.xml not valid\n'.format(identifier))
-        elif identifier.startswith('mvol-0004'):
-            datepull = metadata.findtext("date")
+        if not len(metadata.findall('dc:title', namespaces={'dc': 'http://purl.org/dc/elements/1.1/'})) == 1:
+            errors.append('{} dc.xml does not contain a single dc:title element\n'.format(identifier))
+
+        if not len(metadata.findall('dc:identifier', namespaces={'dc': 'http://purl.org/dc/elements/1.1/'})) == 1:
+            errors.append('{} dc.xml does not contain a single dc:identifier element\n'.format(identifier))
+
+        if not len(metadata.findall('dc:date', namespaces={'dc': 'http://purl.org/dc/elements/1.1/'})) == 1:
+            errors.append('{} dc.xml does not contain a single dc:date element\n'.format(identifier))
+
+        if not len(metadata.findall('dc:description', namespaces={'dc': 'http://purl.org/dc/elements/1.1/'})) == 1:
+            errors.append('{} dc.xml does not contain a single dc:description element\n'.format(identifier))
+
+        elif identifier.startswith('mvol-0004') or identifier.startswith('mvol-0448'):
+            datepull = metadata.findtext('dc:date', namespaces={'dc': 'http://purl.org/dc/elements/1.1/'})
             pattern = re.compile("^\d{4}(-\d{2})?(-\d{2})?")
             attemptmatch = pattern.fullmatch(datepull)
             if attemptmatch:
@@ -904,7 +869,7 @@ class MvolValidator(DigitalCollectionValidator):
                         errors.append(
                             '{} dc.xml has an incorrect month field\n'.format(identifier))
                 if length > 2:
-                    if (sections[2] < 1) | (sections[2] > 31):
+                    if (sections[2] < 0) | (sections[2] > 31):
                         errors.append(
                             '{} dc.xml has an incorrect day field\n'.format(identifier))
                 else:
@@ -987,6 +952,7 @@ class MvolValidator(DigitalCollectionValidator):
         allowable_files = set((
             '{}.dc.xml'.format(identifier),
             '{}.mets.xml'.format(identifier),
+            '{}.METS.xml'.format(identifier),
             '{}.pdf'.format(identifier),
             '{}.struct.txt'.format(identifier),
             '{}.txt'.format(identifier)
@@ -1007,11 +973,13 @@ class MvolValidator(DigitalCollectionValidator):
         for f in files_present.difference(allowable_files):
             errors.append('non-allowable file {} in {}\n'.format(f, identifier))
 
+        '''
         if not os.path.isdir('{}/{}/JPEG'.format(
             self.local_root,
             identifier.replace('-', '/')
         )):
             errors.append('JPEG dir missing in {}\n'.format(identifier))
+        '''
 
         if not os.path.isdir('{}/{}/TIFF'.format(
             self.local_root,
@@ -1080,7 +1048,7 @@ class MvolValidator(DigitalCollectionValidator):
 
         errors = []
         errors += self.validate_alto_or_pos_directory(identifier)
-        errors += self.validate_jpeg_directory(identifier)
+        # errors += self.validate_jpeg_directory(identifier)
         errors += self.validate_tiff_directory(identifier)
         errors += self.validate_pdf(identifier)
         errors += self.validate_struct_txt(identifier)
@@ -1088,7 +1056,8 @@ class MvolValidator(DigitalCollectionValidator):
         errors += self.validate_dc_xml(identifier)
         errors += self.validate_allowable_files_only(identifier)
         if not errors:
-            errors += self.validate_ocr(identifier)
+            pass
+            #errors += self.validate_ocr(identifier)
         return errors
 
 

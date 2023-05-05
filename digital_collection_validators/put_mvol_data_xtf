@@ -28,34 +28,33 @@ if __name__ == '__main__':
             username=os.environ['XTF_DEVELOPMENT_USERNAME'],
             password=os.environ['XTF_DEVELOPMENT_PASSWORD']
         )
-        xtf_path = '/usr/local/apache-tomcat-6.0/webapps/xtf/data/bookreader'
+        xtf_path = '/usr/local/apache-tomcat-6.0/webapps/campub/data/bookreader'
     elif arguments['--production']:
         xtf_ssh.connect(
             os.environ['XTF_PRODUCTION_SERVER'],
             username=os.environ['XTF_PRODUCTION_USERNAME'],
             password=os.environ['XTF_PRODUCTION_PASSWORD']
         )
-        xtf_path = '/usr/local/apache-tomcat-6.0/webapps/campub/data/bookreader'
+        xtf_path = '/usr/local/apache-tomcat-6.0/webapps/xtf/data/bookreader'
     else:
         sys.stdout.write('unknown server, must be development or production.\n')
         sys.exit()
     xtf_ftp = xtf_ssh.open_sftp()
 
     for identifier in arguments['<identifier>']:
-
         if identifier in xtf_ftp.listdir(xtf_path):
             sys.stderr.write(identifier + ' directory exists.')
             sys.exit()
 
         xtf_ftp.mkdir('{}/{}'.format(xtf_path, identifier), mode=0o755)
     
-        img_dir = arguments['--local-root'] + '/' + '/'.join(identifier.split('-')) + '/' + 'JPEG'
+        img_dir = arguments['--local-root'] + '/' + '/'.join(identifier.split('-')) + '/' + 'TIFF'
         imgs= []
         for img in os.listdir(img_dir):
             imgs.append(img_dir + '/' + img)
         imgs.sort()
     
-        if identifier.startswith('mvol-0004'):
+        if identifier.startswith('mvol-0004') or identifier.startswith('mvol-0448'):
             size = (6800, 6800)
         else:
             size = (1024, 1024)
@@ -99,3 +98,21 @@ if __name__ == '__main__':
             xtf_ftp.putfo(in_memory_ocr, '{}/{}/{}.xml'.format(xtf_path, identifier, identifier))
         except OSError:
             pass
+
+        # upload PDF
+        p = os.path.sep.join(
+            [arguments['--local-root']] + \
+            identifier.split('-') + \
+            ['{}.pdf'.format(identifier)]
+        )
+        with open(p, 'rb') as f:
+            xtf_ftp.putfo(f, '{}/{}/{}.pdf'.format(xtf_path, identifier, identifier))
+
+        # upload TXT
+        p = os.path.sep.join(
+            [arguments['--local-root']] + \
+            identifier.split('-') + \
+            ['{}.txt'.format(identifier)]
+        )
+        with open(p, 'rb') as f:
+            xtf_ftp.putfo(f, '{}/{}/{}.txt'.format(xtf_path, identifier, identifier))

@@ -12,3 +12,6 @@ venv/
 ENV/
 env/
 env.sh
+
+dist/
+build/

@@ -1,53 +1,60 @@
 #!/usr/bin/env python3
 
 """Usage:
-   fix_mvol_pdf (--fix-existing|--make-new) <identifier>
+   fix_mvol_pdf --local-root=<local-root> (--fix-existing|--make-new) <identifier>
 """
 
-import os, sys
+import os, re, sys
 from docopt import docopt
 from fpdf import FPDF
 from PIL import Image
 
+def get_identifiers_under_root(root):
+    """Get identifiers under some root in the filesystem."""
+    identifiers = set()
+    for root, dirs, files in os.walk(root):
+        for f in files:
+            if re.match('^mvol-[0-9]{4}-[0-9]{4}-[0-9]{4}\.dc\.xml$', f):
+                identifiers.add(f.replace('.dc.xml', ''))
+    return sorted(list(identifiers))
 
 if __name__ == '__main__':
     options = docopt(__doc__)
 
-    base_dir = '/data/digital_collections/IIIF/IIIF_Files/{}'.format( 
-        options['<identifier>'].replace('-', '/'),
-    )
+    for identifier in get_identifiers_under_root(options['--local-root']):
+        sys.stdout.write(identifier + '\n')
 
-    jpeg_dir = '{}/JPEG'.format(
-        base_dir
-    )
-
-    pdf_path = '{}/{}.pdf'.format(
-        base_dir,
-        options['<identifier>']
-    )
-
-    if not os.path.isdir(jpeg_dir):
-        sys.stderr.write('{} does not exist!\n'.format(jpeg_dir))
-        sys.exit()
-
-    if options['--fix-existing']:
-        raise NotImplementedError
-
-    if options['--make-new']:
-        if os.path.exists(pdf_path):
-            sys.stderr.write('{} exists!\n'.format(struct_txt_path))
+        base_dir = '{}{}{}'.format( 
+            options['--local-root'],
+            os.path.sep,
+            identifier.replace('-', '/')
+        )
+    
+        jpeg_dir = os.path.sep.join((base_dir, 'JPEG'))
+        pdf_path = os.path.sep.join((base_dir, '{}.pdf'.format(identifier)))
+    
+        if not os.path.isdir(jpeg_dir):
+            sys.stderr.write('{} does not exist!\n'.format(jpeg_dir))
             sys.exit()
+    
+        if options['--fix-existing']:
+            raise NotImplementedError
+    
+        if options['--make-new']:
+            if os.path.exists(pdf_path):
+                sys.stderr.write('{} exists!\n'.format(pdf_path))
+                sys.exit()
 
-        jpegs = [f for f in os.listdir(jpeg_dir) if f.endswith('.jpg')]
-
-        pdf = FPDF(unit = "pt", format = Image.open(
-            '{}/JPEG/{}'.format(base_dir, jpegs[0])
-        ).size)
-        for j in jpegs:
-            pdf.add_page()
-            pdf.image(
-                '{}/JPEG/{}'.format(base_dir, j),
-                0, 
-                0
-            )
-        pdf.output(pdf_path, "F")
+            jpegs = [f for f in os.listdir(jpeg_dir) if f.endswith('.jpg')]
+    
+            pdf = FPDF(unit = "pt", format = Image.open(
+                os.path.sep.join((base_dir, 'JPEG', jpegs[0]))
+            ).size)
+            for j in jpegs:
+                pdf.add_page()
+                pdf.image(
+                    os.path.sep.join((base_dir, 'JPEG', j)),
+                    0, 
+                    0
+                )
+            pdf.output(pdf_path, "F")
